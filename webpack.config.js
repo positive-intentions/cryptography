@@ -54,23 +54,23 @@ module.exports = {
                     sizes: [96, 128, 192, 256, 384, 512], // multiple sizes
                     maskable: true,
                 }
-                
 
-              ],
-              "start_url": ".",
-              "display": "standalone",
-              "theme_color": "#44b700",
-              "background_color": "#ffffff",
+
+            ],
+            "start_url": ".",
+            "display": "standalone",
+            "theme_color": "#44b700",
+            "background_color": "#ffffff",
             // crossorigin: 'use-credentials', // can be null, use-credentials or anonymous
             inject: true,
         }),
         new ModuleFederationPlugin({
-            name: 'frontendBase',
+            name: 'cryptography',
             filename: 'remoteEntry.js',
             exposes: {
-                './Example': './src/stories/components/Example.tsx',
+                './Cryptography': './src/stories/components/Cryptography.tsx',
             },
-            shared: {react: {singleton: true}, "react-dom": {singleton: true}}
+            shared: { react: { singleton: true }, "react-dom": { singleton: true } }
         }),
     ],
 };

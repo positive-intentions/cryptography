@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkfrontend_base=self.webpackChunkfrontend_base||[]).push([[19],{361:(e,n,t)=>{t.r(n);var r={};t.r(r);var l=t(416),a=t.n(l),u=t(745);t(94),t(714);var s=function(){return a().createElement("div",null,a().createElement(r.default,null,"positive-intentions"))},c=document.getElementById("app");(0,u.s)(c).render(a().createElement(s,null))}}]);
