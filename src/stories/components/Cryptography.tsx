@@ -28,8 +28,8 @@ export const randomString = (additionalSalt = "") => {
 
 // CryptographyProvider Component
 export const CryptographyProvider = ({ entropy = "", children }) => {
-    const [salt, setSalt] = useState("");
-    const [chance, setChance] = useState(new Chance(salt));
+    const [salt, setSalt] = React.useState("");
+    const [chance, setChance] = React.useState(new Chance(salt));
 
     useEffect(() => {
         const updateSates = async () => {
