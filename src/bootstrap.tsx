@@ -1,11 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import Example from "./stories/components/Example.tsx";
+import Cryptography from "./stories/components/Cryptography.tsx";
 
 const App = () => {
   return (
     <div>
-      <Example>positive-intentions</Example>
+      <Cryptography>positive-intentions</Cryptography>
     </div>
   );
 };
