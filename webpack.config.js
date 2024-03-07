@@ -76,7 +76,7 @@ module.exports = {
             exposes: {
                 './Cryptography': './src/stories/components/Cryptography.tsx',
             },
-            // shared: { react: { singleton: true }, "react-dom": { singleton: true } }
+            shared: { react: { singleton: true }, "react-dom": { singleton: true } }
         }),
     ],
 };
