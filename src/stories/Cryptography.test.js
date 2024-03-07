@@ -1,13 +1,33 @@
-import { TextEncoder, TextDecoder } from 'util'
-global.TextEncoder = TextEncoder
-// @ts-expect-error
-global.TextDecoder = TextDecoder
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 const crypto = require('crypto');
 
+// Define global crypto object with both getRandomValues and subtle
 Object.defineProperty(globalThis, 'crypto', {
   value: {
-    getRandomValues: arr => crypto.randomBytes(arr.length)
+    getRandomValues: arr => crypto.randomBytes(arr.length),
+    subtle: {
+      digest: async (algorithm, data) => {
+        // Ensure the algorithm is compatible with Node.js crypto module
+        let nodeAlgorithm;
+        switch (algorithm) {
+          case 'SHA-256':
+            nodeAlgorithm = 'sha256';
+            break;
+          case 'SHA-1':
+            nodeAlgorithm = 'sha1';
+            break;
+          // Add cases for other algorithms as needed
+          default:
+            throw new Error('Unsupported algorithm');
+        }
+        const hash = crypto.createHash(nodeAlgorithm);
+        hash.update(data);
+        return new Uint8Array(hash.digest());
+      },
+    },
   }
 });
 

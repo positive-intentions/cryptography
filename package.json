@@ -14,6 +14,7 @@
     "build:reset": "rm -rf ./Frontend && mkdir ./Frontend",
     "build:storybook": "storybook build && cp -r storybook-static/* ./Frontend",
     "build:frontend": "webpack --mode production && cp -r dist/* ./Frontend",
+    "build:development": "webpack --mode development && cp -r dist/* ./Frontend",
     "build:coverage": "jest --coverage && cp -r coverage/lcov-report ./Frontend/coverage-report",
     "serve:storybook": "serve storybook-static",
     "serve": "serve Frontend",
