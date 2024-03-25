@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">33.65% </span>
+                <span class="strong">39.42% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>35/104</span>
+                <span class='fraction'>41/104</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.28% </span>
+                <span class="strong">44.44% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/7</span>
+                <span class='fraction'>4/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">18.51% </span>
+                <span class="strong">25.92% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/27</span>
+                <span class='fraction'>7/27</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">34.65% </span>
+                <span class="strong">40.59% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>35/101</span>
+                <span class='fraction'>41/101</span>
             </div>
         
             
@@ -393,22 +393,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -711,29 +711,29 @@ import Chance from "chance";
 const CryptographyContext = createContext(null);
 &nbsp;
 // Cryptographically Random String Generator
-export const randomString = <span class="fstat-no" title="function not covered" >(a</span>dditionalSalt = <span class="branch-0 cbranch-no" title="branch not covered" >"")</span> =&gt; {
+export const randomString = (additionalSalt = <span class="branch-0 cbranch-no" title="branch not covered" >"")</span> =&gt; {
     // Define the length of the random string
-    const randomStringLength = <span class="cstat-no" title="statement not covered" >16;</span> // You can change this value to generate a longer or shorter string
+    const randomStringLength = 16; // You can change this value to generate a longer or shorter string
 &nbsp;
     // Generate a random array of uint8 values
-    const randomValues = <span class="cstat-no" title="statement not covered" >crypto.getRandomValues(</span>
+    const randomValues = crypto.getRandomValues(
         new Uint8Array(randomStringLength),
     );
 &nbsp;
     // Convert random values to hexadecimal string
-    const randomHex = <span class="cstat-no" title="statement not covered" >Array.from(randomValues)</span>
-        .map(<span class="fstat-no" title="function not covered" >(b</span>yte) =&gt; <span class="cstat-no" title="statement not covered" >byte.toString(16).padStart(2, "0"))</span>
+    const randomHex = Array.from(randomValues)
+        .map((byte) =&gt; byte.toString(16).padStart(2, "0"))
         .join("");
 &nbsp;
     // If additional salt is provided, concatenate it with the random string
-    const randomString = <span class="cstat-no" title="statement not covered" >additionalSalt ? additionalSalt + randomHex : randomHex;</span>
+    const randomString = additionalSalt ? additionalSalt + randomHex : <span class="branch-1 cbranch-no" title="branch not covered" >randomHex;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return randomString;</span>
+    return randomString;
 };
 &nbsp;
 // CryptographyProvider Component
 export const CryptographyProvider = ({ entropy = "", children }) =&gt; {
-    const [salt, setSalt] = useState("");
+    const [salt, setSalt] = useState(randomString((entropy || "") + Date.now()));
     const [chance, setChance] = useState(new Chance(salt));
 &nbsp;
     useEffect(() =&gt; {
@@ -1030,7 +1030,7 @@ export default CryptographyProvider;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-03-07T18:25:31.355Z
+                at 2024-03-25T09:23:07.005Z
             </div>
         <script src="prettify.js"></script>
         <script>

@@ -28,7 +28,7 @@ export const randomString = (additionalSalt = "") => {
 
 // CryptographyProvider Component
 export const CryptographyProvider = ({ entropy = "", children }) => {
-    const [salt, setSalt] = useState("");
+    const [salt, setSalt] = useState(randomString((entropy || "") + Date.now()));
     const [chance, setChance] = useState(new Chance(salt));
 
     useEffect(() => {
