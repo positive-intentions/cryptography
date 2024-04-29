@@ -13,7 +13,7 @@
     "build": "npm run build:reset && npm run build:frontend && npm run build:storybook &&  npm run build:coverage",
     "build:reset": "rm -rf ./Frontend && mkdir ./Frontend",
     "build:storybook": "storybook build && cp -r storybook-static/* ./Frontend",
-    "build:frontend": "webpack --mode production && cp -r dist/* ./Frontend",
+    "build:frontend": "webpack --mode development && cp -r dist/* ./Frontend",
     "build:development": "webpack --mode development && cp -r dist/* ./Frontend",
     "build:coverage": "jest --coverage && cp -r coverage/lcov-report ./Frontend/coverage-report",
     "serve:storybook": "serve storybook-static",
@@ -66,9 +66,5 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "webpack-pwa-manifest": "^4.3.0"
-  },
-  "peerDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
   }
 }
