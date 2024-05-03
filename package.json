@@ -19,7 +19,10 @@
     "serve:storybook": "serve storybook-static",
     "serve": "serve Frontend",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "cargo:run": "cargo run --manifest-path rust/cryptography/Cargo.toml",
+    "cargo:clean": "cargo clean --manifest-path rust/cryptography/Cargo.toml",
+    "cargo:build": "cargo build --manifest-path rust/cryptography/Cargo.toml"
   },
   "author": "",
   "license": "ISC",
