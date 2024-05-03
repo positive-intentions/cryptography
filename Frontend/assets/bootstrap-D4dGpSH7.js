@@ -1,0 +1,1 @@
+import{j as r,CryptographyProvider as e}from"./__federation_expose_Cryptography-BUyQ6STC.js";import{r as n}from"./__federation_shared_react-dom-C9Yx0JqX.js";var o,t=n;o=t.createRoot,t.hydrateRoot;const s=()=>r.jsx("div",{children:r.jsx(e,{children:"positive-intentions"})}),i=document.getElementById("app"),a=o(i);a.render(r.jsx(s,{}));
