@@ -1,6 +1,6 @@
 {
-  "name": "frontend-base",
-  "version": "1.0.0",
+  "name": "chat",
+  "version": "0.0.1",
   "description": "",
   "scripts": {
     "start": "storybook dev -p 6006",
