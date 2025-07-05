@@ -1,0 +1,103 @@
+import { Meta } from '@storybook/addon-docs';
+
+<Meta title="Cryptography/Introduction" />
+
+# Cryptography Module
+
+Welcome to the **Cryptography Module** - a comprehensive browser-based cryptography library built as a microfrontend component.
+
+## Overview
+
+This library provides a thin wrapper around browser cryptography APIs, making it easy to perform common cryptographic operations in your web applications. It's designed with security, simplicity, and modularity in mind.
+
+## Features
+
+### 🎲 Random Generation
+- Cryptographically secure random strings
+- Deterministic random generation with seeds (using Chance.js)
+- Customizable length and character sets
+
+### 🔐 Hashing Functions
+- **SHA-256**: Fast, widely-used 256-bit hash
+- **SHA-512**: Stronger 512-bit variant
+- **SHA3-512**: Latest SHA-3 algorithm for maximum security
+
+### 🔑 Asymmetric Encryption (RSA)
+- 4096-bit RSA-OAEP encryption
+- Key pair generation
+- Public/private key serialization
+- Secure message exchange
+
+### 🛡️ Symmetric Encryption (AES)
+- AES-GCM with 256-bit keys
+- Automatic IV generation
+- Fast bulk data encryption
+- Key import/export support
+
+## Getting Started
+
+```jsx
+import { CryptographyProvider, useCryptography } from '@dim/cryptography';
+
+function App() {
+  return (
+    <CryptographyProvider>
+      <YourComponents />
+    </CryptographyProvider>
+  );
+}
+
+function YourComponent() {
+  const crypto = useCryptography();
+  
+  // Use any cryptographic function
+  const hash = await crypto.sha256Hash("Hello World");
+}
+```
+
+## Module Federation
+
+This module is exposed via Webpack Module Federation and can be consumed by other microfrontends:
+
+```javascript
+// In your webpack config
+remotes: {
+  cryptography: "cryptography@http://localhost:3002/remoteEntry.js"
+}
+```
+
+## Security Considerations
+
+- All operations use the browser's native Web Crypto API when possible
+- Keys are never stored in plain text
+- Random values use `crypto.getRandomValues()` for cryptographic security
+- Follow best practices for key management and storage
+
+## Interactive Demos
+
+Explore the sidebar to see interactive demonstrations of each feature:
+
+- **Random Generation**: Generate secure random values
+- **Hashing**: Calculate and verify hashes
+- **RSA Encryption**: See public-key cryptography in action
+- **Symmetric Encryption**: Fast encryption for larger data
+- **Use Cases**: Real-world application examples
+- **Performance**: Benchmark different operations
+
+Each demo includes:
+- Live, interactive examples
+- Code snippets you can copy
+- Performance metrics
+- Security best practices
+
+## Browser Compatibility
+
+This module requires a modern browser with Web Crypto API support:
+- Chrome 37+
+- Firefox 34+
+- Safari 10.1+
+- Edge 12+
+
+## Contributing
+
+This is an open-source project. Feel free to contribute or report issues!

@@ -15,7 +15,7 @@
   \**********************/
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"webpack_sharing_consume_default_react_react\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://frontend-base/./src/index.ts?");
+eval("Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"webpack_sharing_consume_default_react_react\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://chat/./src/index.ts?");
 
 /***/ })
 
@@ -126,7 +126,7 @@ eval("Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_c
 /******/ 	/* webpack/runtime/load script */
 /******/ 	(() => {
 /******/ 		var inProgress = {};
-/******/ 		var dataWebpackPrefix = "frontend-base:";
+/******/ 		var dataWebpackPrefix = "chat:";
 /******/ 		// loadScript function to load a script via script tag
 /******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
 /******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
@@ -210,7 +210,7 @@ eval("Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_c
 /******/ 			var warn = (msg) => {
 /******/ 				if (typeof console !== "undefined" && console.warn) console.warn(msg);
 /******/ 			};
-/******/ 			var uniqueName = "frontend-base";
+/******/ 			var uniqueName = "chat";
 /******/ 			var register = (name, version, factory, eager) => {
 /******/ 				var versions = scope[name] = scope[name] || {};
 /******/ 				var activeVersion = versions[version];
@@ -531,7 +531,7 @@ eval("Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_c
 /******/ 		
 /******/ 		}
 /******/ 		
-/******/ 		var chunkLoadingGlobal = self["webpackChunkfrontend_base"] = self["webpackChunkfrontend_base"] || [];
+/******/ 		var chunkLoadingGlobal = self["webpackChunkchat"] = self["webpackChunkchat"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();
