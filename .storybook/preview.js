@@ -4,22 +4,39 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import '@fontsource/material-icons';
 
-// import { CssBaseline, ThemeProvider } from '@mui/material';
-// import { withThemeFromJSXProvider } from '@storybook/addon-themes';
-// import { lightTheme, darkTheme } from '../src/themes.js';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { useDarkMode } from 'storybook-dark-mode';
+import React from 'react';
 
-// /* snipped for brevity */
+const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
 
-// export const decorators = [
-//   withThemeFromJSXProvider({
-//   themes: {
-//     light: lightTheme,
-//     dark: darkTheme,
-//   },
-//   defaultTheme: 'light',
-//   Provider: ThemeProvider,
-//   GlobalStyles: CssBaseline,
-// })];
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+  },
+});
+
+export const decorators = [
+  (Story) => {
+    const isDarkMode = useDarkMode();
+    const theme = isDarkMode ? darkTheme : lightTheme;
+    
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Story />
+      </ThemeProvider>
+    );
+  },
+];
 
 /** @type { import('@storybook/react').Preview } */
 const preview = {
@@ -31,8 +48,17 @@ const preview = {
         date: /Date$/i,
       },
     },
-    // add branch image
-
+    docs: {
+      toc: true,
+    },
+    options: {
+      storySort: {
+        order: [
+          'Cryptography',
+          ['Introduction', 'Random Generation', 'Hashing', 'Asymmetric', 'Symmetric', 'Use Cases', 'Performance'],
+        ],
+      },
+    },
   },
 };
 
