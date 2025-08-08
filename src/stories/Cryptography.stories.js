@@ -1,45 +1,89 @@
-import {CryptographyProvider, useCryptography} from "./components/Cryptography.tsx";
+import React from "react";
+import type { Meta, StoryObj } from "@storybook/react";
+import { CryptographyProvider, useCryptography } from "./components/Cryptography.tsx";
+import { Box, Typography, Button, Stack } from "@mui/material";
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
-export default {
-  title: "Components/Cryptography",
+const meta: Meta<typeof CryptographyProvider> = {
+  title: "Cryptography/Core/Provider",
   component: CryptographyProvider,
   parameters: {
-    // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
     layout: "centered",
+    docs: {
+      description: {
+        component: 'Core cryptography provider that enables all cryptographic functions throughout the application.',
+      },
+    },
   },
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
   tags: ["autodocs"],
-  // More on argTypes: https://storybook.js.org/docs/api/argtypes
-  //   argTypes: {
-  //     backgroundColor: { control: 'color' },
-  //   },
-};
-
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
-export const Basic = {
-  args: {
-    children: "positive-intentions",
-    onClick: () => alert("positive-intentions"),
+  argTypes: {
+    entropy: {
+      control: "text",
+      description: "Optional entropy to seed deterministic operations",
+    },
   },
 };
 
-// export const Secondary = {
-//   args: {
-//     label: 'Button',
-//   },
-// };
+export default meta;
+type Story = StoryObj<typeof meta>;
 
-// export const Large = {
-//   args: {
-//     size: 'large',
-//     label: 'Button',
-//   },
-// };
+const BasicDemo = ({ entropy }) => {
+  const crypto = useCryptography();
+  const [result, setResult] = React.useState("");
+  
+  const testBasicFunction = async () => {
+    try {
+      const hash = await crypto.sha256Hash("Hello, Cryptography!");
+      setResult(hash);
+    } catch (error) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
 
-// export const Small = {
-//   args: {
-//     size: 'small',
-//     label: 'Button',
-//   },
-// };
+  return (
+    <Box sx={{ p: 3, maxWidth: 500 }}>
+      <Typography variant="h6" gutterBottom>
+        Cryptography Provider Demo
+      </Typography>
+      <Typography variant="body2" color="text.secondary" paragraph>
+        Click the button below to test basic cryptographic functionality.
+      </Typography>
+      <Stack spacing={2}>
+        <Button variant="contained" onClick={testBasicFunction}>
+          Test SHA-256 Hash
+        </Button>
+        {result && (
+          <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Result:
+            </Typography>
+            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+              {result}
+            </Typography>
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  );
+};
+
+export const Basic: Story = {
+  args: {
+    entropy: "",
+  },
+  render: (args) => (
+    <CryptographyProvider entropy={args.entropy}>
+      <BasicDemo entropy={args.entropy} />
+    </CryptographyProvider>
+  ),
+};
+
+export const WithEntropy: Story = {
+  args: {
+    entropy: "test-seed-123",
+  },
+  render: (args) => (
+    <CryptographyProvider entropy={args.entropy}>
+      <BasicDemo entropy={args.entropy} />
+    </CryptographyProvider>
+  ),
+};
