@@ -1,3 +1,3 @@
-export { CryptoDemo } from './CryptoDemo';
-export { CodeDisplay } from './CodeDisplay';
-export { OperationStatus } from './OperationStatus';
+export { CryptoDemo } from './CryptoDemo.jsx';
+export { CodeDisplay } from './CodeDisplay.jsx';
+export { OperationStatus } from './OperationStatus.jsx';

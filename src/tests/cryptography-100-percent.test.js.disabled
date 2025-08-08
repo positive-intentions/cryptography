@@ -1,0 +1,957 @@
+/**
+ * Comprehensive test suite for 100% code coverage of Cryptography.tsx
+ * Covers all functions, branches, and error paths
+ */
+
+/**
+ * @jest-environment jsdom
+ */
+
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+const crypto = require('crypto');
+
+// Comprehensive Web Crypto API mock
+Object.defineProperty(globalThis, 'crypto', {
+  value: {
+    getRandomValues: (arr) => {
+      const randomBytes = crypto.randomBytes(arr.length);
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = randomBytes[i];
+      }
+      return arr;
+    },
+    subtle: {
+      digest: async (algorithm, data) => {
+        let nodeAlgorithm;
+        switch (algorithm) {
+          case 'SHA-256':
+            nodeAlgorithm = 'sha256';
+            break;
+          case 'SHA-512':
+            nodeAlgorithm = 'sha512';
+            break;
+          case 'SHA-1':
+            nodeAlgorithm = 'sha1';
+            break;
+          default:
+            throw new Error(`Unsupported algorithm: ${algorithm}`);
+        }
+        const hash = crypto.createHash(nodeAlgorithm);
+        hash.update(data);
+        return new Uint8Array(hash.digest());
+      },
+      generateKey: async (algorithm, extractable, usages) => {
+        if (algorithm.name === 'RSA-OAEP') {
+          return {
+            publicKey: 'mock-rsa-public-key',
+            privateKey: 'mock-rsa-private-key'
+          };
+        } else if (algorithm.name === 'AES-GCM') {
+          return 'mock-aes-key';
+        }
+        throw new Error('Unsupported algorithm');
+      },
+      importKey: async (format, keyData, algorithm) => {
+        if (typeof keyData === 'string') {
+          keyData = JSON.parse(keyData);
+        }
+        if (!keyData.kty) {
+          throw new Error('Invalid JWK format');
+        }
+        return 'mock-imported-key';
+      },
+      exportKey: async () => ({
+        kty: 'RSA',
+        n: 'mock-key-data',
+        e: 'AQAB'
+      }),
+      encrypt: async () => new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer,
+      decrypt: async () => new Uint8Array([72, 101, 108, 108, 111]).buffer,
+      deriveKey: async () => 'mock-derived-key'
+    },
+  }
+});
+
+// Mock window.crypto
+Object.defineProperty(globalThis, 'window', {
+  value: { crypto: globalThis.crypto }
+});
+
+// Mock DOM methods
+const mockElement = {
+  href: '',
+  download: '',
+  click: jest.fn(),
+  remove: jest.fn()
+};
+
+global.document = {
+  createElement: jest.fn(() => mockElement),
+  body: {
+    appendChild: jest.fn(),
+    removeChild: jest.fn()
+  }
+};
+
+global.URL = {
+  createObjectURL: jest.fn(() => 'blob:mock-url'),
+  revokeObjectURL: jest.fn()
+};
+
+// Mock File and Blob
+global.File = class MockFile {
+  constructor(parts, name, options = {}) {
+    this.parts = parts;
+    this.name = name;
+    this.type = options.type || '';
+    this.size = parts.reduce((acc, part) => {
+      if (typeof part === 'string') return acc + part.length;
+      if (part instanceof ArrayBuffer) return acc + part.byteLength;
+      return acc + (part.length || 0);
+    }, 0);
+  }
+  
+  async arrayBuffer() {
+    const encoder = new TextEncoder();
+    return encoder.encode(this.parts.join('')).buffer;
+  }
+};
+
+global.Blob = class MockBlob {
+  constructor(parts, options = {}) {
+    this.parts = parts;
+    this.type = options.type || '';
+  }
+};
+
+// Polyfills
+global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
+global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+
+import React from 'react';
+import { render, waitFor, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
+
+import { CryptographyProvider, useCryptography, randomString } from '../stories/components/Cryptography.tsx';
+
+
+// Test component to access crypto methods
+const TestHarness = ({ onReady, entropy = '' }) => {
+  const crypto = useCryptography();
+  
+  React.useEffect(() => {
+    if (crypto && onReady) {
+      onReady(crypto);
+    }
+  }, [crypto, onReady]);
+  
+  return <div data-testid="test-harness">Test</div>;
+};
+
+describe('Cryptography.tsx - 100% Coverage Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('randomString function', () => {
+    test('should generate random string without salt', () => {
+      const result = randomString();
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result.length).toBe(32); // 16 bytes * 2 hex chars
+      expect(result).toMatch(/^[0-9a-f]+$/);
+    });
+
+    test('should generate random string with salt', () => {
+      const salt = 'test-salt';
+      const result = randomString(salt);
+      expect(result).toMatch(new RegExp(`^${salt}[0-9a-f]{32}$`));
+    });
+
+    test('should generate different strings on each call', () => {
+      const result1 = randomString();
+      const result2 = randomString();
+      expect(result1).not.toBe(result2);
+    });
+  });
+
+  describe('CryptographyProvider - initialization and entropy', () => {
+    test('should initialize without entropy', async () => {
+      let cryptoMethods;
+      
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+        expect(cryptoMethods.chance).toBeDefined();
+        expect(cryptoMethods.randomString).toBeDefined();
+      });
+    });
+
+    test('should initialize with entropy and trigger useEffect', async () => {
+      let cryptoMethods;
+      
+      await act(async () => {
+        render(
+          <CryptographyProvider entropy="test-entropy-123">
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+        expect(cryptoMethods.chance).toBeDefined();
+      });
+    });
+
+    test('should handle entropy update error in useEffect', async () => {
+      // Mock digest to fail
+      const originalDigest = globalThis.crypto.subtle.digest;
+      globalThis.crypto.subtle.digest = jest.fn().mockRejectedValue(new Error('Digest failed'));
+      
+      let cryptoMethods;
+      
+      await act(async () => {
+        render(
+          <CryptographyProvider entropy="test-entropy">
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+      
+      expect(console.error).toHaveBeenCalledWith('Error updating states:', expect.any(Error));
+      
+      // Restore
+      globalThis.crypto.subtle.digest = originalDigest;
+    });
+
+    test('should handle empty entropy string', async () => {
+      let cryptoMethods;
+      
+      await act(async () => {
+        render(
+          <CryptographyProvider entropy="">
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+  });
+
+  describe('Hash functions', () => {
+    let cryptoMethods;
+
+    beforeEach(async () => {
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+
+    test('should hash with sha256Hash', async () => {
+      const testInputs = [
+        'string input',
+        { object: 'input' },
+        123,
+        null,
+        undefined,
+        ['array', 'input']
+      ];
+
+      for (const input of testInputs) {
+        const hash = await cryptoMethods.sha256Hash(input);
+        expect(hash).toBeDefined();
+        expect(typeof hash).toBe('string');
+        expect(hash.length).toBe(64); // SHA-256 produces 64 hex characters
+        expect(hash).toMatch(/^[0-9a-f]+$/);
+      }
+    });
+
+    test('should hash with sha512Hash', async () => {
+      const testInputs = [
+        'string input',
+        { object: 'input' },
+        123,
+        null,
+        undefined
+      ];
+
+      for (const input of testInputs) {
+        const hash = await cryptoMethods.sha512Hash(input);
+        expect(hash).toBeDefined();
+        expect(typeof hash).toBe('string');
+        expect(hash.length).toBe(128); // SHA-512 produces 128 hex characters
+        expect(hash).toMatch(/^[0-9a-f]+$/);
+      }
+    });
+
+    test('should hash with sha3_512Hash', async () => {
+      const testInputs = [
+        'string input',
+        { object: 'input' },
+        123,
+        null,
+        undefined
+      ];
+
+      for (const input of testInputs) {
+        const hash = await cryptoMethods.sha3_512Hash(input);
+        expect(hash).toBeDefined();
+        expect(typeof hash).toBe('string');
+        expect(hash.length).toBe(128); // SHA3-512 produces 128 hex characters
+        expect(hash).toMatch(/^[0-9a-f]+$/);
+      }
+    });
+  });
+
+  describe('RSA Key Operations', () => {
+    let cryptoMethods;
+
+    beforeEach(async () => {
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+
+    test('should generate RSA key pair successfully', async () => {
+      const keyPair = await cryptoMethods.generateKeyPair();
+      expect(keyPair).toBeDefined();
+      expect(keyPair.publicKey).toBeDefined();
+      expect(keyPair.privateKey).toBeDefined();
+    });
+
+    test('should handle generateKeyPair errors', async () => {
+      const originalGenerateKey = globalThis.crypto.subtle.generateKey;
+      globalThis.crypto.subtle.generateKey = jest.fn().mockRejectedValue(new Error('Key generation failed'));
+
+      await expect(cryptoMethods.generateKeyPair()).rejects.toThrow('Key generation failed');
+      expect(console.error).toHaveBeenCalledWith('Error generating key pair:', expect.any(Error));
+
+      globalThis.crypto.subtle.generateKey = originalGenerateKey;
+    });
+
+    test('should deserialize public key from object', async () => {
+      const mockJWK = { kty: 'RSA', n: 'test-key' };
+      const result = await cryptoMethods.deserializePublicKey(mockJWK);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should deserialize public key from string', async () => {
+      const mockJWK = { kty: 'RSA', n: 'test-key' };
+      const jwkString = JSON.stringify(mockJWK);
+      const result = await cryptoMethods.deserializePublicKey(jwkString);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should handle deserializePublicKey with invalid JWK', async () => {
+      const invalidJWK = { invalid: 'key' };
+      
+      await expect(cryptoMethods.deserializePublicKey(invalidJWK))
+        .rejects.toThrow('Invalid JWK: missing "kty" property');
+      expect(console.error).toHaveBeenCalledWith('Error deserializing public key:', expect.any(Error));
+    });
+
+    test('should deserialize private key from object', async () => {
+      const mockJWK = { kty: 'RSA', n: 'test-key' };
+      const result = await cryptoMethods.deserializePrivateKey(mockJWK);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should deserialize private key from string', async () => {
+      const mockJWK = { kty: 'RSA', n: 'test-key' };
+      const jwkString = JSON.stringify(mockJWK);
+      const result = await cryptoMethods.deserializePrivateKey(jwkString);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should handle deserializePrivateKey with invalid JWK', async () => {
+      const invalidJWK = { invalid: 'key' };
+      
+      await expect(cryptoMethods.deserializePrivateKey(invalidJWK))
+        .rejects.toThrow('Invalid JWK: missing "kty" property');
+      expect(console.error).toHaveBeenCalledWith('Error deserializing private key:', expect.any(Error));
+    });
+
+    test('should encrypt message', async () => {
+      const message = 'Hello, World!';
+      const mockKey = 'mock-public-key';
+      
+      const encrypted = await cryptoMethods.encrypt(message, mockKey);
+      expect(encrypted).toBeDefined();
+      expect(typeof encrypted).toBe('string');
+    });
+
+    test('should handle encrypt errors', async () => {
+      const originalEncrypt = globalThis.crypto.subtle.encrypt;
+      globalThis.crypto.subtle.encrypt = jest.fn().mockRejectedValue(new Error('Encryption failed'));
+
+      const result = await cryptoMethods.encrypt('test', 'mock-key');
+      expect(result).toBeUndefined();
+      expect(console.log).toHaveBeenCalledWith('error', expect.any(Error));
+
+      globalThis.crypto.subtle.encrypt = originalEncrypt;
+    });
+
+    test('should decrypt message', async () => {
+      const encryptedMessage = btoa('encrypted-data');
+      const mockKey = 'mock-private-key';
+      
+      const decrypted = await cryptoMethods.decrypt(encryptedMessage, mockKey);
+      expect(decrypted).toBeDefined();
+      expect(typeof decrypted).toBe('string');
+    });
+
+    test('should handle decrypt errors', async () => {
+      const originalDecrypt = globalThis.crypto.subtle.decrypt;
+      globalThis.crypto.subtle.decrypt = jest.fn().mockRejectedValue(new Error('Decryption failed'));
+
+      const encryptedMessage = btoa('invalid-data');
+      const mockKey = 'mock-private-key';
+      
+      await expect(cryptoMethods.decrypt(encryptedMessage, mockKey))
+        .rejects.toThrow('Unable to decrypt message. Incorrect passphrase.');
+      expect(console.log).toHaveBeenCalledWith('error', expect.any(Error));
+
+      globalThis.crypto.subtle.decrypt = originalDecrypt;
+    });
+  });
+
+  describe('Symmetric Key Operations', () => {
+    let cryptoMethods;
+
+    beforeEach(async () => {
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+
+    test('should generate symmetric key', async () => {
+      const key = await cryptoMethods.generateSymmetricKey();
+      expect(key).toBeDefined();
+    });
+
+    test('should deserialize symmetric key from object', async () => {
+      const mockJWK = { kty: 'oct', k: 'test-key' };
+      const result = await cryptoMethods.deserializeSymmetricKey(mockJWK);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should deserialize symmetric key from string', async () => {
+      const mockJWK = { kty: 'oct', k: 'test-key' };
+      const jwkString = JSON.stringify(mockJWK);
+      const result = await cryptoMethods.deserializeSymmetricKey(jwkString);
+      expect(result).toBe('mock-imported-key');
+    });
+
+    test('should handle deserializeSymmetricKey with invalid JWK', async () => {
+      const invalidJWK = { invalid: 'key' };
+      
+      await expect(cryptoMethods.deserializeSymmetricKey(invalidJWK))
+        .rejects.toThrow('Invalid JWK: missing "kty" property');
+      expect(console.error).toHaveBeenCalledWith('Error deserializing symmetric key:', expect.any(Error));
+    });
+
+    test('should fix kty property in deserializeSymmetricKey', async () => {
+      const mockJWK = { kty: 'wrong-type', k: 'test-key' };
+      const result = await cryptoMethods.deserializeSymmetricKey(mockJWK);
+      expect(result).toBe('mock-imported-key');
+      expect(mockJWK.kty).toBe('oct'); // Should be fixed
+    });
+
+    test('should encrypt with symmetric key', async () => {
+      const message = 'Hello, Symmetric World!';
+      const mockKey = 'mock-symmetric-key';
+      
+      const encrypted = await cryptoMethods.encryptWithSymmetricKey(message, mockKey);
+      expect(encrypted).toBeDefined();
+      expect(encrypted.ciphertext).toBeDefined();
+      expect(encrypted.iv).toBeDefined();
+    });
+
+    test('should handle encryptWithSymmetricKey errors', async () => {
+      const originalEncrypt = globalThis.crypto.subtle.encrypt;
+      globalThis.crypto.subtle.encrypt = jest.fn().mockRejectedValue(new Error('Encryption failed'));
+
+      const result = await cryptoMethods.encryptWithSymmetricKey('test', 'mock-key');
+      expect(result).toBeUndefined();
+      expect(console.log).toHaveBeenCalledWith('error', expect.any(Error));
+
+      globalThis.crypto.subtle.encrypt = originalEncrypt;
+    });
+
+    test('should decrypt with symmetric key', async () => {
+      const encryptedData = {
+        ciphertext: btoa('encrypted-data'),
+        iv: btoa('initialization-vector')
+      };
+      const mockKey = 'mock-symmetric-key';
+      
+      const decrypted = await cryptoMethods.decryptWithSymmetricKey(encryptedData, mockKey);
+      expect(decrypted).toBeDefined();
+      expect(typeof decrypted).toBe('string');
+    });
+
+    test('should handle decryptWithSymmetricKey errors', async () => {
+      const originalDecrypt = globalThis.crypto.subtle.decrypt;
+      globalThis.crypto.subtle.decrypt = jest.fn().mockRejectedValue(new Error('Decryption failed'));
+
+      const encryptedData = {
+        ciphertext: btoa('invalid-data'),
+        iv: btoa('invalid-iv')
+      };
+      const mockKey = 'mock-symmetric-key';
+      
+      await expect(cryptoMethods.decryptWithSymmetricKey(encryptedData, mockKey))
+        .rejects.toThrow('Unable to decrypt message. Incorrect key.');
+
+      globalThis.crypto.subtle.decrypt = originalDecrypt;
+    });
+  });
+
+  describe('File Encryption Operations', () => {
+    let cryptoMethods;
+
+    beforeEach(async () => {
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+
+    test('should derive key from password without salt', async () => {
+      const password = 'test-password';
+      const result = await cryptoMethods.deriveKeyFromPassword(password);
+      expect(result.key).toBeDefined();
+      expect(result.salt).toBeDefined();
+    });
+
+    test('should derive key from password with salt', async () => {
+      const password = 'test-password';
+      const customSalt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+      const result = await cryptoMethods.deriveKeyFromPassword(password, customSalt);
+      expect(result.key).toBeDefined();
+      expect(result.salt).toBe(customSalt);
+    });
+
+    test('should encrypt file with string content', async () => {
+      const password = 'test-password';
+      const content = 'This is test file content';
+      const fileName = 'test.txt';
+      
+      const encrypted = await cryptoMethods.encryptFile(content, password, fileName);
+      expect(encrypted).toBeDefined();
+      expect(encrypted.encryptedData).toBeDefined();
+      expect(encrypted.iv).toBeDefined();
+      expect(encrypted.salt).toBeDefined();
+      expect(encrypted.fileName).toBe(fileName);
+      expect(encrypted.timestamp).toBeDefined();
+      expect(encrypted.originalSize).toBe(content.length);
+    });
+
+    test('should encrypt file with ArrayBuffer content', async () => {
+      const password = 'test-password';
+      const content = new ArrayBuffer(10);
+      const fileName = 'test.bin';
+      
+      const encrypted = await cryptoMethods.encryptFile(content, password, fileName);
+      expect(encrypted.originalSize).toBe(10);
+    });
+
+    test('should encrypt file with File object', async () => {
+      const password = 'test-password';
+      const fileContent = 'test content';
+      const file = new File([fileContent], 'test.txt', { type: 'text/plain' });
+      
+      // Mock File.arrayBuffer
+      file.arrayBuffer = jest.fn().mockResolvedValue(new TextEncoder().encode(fileContent).buffer);
+      
+      const encrypted = await cryptoMethods.encryptFile(file, password);
+      expect(encrypted.originalSize).toBe(fileContent.length);
+    });
+
+    test('should handle encryptFile with unsupported content type', async () => {
+      const password = 'test-password';
+      const unsupportedContent = 12345; // Number
+      
+      await expect(cryptoMethods.encryptFile(unsupportedContent, password))
+        .rejects.toThrow('Unsupported file content type');
+      expect(console.error).toHaveBeenCalledWith('Error encrypting file:', expect.any(Error));
+    });
+
+    test('should decrypt file successfully', async () => {
+      const password = 'test-password';
+      const content = 'This is test content';
+      
+      // First encrypt a file
+      const encrypted = await cryptoMethods.encryptFile(content, password, 'test.txt');
+      
+      // Then decrypt it
+      const decrypted = await cryptoMethods.decryptFile(encrypted, password);
+      expect(decrypted).toBeDefined();
+      expect(decrypted.fileName).toBe('test.txt');
+      expect(decrypted.originalSize).toBe(content.length);
+      expect(decrypted.decryptedSize).toBeDefined();
+    });
+
+    test('should handle decryptFile errors', async () => {
+      const originalDecrypt = globalThis.crypto.subtle.decrypt;
+      globalThis.crypto.subtle.decrypt = jest.fn().mockRejectedValue(new Error('Decryption failed'));
+
+      const invalidPackage = {
+        encryptedData: btoa('invalid'),
+        iv: btoa('invalid'),
+        salt: btoa('invalid'),
+        fileName: 'test.txt',
+        originalSize: 100
+      };
+      
+      await expect(cryptoMethods.decryptFile(invalidPackage, 'password'))
+        .rejects.toThrow('Failed to decrypt file. Check password and try again.');
+      expect(console.error).toHaveBeenCalledWith('Error decrypting file:', expect.any(Error));
+
+      globalThis.crypto.subtle.decrypt = originalDecrypt;
+    });
+
+    test('should encrypt and decrypt text file', async () => {
+      const password = 'test-password';
+      const content = 'This is text content';
+      const fileName = 'test.txt';
+      
+      const encrypted = await cryptoMethods.encryptTextFile(content, password, fileName);
+      expect(encrypted.fileName).toBe(fileName);
+      
+      const decrypted = await cryptoMethods.decryptTextFile(encrypted, password);
+      expect(decrypted.textContent).toBe(content);
+    });
+
+    test('should encrypt binary file successfully', async () => {
+      const password = 'test-password';
+      const fileContent = new Uint8Array([1, 2, 3, 4, 5]);
+      const file = new File([fileContent], 'test.bin', { type: 'application/octet-stream' });
+      
+      // Mock File.arrayBuffer
+      file.arrayBuffer = jest.fn().mockResolvedValue(fileContent.buffer);
+      
+      const encrypted = await cryptoMethods.encryptBinaryFile(file, password);
+      expect(encrypted.fileName).toBe('test.bin');
+      expect(encrypted.mimeType).toBe('application/octet-stream');
+      expect(encrypted.fileSize).toBe(5);
+    });
+
+    test('should handle encryptBinaryFile with non-File object', async () => {
+      const password = 'test-password';
+      const notAFile = 'not a file';
+      
+      await expect(cryptoMethods.encryptBinaryFile(notAFile, password))
+        .rejects.toThrow('Expected File object for binary encryption');
+    });
+
+    test('should decrypt binary file successfully', async () => {
+      const password = 'test-password';
+      const fileContent = new Uint8Array([1, 2, 3, 4, 5]);
+      const file = new File([fileContent], 'test.bin', { type: 'application/octet-stream' });
+      
+      // Mock File.arrayBuffer
+      file.arrayBuffer = jest.fn().mockResolvedValue(fileContent.buffer);
+      
+      const encrypted = await cryptoMethods.encryptBinaryFile(file, password);
+      const decrypted = await cryptoMethods.decryptBinaryFile(encrypted, password);
+      
+      expect(decrypted.blob).toBeInstanceOf(global.Blob);
+      expect(decrypted.mimeType).toBe('application/octet-stream');
+    });
+
+    test('should create secure file download with ArrayBuffer', () => {
+      const arrayBuffer = new ArrayBuffer(10);
+      const fileName = 'test.bin';
+      const mimeType = 'application/octet-stream';
+      
+      cryptoMethods.createSecureFileDownload(arrayBuffer, fileName, mimeType);
+      
+      expect(document.createElement).toHaveBeenCalledWith('a');
+      expect(document.body.appendChild).toHaveBeenCalled();
+      expect(document.body.removeChild).toHaveBeenCalled();
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(URL.revokeObjectURL).toHaveBeenCalled();
+    });
+
+    test('should create secure file download with string', () => {
+      const content = 'test content';
+      const fileName = 'test.txt';
+      
+      cryptoMethods.createSecureFileDownload(content, fileName);
+      
+      expect(document.createElement).toHaveBeenCalledWith('a');
+    });
+
+    test('should create secure file download with Blob', () => {
+      const blob = new global.Blob(['test content'], { type: 'text/plain' });
+      const fileName = 'test.txt';
+      
+      cryptoMethods.createSecureFileDownload(blob, fileName);
+      
+      expect(document.createElement).toHaveBeenCalledWith('a');
+    });
+
+    test('should parse valid encrypted file package', async () => {
+      const validPackage = {
+        encryptedData: 'validBase64',
+        iv: 'validBase64',
+        salt: 'validBase64',
+        fileName: 'test.txt',
+        timestamp: '2023-01-01',
+        originalSize: 100
+      };
+      
+      const mockFile = {
+        text: jest.fn().mockResolvedValue(JSON.stringify(validPackage))
+      };
+      
+      const result = await cryptoMethods.parseEncryptedFilePackage(mockFile);
+      expect(result.isValid).toBe(true);
+      expect(result.package).toEqual(validPackage);
+      expect(result.metadata.fileName).toBe('test.txt');
+    });
+
+    test('should handle parseEncryptedFilePackage with invalid JSON', async () => {
+      const mockFile = {
+        text: jest.fn().mockResolvedValue('invalid json')
+      };
+      
+      const result = await cryptoMethods.parseEncryptedFilePackage(mockFile);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('Unexpected token');
+    });
+
+    test('should validate all required properties in parseEncryptedFilePackage', async () => {
+      const requiredProps = ['encryptedData', 'iv', 'salt', 'fileName', 'timestamp', 'originalSize'];
+      
+      for (const missingProp of requiredProps) {
+        const invalidPackage = {
+          encryptedData: 'valid',
+          iv: 'valid',
+          salt: 'valid',
+          fileName: 'valid',
+          timestamp: 'valid',
+          originalSize: 100
+        };
+        delete invalidPackage[missingProp];
+        
+        const mockFile = {
+          text: jest.fn().mockResolvedValue(JSON.stringify(invalidPackage))
+        };
+        
+        const result = await cryptoMethods.parseEncryptedFilePackage(mockFile);
+        expect(result.isValid).toBe(false);
+        expect(result.error).toBe(`Missing required property: ${missingProp}`);
+      }
+    });
+
+    test('should validate data types in parseEncryptedFilePackage', async () => {
+      const typeTests = [
+        { field: 'encryptedData', invalidValue: 123, error: 'encryptedData must be a base64 string' },
+        { field: 'iv', invalidValue: 123, error: 'iv must be a base64 string' },
+        { field: 'salt', invalidValue: 123, error: 'salt must be a base64 string' },
+        { field: 'fileName', invalidValue: 123, error: 'fileName must be a string' },
+        { field: 'originalSize', invalidValue: 'string', error: 'originalSize must be a number' }
+      ];
+
+      for (const test of typeTests) {
+        const invalidPackage = {
+          encryptedData: 'valid',
+          iv: 'valid',
+          salt: 'valid',
+          fileName: 'valid',
+          timestamp: 'valid',
+          originalSize: 100
+        };
+        invalidPackage[test.field] = test.invalidValue;
+        
+        const mockFile = {
+          text: jest.fn().mockResolvedValue(JSON.stringify(invalidPackage))
+        };
+        
+        const result = await cryptoMethods.parseEncryptedFilePackage(mockFile);
+        expect(result.isValid).toBe(false);
+        expect(result.error).toBe(test.error);
+      }
+    });
+
+    test('should decrypt uploaded file successfully', async () => {
+      const password = 'test-password';
+      const content = 'This is test content';
+      
+      const encrypted = await cryptoMethods.encryptTextFile(content, password, 'test.txt');
+      encrypted.type = 'text';
+      
+      const mockFile = {
+        text: jest.fn().mockResolvedValue(JSON.stringify(encrypted))
+      };
+      
+      const result = await cryptoMethods.decryptUploadedFile(mockFile, password);
+      expect(result.metadata.fileName).toBe('test.txt');
+      expect(result.isTextFile).toBe(true);
+      expect(result.textContent).toBe(content);
+    });
+
+    test('should handle decryptUploadedFile with invalid package', async () => {
+      const mockFile = {
+        text: jest.fn().mockResolvedValue('invalid json')
+      };
+      
+      await expect(cryptoMethods.decryptUploadedFile(mockFile, 'password'))
+        .rejects.toThrow('Failed to decrypt uploaded file:');
+      expect(console.error).toHaveBeenCalledWith('Error decrypting uploaded file:', expect.any(Error));
+    });
+
+    test('should detect text files in decryptUploadedFile', async () => {
+      const password = 'test-password';
+      const content = 'This is test content';
+      
+      const encrypted = await cryptoMethods.encryptTextFile(content, password, 'test.txt');
+      encrypted.mimeType = 'text/plain';
+      
+      const mockFile = {
+        text: jest.fn().mockResolvedValue(JSON.stringify(encrypted))
+      };
+      
+      const result = await cryptoMethods.decryptUploadedFile(mockFile, password);
+      expect(result.isTextFile).toBe(true);
+    });
+  });
+
+  describe('Random function and provider methods', () => {
+    let cryptoMethods;
+
+    beforeEach(async () => {
+      await act(async () => {
+        render(
+          <CryptographyProvider>
+            <TestHarness onReady={(crypto) => { cryptoMethods = crypto; }} />
+          </CryptographyProvider>
+        );
+      });
+      
+      await waitFor(() => {
+        expect(cryptoMethods).toBeDefined();
+      });
+    });
+
+    test('should use random function with salt', () => {
+      const result1 = cryptoMethods.randomString();
+      const result2 = cryptoMethods.randomString('test-salt');
+      
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+      expect(result1).not.toBe(result2);
+      expect(result2).toMatch(/test-salt/);
+    });
+
+    test('should provide all expected methods', () => {
+      const expectedMethods = [
+        'randomString',
+        'sha256Hash',
+        'sha512Hash',
+        'sha3_512Hash',
+        'generateKeyPair',
+        'deserializePublicKey',
+        'deserializePrivateKey',
+        'encrypt',
+        'decrypt',
+        'generateSymmetricKey',
+        'deserializeSymmetricKey',
+        'encryptWithSymmetricKey',
+        'decryptWithSymmetricKey',
+        'deriveKeyFromPassword',
+        'encryptFile',
+        'decryptFile',
+        'encryptTextFile',
+        'decryptTextFile',
+        'encryptBinaryFile',
+        'decryptBinaryFile',
+        'createSecureFileDownload',
+        'parseEncryptedFilePackage',
+        'decryptUploadedFile',
+        'chance'
+      ];
+
+      expectedMethods.forEach(method => {
+        expect(cryptoMethods[method]).toBeDefined();
+      });
+    });
+  });
+
+  describe('useCryptography hook', () => {
+    test('should return context value', () => {
+      let hookResult;
+      
+      const TestComponent = () => {
+        const crypto = useCryptography();
+        hookResult = crypto;
+        return <div>Test</div>;
+      };
+      
+      render(
+        <CryptographyProvider>
+          <TestComponent />
+        </CryptographyProvider>
+      );
+      
+      expect(hookResult).toBeDefined();
+    });
+  });
+});

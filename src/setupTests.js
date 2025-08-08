@@ -55,10 +55,17 @@ global.document = {
 // Mock crypto.subtle for tests
 const mockSubtle = {
   digest: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
-  generateKey: jest.fn(() => Promise.resolve({ 
-    publicKey: { type: 'public' }, 
-    privateKey: { type: 'private' } 
-  })),
+  generateKey: jest.fn((algorithm) => {
+    if (algorithm.name === 'RSA-OAEP') {
+      return Promise.resolve({ 
+        publicKey: { type: 'public' }, 
+        privateKey: { type: 'private' } 
+      });
+    } else if (algorithm.name === 'AES-GCM') {
+      return Promise.resolve({ type: 'secret' });
+    }
+    return Promise.resolve({ type: 'unknown' });
+  }),
   exportKey: jest.fn((format, key) => {
     if (format === 'jwk') {
       return Promise.resolve({
@@ -72,10 +79,27 @@ const mockSubtle = {
     }
     return Promise.resolve(new ArrayBuffer(256));
   }),
-  importKey: jest.fn(() => Promise.resolve({ type: 'imported' })),
+  importKey: jest.fn((format, keyData) => {
+    // Handle raw key data (for PBKDF2 etc.)
+    if (format === 'raw') {
+      return Promise.resolve({ type: 'imported-raw' });
+    }
+    
+    // Handle JWK format
+    if (format === 'jwk') {
+      if (typeof keyData === 'string') {
+        keyData = JSON.parse(keyData);
+      }
+      if (!keyData.kty) {
+        throw new Error('Invalid JWK format');
+      }
+    }
+    
+    return Promise.resolve({ type: 'imported' });
+  }),
   deriveKey: jest.fn(() => Promise.resolve({ type: 'derived' })),
-  encrypt: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
-  decrypt: jest.fn(() => Promise.resolve(new TextEncoder().encode('decrypted text')))
+  encrypt: jest.fn(() => Promise.resolve(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer)),
+  decrypt: jest.fn(() => Promise.resolve(new Uint8Array([72, 101, 108, 108, 111]).buffer))
 };
 
 // Set up crypto for both global and window
@@ -89,9 +113,18 @@ const mockCrypto = {
   })
 };
 
+// Provide crypto in multiple ways for maximum compatibility
 global.crypto = mockCrypto;
+globalThis.crypto = mockCrypto;
 global.window = global.window || {};
 global.window.crypto = mockCrypto;
+
+// Make crypto available globally for direct access
+Object.defineProperty(global, 'crypto', {
+  value: mockCrypto,
+  writable: true,
+  configurable: true
+});
 
 // Provide btoa/atob for base64 encoding
 global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
