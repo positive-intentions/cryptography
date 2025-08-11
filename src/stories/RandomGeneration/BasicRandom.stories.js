@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
 import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  TextField, 
-  Box, 
-  FormControl, 
-  InputLabel, 
-  Select, 
+import {
+  Button,
+  TextField,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
   Typography,
   Slider,
   Stack
 } from '@mui/material';
 import { Refresh, Casino } from '@mui/icons-material';
+
+import { Button as Button2, ThemeProvider } from 'ui';
 
 export default {
   title: 'Cryptography/Random Generation/Basic Random',
@@ -47,81 +49,94 @@ const RandomStringDemo = () => {
   };
 
   return (
-    <CryptoDemo
-      title="Cryptographically Secure Random Strings"
-      description="Generate random strings using crypto.getRandomValues() for maximum security. Perfect for tokens, IDs, and passwords."
-    >
-      <Box className="demo-section">
-        <Stack spacing={3}>
-          <Box>
-            <Typography gutterBottom>String Length: {length} characters</Typography>
-            <Slider
-              value={length}
-              onChange={(e, val) => setLength(val)}
-              min={8}
-              max={128}
-              marks={[
-                { value: 8, label: '8' },
-                { value: 32, label: '32' },
-                { value: 64, label: '64' },
-                { value: 128, label: '128' },
-              ]}
+    <ThemeProvider>
+
+      <CryptoDemo
+        title="Cryptographically Secure Random Strings"
+        description="Generate random strings using crypto.getRandomValues() for maximum security. Perfect for tokens, IDs, and passwords."
+      >
+        <Box className="demo-section">
+          <Stack spacing={3}>
+            <Box>
+              <Typography gutterBottom>String Length: {length} characters</Typography>
+              <Slider
+                value={length}
+                onChange={(e, val) => setLength(val)}
+                min={8}
+                max={128}
+                marks={[
+                  { value: 8, label: '8' },
+                  { value: 32, label: '32' },
+                  { value: 64, label: '64' },
+                  { value: 128, label: '128' },
+                ]}
+              />
+            </Box>
+
+            <TextField
+              label="Custom Salt (optional)"
+              value={customSalt}
+              onChange={(e) => setCustomSalt(e.target.value)}
+              fullWidth
+              helperText="Add entropy to the random generation"
+              variant="outlined"
             />
-          </Box>
 
-          <TextField
-            label="Custom Salt (optional)"
-            value={customSalt}
-            onChange={(e) => setCustomSalt(e.target.value)}
-            fullWidth
-            helperText="Add entropy to the random generation"
-            variant="outlined"
-          />
+            <Button
+              variant="contained"
+              onClick={generateRandom}
+              disabled={loading}
+              startIcon={<Casino />}
+              size="large"
+            >
+              Generate Random String
+            </Button>
 
-          <Button
-            variant="contained"
-            onClick={generateRandom}
-            disabled={loading}
-            startIcon={<Casino />}
-            size="large"
-          >
-            Generate Random String
-          </Button>
+            <Button2
+              variant="contained"
+              onClick={generateRandom}
+              disabled={loading}
+              startIcon={<Casino />}
+              size="large"
+            >
+              Generate Random String!!11hbhb
+            </Button2>
 
-          <OperationStatus loading={loading} />
+            <OperationStatus loading={loading} />
 
-          {result && (
-            <CodeDisplay
-              code={result}
-              label={`Random String (${result.length} characters)`}
-            />
-          )}
-        </Stack>
-      </Box>
+            {result && (
+              <CodeDisplay
+                code={result}
+                label={`Random String (${result.length} characters)`}
+              />
+            )}
+          </Stack>
+        </Box>
 
-      <Box className="demo-section" sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          How It Works
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          This function uses the Web Crypto API's <code>crypto.getRandomValues()</code> method 
-          to generate cryptographically strong random values. The browser's crypto module 
-          seeds from the operating system's entropy pool, making it suitable for security-sensitive 
-          applications.
-        </Typography>
-        
-        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-          Use Cases
-        </Typography>
-        <Typography component="ul" variant="body2" color="text.secondary">
-          <li>Session tokens and API keys</li>
-          <li>Temporary passwords</li>
-          <li>Unique identifiers</li>
-          <li>Nonces for cryptographic operations</li>
-          <li>Salt generation for hashing</li>
-        </Typography>
-      </Box>
-    </CryptoDemo>
+        <Box className="demo-section" sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            How It Works
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            This function uses the Web Crypto API's <code>crypto.getRandomValues()</code> method
+            to generate cryptographically strong random values. The browser's crypto module
+            seeds from the operating system's entropy pool, making it suitable for security-sensitive
+            applications.
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+            Use Cases
+          </Typography>
+          <Typography component="ul" variant="body2" color="text.secondary">
+            <li>Session tokens and API keys</li>
+            <li>Temporary passwords</li>
+            <li>Unique identifiers</li>
+            <li>Nonces for cryptographic operations</li>
+            <li>Salt generation for hashing</li>
+          </Typography>
+        </Box>
+      </CryptoDemo>
+    </ThemeProvider>
   );
 };
 

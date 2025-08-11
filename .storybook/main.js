@@ -1,6 +1,6 @@
-const {
-  withStorybookModuleFederation,
-} = require('storybook-module-federation');
+// const {
+//   withStorybookModuleFederation,
+// } = require('storybook-module-federation');
 const { ModuleFederationPlugin } = require("webpack").container;
 var deps = require('../package.json').dependencies;
 
@@ -80,9 +80,6 @@ const moduleRedundency = ({
 const moduleFederationConfig = new ModuleFederationPlugin({
   name: "cryptography",
   filename: "remoteEntry.js",
-  exposes: {
-    './Cryptography': './src/stories/components/Cryptography.tsx',
-  },
   remotes: {
     "dim": moduleRedundency({
       moduleName: 'dim',
@@ -98,14 +95,6 @@ const moduleFederationConfig = new ModuleFederationPlugin({
         'http://localhost:8081/remoteEntry.js', // local for testing
         'https://positive-intentions.github.io/ui/remoteEntry.js',
         'https://ui.positive-intentions.com/remoteEntry.js'
-      ]
-    }),
-    "glitr": moduleRedundency({
-      moduleName: 'glitr',
-      urls: [
-        'http://localhost:8083/remoteEntry.js', // local for testing
-        'https://positive-intentions.github.io/glitr-chat/remoteEntry.js',
-        'https://glitr.positive-intentions.com/remoteEntry.js'
       ]
     }),
   },
@@ -152,9 +141,6 @@ const config = {
     },
   },
 
-  docs: {
-    autodocs: 'tag',
-  },
   staticDirs: ['../public'],
 
   typescript: {

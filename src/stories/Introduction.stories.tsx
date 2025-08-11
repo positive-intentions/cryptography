@@ -1,5 +1,5 @@
 import React from "react";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Card, CardContent, Stack, Chip } from "@mui/material";
 import { Lock, VpnKey, Tag, Speed, Security, Shuffle } from "@mui/icons-material";
 

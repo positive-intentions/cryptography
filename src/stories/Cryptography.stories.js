@@ -1,5 +1,5 @@
 import React from "react";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
 import { CryptographyProvider, useCryptography } from "./components/Cryptography.tsx";
 import { Box, Typography, Button, Stack } from "@mui/material";
 

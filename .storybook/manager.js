@@ -3,4 +3,8 @@ import customTheme from './customTheme';
 
 addons.setConfig({
   theme: customTheme,
+  panel: {
+    showPanel: false,
+  },
+  bottomPanelHeight: 0
 });
