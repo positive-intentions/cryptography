@@ -3,7 +3,7 @@ import { sha3_512 } from "js-sha3";
 import Chance from "chance";
 
 // Create Context
-const CryptographyContext = createContext(null);
+const CryptographyContext = createContext<unknown>(null);
 
 // Cryptographically Random String Generator
 export const randomString = (additionalSalt = "") => {
@@ -578,6 +578,595 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         }
     };
 
+    // Signal Protocol X3DH Key Exchange Implementation
+    const signalKeyParams = {
+        name: "ECDH",
+        namedCurve: "P-256"
+    };
+    
+    const signalHkdfParams = {
+        name: "HKDF",
+        hash: "SHA-256"
+    };
+
+    const generateSignalKeyPair = async () => {
+        return await crypto.subtle.generateKey(
+            signalKeyParams,
+            true,
+            ["deriveKey", "deriveBits"]
+        );
+    };
+
+    const generateSignalSigningKeyPair = async () => {
+        return await crypto.subtle.generateKey(
+            {
+                name: "ECDSA",
+                namedCurve: "P-256"
+            },
+            true,
+            ["sign", "verify"]
+        );
+    };
+
+    const exportSignalPublicKey = async (publicKey) => {
+        return await crypto.subtle.exportKey("raw", publicKey);
+    };
+
+    const importSignalPublicKey = async (keyBytes) => {
+        return await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            signalKeyParams,
+            false,
+            []
+        );
+    };
+
+    const importSignalSigningPublicKey = async (keyBytes) => {
+        return await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            {
+                name: "ECDSA",
+                namedCurve: "P-256"
+            },
+            false,
+            ["verify"]
+        );
+    };
+
+    const performSignalDH = async (privateKey, publicKey) => {
+        console.log('🔄 Performing ECDH operation...');
+        console.log('Private key algorithm:', privateKey.algorithm);
+        console.log('Public key algorithm:', publicKey.algorithm);
+        console.log('Private key usages:', privateKey.usages);
+        console.log('Public key usages:', publicKey.usages);
+        
+        try {
+            const result = await crypto.subtle.deriveBits(
+                {
+                    name: "ECDH",
+                    public: publicKey
+                },
+                privateKey,
+                256
+            );
+            console.log('✓ ECDH operation successful, output length:', result.byteLength);
+            return result;
+        } catch (error) {
+            console.error('❌ ECDH operation failed:', error);
+            throw error;
+        }
+    };
+
+    const signSignalData = async (privateKey, data) => {
+        return await crypto.subtle.sign(
+            {
+                name: "ECDSA",
+                hash: "SHA-256"
+            },
+            privateKey,
+            data
+        );
+    };
+
+    const verifySignalSignature = async (publicKey, signature, data) => {
+        console.log('🔍 Verifying ECDSA signature...');
+        console.log('Public key algorithm:', publicKey.algorithm);
+        console.log('Public key usages:', publicKey.usages);
+        console.log('Signature length:', signature.byteLength);
+        console.log('Data length:', data.byteLength);
+        
+        try {
+            const result = await crypto.subtle.verify(
+                {
+                    name: "ECDSA",
+                    hash: "SHA-256"
+                },
+                publicKey,
+                signature,
+                data
+            );
+            console.log('✓ Signature verification result:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Signature verification failed:', error);
+            throw error;
+        }
+    };
+
+    const deriveSignalKey = async (inputKeyMaterial, salt, info, length = 256) => {
+        const prk = await crypto.subtle.importKey(
+            "raw",
+            inputKeyMaterial,
+            signalHkdfParams.name,
+            false,
+            ["deriveKey"]
+        );
+
+        return await crypto.subtle.deriveKey(
+            {
+                name: signalHkdfParams.name,
+                hash: signalHkdfParams.hash,
+                salt: salt,
+                info: info
+            },
+            prk,
+            {
+                name: "AES-GCM",
+                length: length
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+    };
+
+    const concatSignalArrayBuffers = (...buffers) => {
+        const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        
+        for (const buffer of buffers) {
+            result.set(new Uint8Array(buffer), offset);
+            offset += buffer.byteLength;
+        }
+        
+        return result.buffer;
+    };
+
+    const bufferToSignalHex = (buffer) => {
+        return Array.from(new Uint8Array(buffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    };
+
+    const initializeSignalUser = async (name) => {
+        console.log(`🔐 [${name}] Starting user initialization...`);
+        
+        try {
+            // Generate identity key pairs (separate for ECDH and signing due to Web Crypto API limitations)
+            console.log(`🔑 [${name}] Generating identity signing key pair (ECDSA)...`);
+            const identitySigningKeyPair = await generateSignalSigningKeyPair();
+            console.log(`✓ [${name}] Identity signing key pair generated:`, {
+                publicKeyAlgorithm: identitySigningKeyPair.publicKey.algorithm,
+                privateKeyAlgorithm: identitySigningKeyPair.privateKey.algorithm
+            });
+            
+            console.log(`🔑 [${name}] Generating identity ECDH key pair...`);
+            const identityKeyPair = await generateSignalKeyPair();
+            console.log(`✓ [${name}] Identity ECDH key pair generated:`, {
+                publicKeyAlgorithm: identityKeyPair.publicKey.algorithm,
+                privateKeyAlgorithm: identityKeyPair.privateKey.algorithm
+            });
+            
+            // Generate signed prekey pair
+            console.log(`🔑 [${name}] Generating signed prekey pair...`);
+            const signedPrekeyPair = await generateSignalKeyPair();
+            console.log(`✓ [${name}] Signed prekey pair generated`);
+            
+            // Sign the prekey with identity signing key
+            console.log(`📝 [${name}] Exporting signed prekey for signing...`);
+            const prekeyBytes = await exportSignalPublicKey(signedPrekeyPair.publicKey);
+            console.log(`📝 [${name}] Prekey bytes length:`, prekeyBytes.byteLength);
+            
+            console.log(`✍️ [${name}] Signing prekey with identity signing key...`);
+            const signedPrekeySignature = await signSignalData(
+                identitySigningKeyPair.privateKey,
+                prekeyBytes
+            );
+            console.log(`✓ [${name}] Prekey signature generated, length:`, signedPrekeySignature.byteLength);
+
+            // Generate one-time prekeys
+            console.log(`🔑 [${name}] Generating one-time prekeys...`);
+            const oneTimePrekeyPairs: CryptoKeyPair[] = [];
+            for (let i = 0; i < 3; i++) {
+                const oneTimeKey = await generateSignalKeyPair();
+                oneTimePrekeyPairs.push(oneTimeKey);
+                console.log(`✓ [${name}] One-time prekey ${i + 1}/3 generated`);
+            }
+
+            console.log(`✅ [${name}] User initialization completed successfully`);
+            return {
+                name,
+                identityKeyPair, // ECDH key pair
+                identitySigningKeyPair, // ECDSA key pair
+                signedPrekeyPair,
+                signedPrekeySignature,
+                oneTimePrekeyPairs
+            };
+        } catch (error) {
+            console.error(`❌ [${name}] User initialization failed:`, error);
+            throw error;
+        }
+    };
+
+    const getSignalPublicKeyBundle = async (user) => {
+        console.log(`📦 Creating public key bundle for ${user.name}...`);
+        
+        try {
+            console.log('Exporting identity ECDH key...');
+            const identityKey = await exportSignalPublicKey(user.identityKeyPair.publicKey);
+            console.log('✓ Identity ECDH key exported, length:', identityKey.byteLength);
+            
+            console.log('Exporting identity signing key...');
+            const identitySigningKey = await exportSignalPublicKey(user.identitySigningKeyPair.publicKey);
+            console.log('✓ Identity signing key exported, length:', identitySigningKey.byteLength);
+            
+            console.log('Exporting signed prekey...');
+            const signedPrekey = await exportSignalPublicKey(user.signedPrekeyPair.publicKey);
+            console.log('✓ Signed prekey exported, length:', signedPrekey.byteLength);
+            
+            const oneTimePrekey = user.oneTimePrekeyPairs.length > 0 ? 
+                await exportSignalPublicKey(user.oneTimePrekeyPairs[0].publicKey) : null;
+            if (oneTimePrekey) {
+                console.log('✓ One-time prekey exported, length:', oneTimePrekey.byteLength);
+            } else {
+                console.log('⚠️ No one-time prekey available');
+            }
+
+            const bundle = {
+                identityKey, // ECDH key
+                identitySigningKey, // ECDSA key  
+                signedPrekey,
+                signedPrekeySignature: user.signedPrekeySignature,
+                oneTimePrekey
+            };
+            
+            console.log(`✅ Public key bundle created for ${user.name}`);
+            return bundle;
+        } catch (error) {
+            console.error(`❌ Failed to create public key bundle for ${user.name}:`, error);
+            throw error;
+        }
+    };
+
+    const consumeSignalOneTimePrekey = (user) => {
+        return user.oneTimePrekeyPairs.shift();
+    };
+
+    const performSignalX3DHKeyExchange = async (alice, bobBundle) => {
+        console.log(`🤝 Starting X3DH key exchange between ${alice.name} and Bob...`);
+        console.log('📦 Bob bundle keys available:', {
+            hasIdentityKey: !!bobBundle.identityKey,
+            hasIdentitySigningKey: !!bobBundle.identitySigningKey,
+            hasSignedPrekey: !!bobBundle.signedPrekey,
+            hasSignedPrekeySignature: !!bobBundle.signedPrekeySignature,
+            hasOneTimePrekey: !!bobBundle.oneTimePrekey
+        });
+
+        try {
+            // Step 1: Verify Bob's signed prekey signature using his signing key
+            console.log('📝 Step 1: Importing Bob\'s identity signing key...');
+            const bobIdentitySigningKey = await importSignalSigningPublicKey(bobBundle.identitySigningKey);
+            console.log('✓ Bob\'s signing key imported, algorithm:', bobIdentitySigningKey.algorithm);
+            
+            console.log('🔍 Verifying Bob\'s signed prekey signature...');
+            console.log('Signature length:', bobBundle.signedPrekeySignature.byteLength);
+            console.log('Prekey data length:', bobBundle.signedPrekey.byteLength);
+            
+            const isValidSignature = await verifySignalSignature(
+                bobIdentitySigningKey,
+                bobBundle.signedPrekeySignature,
+                bobBundle.signedPrekey
+            );
+            
+            console.log('✓ Signature verification result:', isValidSignature);
+            
+            if (!isValidSignature) {
+                throw new Error("Invalid signed prekey signature!");
+            }
+
+            // Step 2: Generate ephemeral key pair
+            console.log('🔑 Step 2: Generating Alice\'s ephemeral key pair...');
+            const aliceEphemeralPair = await generateSignalKeyPair();
+            console.log('✓ Ephemeral key pair generated:', {
+                publicAlgorithm: aliceEphemeralPair.publicKey.algorithm,
+                privateAlgorithm: aliceEphemeralPair.privateKey.algorithm
+            });
+
+            // Step 3: Import Bob's public keys for DH operations
+            console.log('🔄 Step 3: Importing Bob\'s keys for DH operations...');
+            
+            console.log('Importing Bob\'s signed prekey...');
+            const bobSignedPrekey = await importSignalPublicKey(bobBundle.signedPrekey);
+            console.log('✓ Bob signed prekey imported:', bobSignedPrekey.algorithm);
+            
+            console.log('Importing Bob\'s identity key for DH...');
+            const bobIdentityKeyDH = await importSignalPublicKey(bobBundle.identityKey);
+            console.log('✓ Bob identity DH key imported:', bobIdentityKeyDH.algorithm);
+            
+            const bobOneTimePrekey = bobBundle.oneTimePrekey ? 
+                await importSignalPublicKey(bobBundle.oneTimePrekey) : null;
+            if (bobOneTimePrekey) {
+                console.log('✓ Bob one-time prekey imported:', bobOneTimePrekey.algorithm);
+            } else {
+                console.log('⚠️ No one-time prekey available');
+            }
+
+            // Step 4: Perform the Triple (or Quadruple) Diffie-Hellman computation
+            console.log('🔄 Step 4: Performing DH computations...');
+            
+            console.log('DH1: Alice_Identity_Private × Bob_SignedPrekey_Public');
+            console.log('Alice identity private algorithm:', alice.identityKeyPair.privateKey.algorithm);
+            console.log('Bob signed prekey public algorithm:', bobSignedPrekey.algorithm);
+            const dh1 = await performSignalDH(
+                alice.identityKeyPair.privateKey,
+                bobSignedPrekey
+            );
+            console.log('✓ DH1 completed, output length:', dh1.byteLength);
+
+            console.log('DH2: Alice_Ephemeral_Private × Bob_Identity_Public');
+            console.log('Alice ephemeral private algorithm:', aliceEphemeralPair.privateKey.algorithm);
+            console.log('Bob identity public algorithm:', bobIdentityKeyDH.algorithm);
+            const dh2 = await performSignalDH(
+                aliceEphemeralPair.privateKey,
+                bobIdentityKeyDH
+            );
+            console.log('✓ DH2 completed, output length:', dh2.byteLength);
+
+            console.log('DH3: Alice_Ephemeral_Private × Bob_SignedPrekey_Public');
+            const dh3 = await performSignalDH(
+                aliceEphemeralPair.privateKey,
+                bobSignedPrekey
+            );
+            console.log('✓ DH3 completed, output length:', dh3.byteLength);
+
+            // DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public (if available)
+            let dh4: ArrayBuffer | null = null;
+            if (bobOneTimePrekey) {
+                console.log('DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public');
+                dh4 = await performSignalDH(
+                    aliceEphemeralPair.privateKey,
+                    bobOneTimePrekey
+                );
+                console.log('✓ DH4 completed, output length:', dh4.byteLength);
+            } else {
+                console.log('⚠️ Skipping DH4 (no one-time prekey)');
+            }
+
+            // Step 5: Combine all DH outputs
+            console.log('🔗 Step 5: Combining DH outputs...');
+            
+            // Log the individual DH outputs for comparison
+            console.log('Alice DH outputs (hex):');
+            console.log('  DH1:', bufferToSignalHex(dh1));
+            console.log('  DH2:', bufferToSignalHex(dh2));
+            console.log('  DH3:', bufferToSignalHex(dh3));
+            if (dh4) console.log('  DH4:', bufferToSignalHex(dh4));
+            
+            const dhOutputs = dh4 ? 
+                concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
+                concatSignalArrayBuffers(dh1, dh2, dh3);
+            console.log('✓ Combined DH outputs, total length:', dhOutputs.byteLength);
+
+            // Step 6: Derive the master secret using HKDF
+            console.log('🔑 Step 6: Deriving master secret using HKDF...');
+            const salt = new ArrayBuffer(32); // 32 zero bytes
+            const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
+            console.log('Salt length:', salt.byteLength);
+            console.log('Info string:', new TextDecoder().decode(info));
+            
+            const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
+            console.log('✓ Master secret derived');
+            
+            const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
+            console.log('✓ Master secret exported, length:', secretBytes.byteLength);
+            console.log('🔐 Alice final secret:', bufferToSignalHex(secretBytes));
+
+            const result = {
+                masterSecret: secretBytes,
+                aliceEphemeralPublic: await exportSignalPublicKey(aliceEphemeralPair.publicKey),
+                usedOneTimePrekey: bobBundle.oneTimePrekey !== null
+            };
+            
+            console.log('✅ X3DH key exchange completed successfully!');
+            return result;
+            
+        } catch (error) {
+            console.error('❌ X3DH key exchange failed:', error);
+            console.error('Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    };
+
+    const deriveSignalSharedSecret = async (bob, aliceEphemeralPublic, aliceIdentityPublic, usedOneTimePrekey, oneTimePrekeyBytes = null) => {
+        console.log(`🔄 Bob deriving shared secret from Alice's message...`);
+        console.log('Alice ephemeral public length:', aliceEphemeralPublic.byteLength);
+        console.log('Alice identity public length:', aliceIdentityPublic.byteLength);
+        console.log('Used one-time prekey:', usedOneTimePrekey);
+        
+        try {
+            // Import Alice's public keys
+            console.log('📥 Importing Alice\'s public keys...');
+            const aliceEphemeral = await importSignalPublicKey(aliceEphemeralPublic);
+            const aliceIdentity = await importSignalPublicKey(aliceIdentityPublic);
+            console.log('✓ Alice\'s keys imported');
+
+            // Perform the same DH computations (but from Bob's perspective)
+            console.log('🔄 Bob performing DH computations...');
+            
+            // DH1: Bob_SignedPrekey_Private × Alice_Identity_Public
+            console.log('Bob DH1: Bob_SignedPrekey_Private × Alice_Identity_Public');
+            const dh1 = await performSignalDH(
+                bob.signedPrekeyPair.privateKey,
+                aliceIdentity
+            );
+            console.log('✓ Bob DH1 completed, output length:', dh1.byteLength);
+
+            // DH2: Bob_Identity_Private × Alice_Ephemeral_Public  
+            console.log('Bob DH2: Bob_Identity_Private × Alice_Ephemeral_Public');
+            const dh2 = await performSignalDH(
+                bob.identityKeyPair.privateKey,
+                aliceEphemeral
+            );
+            console.log('✓ Bob DH2 completed, output length:', dh2.byteLength);
+
+            // DH3: Bob_SignedPrekey_Private × Alice_Ephemeral_Public
+            console.log('Bob DH3: Bob_SignedPrekey_Private × Alice_Ephemeral_Public');
+            const dh3 = await performSignalDH(
+                bob.signedPrekeyPair.privateKey,
+                aliceEphemeral
+            );
+            console.log('✓ Bob DH3 completed, output length:', dh3.byteLength);
+
+            // DH4: Bob_OneTimePrekey_Private × Alice_Ephemeral_Public (if used)
+            let dh4: ArrayBuffer | null = null;
+            if (usedOneTimePrekey && oneTimePrekeyBytes && bob.oneTimePrekeyPairs.length > 0) {
+                console.log('Bob DH4: Bob_OneTimePrekey_Private × Alice_Ephemeral_Public');
+                console.log('Using provided one-time prekey bytes, length:', oneTimePrekeyBytes.byteLength);
+                
+                // Find the matching one-time prekey in Bob's collection
+                let matchingKeyPair: CryptoKeyPair | null = null;
+                for (const keyPair of bob.oneTimePrekeyPairs) {
+                    const publicKeyBytes = await exportSignalPublicKey(keyPair.publicKey);
+                    const publicKeyHex = bufferToSignalHex(publicKeyBytes);
+                    const providedKeyHex = bufferToSignalHex(oneTimePrekeyBytes);
+                    
+                    console.log('Comparing keys:');
+                    console.log('  Bob key:', publicKeyHex.substring(0, 32) + '...');
+                    console.log('  Used key:', providedKeyHex.substring(0, 32) + '...');
+                    
+                    if (publicKeyHex === providedKeyHex) {
+                        matchingKeyPair = keyPair;
+                        console.log('✓ Found matching one-time prekey in Bob\'s collection');
+                        break;
+                    }
+                }
+                
+                if (matchingKeyPair) {
+                    dh4 = await performSignalDH(
+                        matchingKeyPair.privateKey,
+                        aliceEphemeral
+                    );
+                    console.log('✓ Bob DH4 completed, output length:', dh4.byteLength);
+                } else {
+                    console.error('❌ Could not find matching one-time prekey in Bob\'s collection!');
+                    console.log('Bob has', bob.oneTimePrekeyPairs.length, 'one-time prekeys available');
+                    console.log('Looking for key:', bufferToSignalHex(oneTimePrekeyBytes));
+                    for (let i = 0; i < bob.oneTimePrekeyPairs.length; i++) {
+                        const keyBytes = await exportSignalPublicKey(bob.oneTimePrekeyPairs[i].publicKey);
+                        console.log(`Bob key ${i}:`, bufferToSignalHex(keyBytes));
+                    }
+                    throw new Error('One-time prekey mismatch');
+                }
+            } else {
+                console.log('⚠️ Bob skipping DH4 (no one-time prekey used, no prekey bytes provided, or no keys available)');
+                console.log('  usedOneTimePrekey:', usedOneTimePrekey);
+                console.log('  oneTimePrekeyBytes:', !!oneTimePrekeyBytes);
+                console.log('  bob.oneTimePrekeyPairs.length:', bob.oneTimePrekeyPairs.length);
+            }
+
+            // Combine DH outputs in the same order
+            console.log('🔗 Bob combining DH outputs...');
+            const dhOutputs = dh4 ? 
+                concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
+                concatSignalArrayBuffers(dh1, dh2, dh3);
+            console.log('✓ Bob combined DH outputs, total length:', dhOutputs.byteLength);
+
+            // Log the individual DH outputs for comparison
+            console.log('Bob DH outputs (hex):');
+            console.log('  DH1:', bufferToSignalHex(dh1));
+            console.log('  DH2:', bufferToSignalHex(dh2));
+            console.log('  DH3:', bufferToSignalHex(dh3));
+            if (dh4) console.log('  DH4:', bufferToSignalHex(dh4));
+
+            // Derive the same master secret
+            console.log('🔑 Bob deriving master secret using HKDF...');
+            const salt = new ArrayBuffer(32);
+            const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
+            console.log('Bob salt length:', salt.byteLength);
+            console.log('Bob info string:', new TextDecoder().decode(info));
+            
+            const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
+            console.log('✓ Bob master secret derived');
+            
+            const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
+            console.log('✓ Bob master secret exported, length:', secretBytes.byteLength);
+            console.log('🔐 Bob final secret:', bufferToSignalHex(secretBytes));
+
+            return secretBytes;
+        } catch (error) {
+            console.error('❌ Bob shared secret derivation failed:', error);
+            throw error;
+        }
+    };
+
+    const demonstrateSignalProtocol = async () => {
+        try {
+            // Create two users
+            const alice = await initializeSignalUser("Alice");
+            const bob = await initializeSignalUser("Bob");
+
+            // Get Bob's public key bundle
+            const bobBundle = await getSignalPublicKeyBundle(bob);
+
+            // Perform the X3DH key exchange
+            const exchangeResult = await performSignalX3DHKeyExchange(alice, bobBundle);
+
+            // Verify Bob can derive the same secret
+            const aliceIdentityPublic = await exportSignalPublicKey(alice.identityKeyPair.publicKey);
+            
+            // Get the one-time prekey that was actually used
+            const usedOneTimePrekey = exchangeResult.usedOneTimePrekey ? bobBundle.oneTimePrekey : null;
+            
+            const bobSecret = await deriveSignalSharedSecret(
+                bob,
+                exchangeResult.aliceEphemeralPublic,
+                aliceIdentityPublic,
+                exchangeResult.usedOneTimePrekey,
+                usedOneTimePrekey // Pass the actual prekey that was used
+            );
+
+            // Now consume Bob's one-time prekey after both sides have used it
+            if (exchangeResult.usedOneTimePrekey) {
+                consumeSignalOneTimePrekey(bob);
+            }
+
+            // Verify both parties have the same secret
+            const aliceSecretHex = bufferToSignalHex(exchangeResult.masterSecret);
+            const bobSecretHex = bufferToSignalHex(bobSecret);
+            
+            const success = aliceSecretHex === bobSecretHex;
+            
+            return {
+                success,
+                aliceSecret: aliceSecretHex,
+                bobSecret: bobSecretHex,
+                usedOneTimePrekey: exchangeResult.usedOneTimePrekey,
+                alice,
+                bob,
+                exchangeResult
+            };
+        } catch (error) {
+            console.error("Error during Signal Protocol demonstration:", error);
+            throw error;
+        }
+    };
+
     // Exported Methods Bundle
     const cryptographyMethods = {
         randomString,
@@ -604,6 +1193,24 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         createSecureFileDownload,
         parseEncryptedFilePackage,
         decryptUploadedFile,
+        // Signal Protocol X3DH functions
+        generateSignalKeyPair,
+        generateSignalSigningKeyPair,
+        exportSignalPublicKey,
+        importSignalPublicKey,
+        importSignalSigningPublicKey,
+        performSignalDH,
+        signSignalData,
+        verifySignalSignature,
+        deriveSignalKey,
+        concatSignalArrayBuffers,
+        bufferToSignalHex,
+        initializeSignalUser,
+        getSignalPublicKeyBundle,
+        consumeSignalOneTimePrekey,
+        performSignalX3DHKeyExchange,
+        deriveSignalSharedSecret,
+        demonstrateSignalProtocol,
         // Add more methods as needed
         chance,
     };
