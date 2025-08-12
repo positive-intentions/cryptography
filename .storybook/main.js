@@ -118,12 +118,31 @@ const config = {
 
   webpackFinal: async (config) => {
     config.plugins.push(moduleFederationConfig);
+    
     // Resolve emotion duplication
     config.resolve.alias = {
       ...config.resolve.alias,
       '@emotion/react': require.resolve('@emotion/react'),
       '@emotion/styled': require.resolve('@emotion/styled'),
     };
+    
+    // Add WASM file watching for hot reload
+    if (config.watchOptions) {
+      config.watchOptions.ignored = config.watchOptions.ignored || [];
+      // Remove pkg directory from ignored so WASM files are watched
+      if (Array.isArray(config.watchOptions.ignored)) {
+        config.watchOptions.ignored = config.watchOptions.ignored.filter(
+          pattern => !pattern.toString().includes('pkg')
+        );
+      }
+    }
+    
+    // Ensure WASM files are treated as assets
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'asset/resource',
+    });
+    
     return config;
   },
 
