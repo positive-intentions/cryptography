@@ -13,7 +13,7 @@
     "test:wasm": "jest src/tests/signal-protocol-wasm.test.js",
     "build": "npm run build:reset && npm run build:wasm && npm run build:frontend && npm run build:frontend:vite && npm run build:storybook &&  npm run build:coverage",
     "build:reset": "rm -rf ./Frontend && mkdir ./Frontend",
-    "build:wasm": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target web --out-dir ./Frontend/pkg && rm ./Frontend/pkg/.gitignore",
+    "build:wasm": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target web --out-dir ./pkg && cp -r ./pkg ./Frontend/pkg && rm ./Frontend/pkg/.gitignore",
     "build:wasm:dev": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --dev --target web --out-dir pkg",
     "build:wasm:node": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target nodejs --out-dir pkg-node",
     "build:wasm:bundler": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target bundler --out-dir pkg-bundler",

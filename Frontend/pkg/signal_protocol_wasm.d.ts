@@ -60,10 +60,10 @@ export interface InitOutput {
   readonly main: () => void;
   readonly __wbg_x3dhresult_free: (a: number, b: number) => void;
   readonly __wbg_keypair_free: (a: number, b: number) => void;
-  readonly keypair_private_key: (a: number) => any;
-  readonly keypair_public_key: (a: number) => any;
   readonly x3dhresult_associated_data: (a: number) => any;
   readonly x3dhresult_shared_secret: (a: number) => any;
+  readonly keypair_private_key: (a: number) => any;
+  readonly keypair_public_key: (a: number) => any;
   readonly __wbindgen_exn_store: (a: number) => void;
   readonly __externref_table_alloc: () => number;
   readonly __wbindgen_export_2: WebAssembly.Table;

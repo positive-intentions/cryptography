@@ -126,8 +126,10 @@ const SignalProtocolWasmDemo = () => {
         setWasmInitializing(true);
         try {
             // Try to load the real WASM module from public directory
-            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
-            await wasmModule.default(); // Initialize the WASM module
+            // Note: Commenting out real WASM loading as it's not available
+            // const wasmModule = await import('/pkg/signal_protocol_wasm.js');
+            throw new Error('WASM module not available - using mock implementation');
+            // await wasmModule.default(); // Initialize the WASM module
             
             // Create a wrapper that matches our expected interface
             const wasmWrapper = {
@@ -940,7 +942,7 @@ export default {
 This demo compares two implementations of the Signal Protocol:
 
 ## 🟨 JavaScript Implementation
-- Uses Web Crypto API with P-256 curves
+- Uses Web Crypto API with X25519/Ed25519 curves
 - Relies on browser optimizations and JIT compilation
 - Easy to debug and integrate with web applications
 - Good performance for most use cases

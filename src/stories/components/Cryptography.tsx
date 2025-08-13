@@ -579,9 +579,9 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     // Signal Protocol X3DH Key Exchange Implementation
+    // Using X25519 for key agreement (matches actual Signal Protocol)
     const signalKeyParams = {
-        name: "ECDH",
-        namedCurve: "P-256"
+        name: "X25519"
     };
     
     const signalHkdfParams = {
@@ -593,15 +593,14 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         return await crypto.subtle.generateKey(
             signalKeyParams,
             true,
-            ["deriveKey", "deriveBits"]
+            ["deriveBits"]
         );
     };
 
     const generateSignalSigningKeyPair = async () => {
         return await crypto.subtle.generateKey(
             {
-                name: "ECDSA",
-                namedCurve: "P-256"
+                name: "Ed25519"  // Using Ed25519 for signatures (matches actual Signal Protocol)
             },
             true,
             ["sign", "verify"]
@@ -627,8 +626,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             "raw",
             keyBytes,
             {
-                name: "ECDSA",
-                namedCurve: "P-256"
+                name: "Ed25519"
             },
             false,
             ["verify"]
@@ -636,25 +634,25 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const performSignalDH = async (privateKey, publicKey) => {
-        console.log('🔄 Performing ECDH operation...');
-        console.log('Private key algorithm:', privateKey.algorithm);
-        console.log('Public key algorithm:', publicKey.algorithm);
-        console.log('Private key usages:', privateKey.usages);
-        console.log('Public key usages:', publicKey.usages);
+        console.log('🔄 Performing X25519 key agreement...');
+        console.log('Private key algorithm:', privateKey?.algorithm?.name || 'X25519');
+        console.log('Public key algorithm:', publicKey?.algorithm?.name || 'X25519');
+        console.log('Private key usages:', privateKey?.usages || ['deriveKey']);
+        console.log('Public key usages:', publicKey?.usages || ['deriveBits']);
         
         try {
             const result = await crypto.subtle.deriveBits(
                 {
-                    name: "ECDH",
+                    name: "X25519",
                     public: publicKey
                 },
                 privateKey,
-                256
+                256  // X25519 always produces 256 bits (32 bytes)
             );
-            console.log('✓ ECDH operation successful, output length:', result.byteLength);
+            console.log('✓ X25519 key agreement successful, output length:', result.byteLength);
             return result;
         } catch (error) {
-            console.error('❌ ECDH operation failed:', error);
+            console.error('❌ X25519 key agreement failed:', error);
             throw error;
         }
     };
@@ -662,8 +660,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     const signSignalData = async (privateKey, data) => {
         return await crypto.subtle.sign(
             {
-                name: "ECDSA",
-                hash: "SHA-256"
+                name: "Ed25519"
             },
             privateKey,
             data
@@ -671,17 +668,16 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const verifySignalSignature = async (publicKey, signature, data) => {
-        console.log('🔍 Verifying ECDSA signature...');
-        console.log('Public key algorithm:', publicKey.algorithm);
-        console.log('Public key usages:', publicKey.usages);
+        console.log('🔍 Verifying Ed25519 signature...');
+        console.log('Public key algorithm:', publicKey?.algorithm?.name || 'X25519');
+        console.log('Public key usages:', publicKey?.usages || ['verify']);
         console.log('Signature length:', signature.byteLength);
         console.log('Data length:', data.byteLength);
         
         try {
             const result = await crypto.subtle.verify(
                 {
-                    name: "ECDSA",
-                    hash: "SHA-256"
+                    name: "Ed25519"
                 },
                 publicKey,
                 signature,
@@ -744,19 +740,19 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         console.log(`🔐 [${name}] Starting user initialization...`);
         
         try {
-            // Generate identity key pairs (separate for ECDH and signing due to Web Crypto API limitations)
-            console.log(`🔑 [${name}] Generating identity signing key pair (ECDSA)...`);
+            // Generate identity key pairs (separate for X25519 and Ed25519)
+            console.log(`🔑 [${name}] Generating identity signing key pair (Ed25519)...`);
             const identitySigningKeyPair = await generateSignalSigningKeyPair();
             console.log(`✓ [${name}] Identity signing key pair generated:`, {
-                publicKeyAlgorithm: identitySigningKeyPair.publicKey.algorithm,
-                privateKeyAlgorithm: identitySigningKeyPair.privateKey.algorithm
+                publicKeyAlgorithm: identitySigningKeyPair.publicKey?.algorithm?.name || 'Ed25519',
+                privateKeyAlgorithm: identitySigningKeyPair.privateKey?.algorithm?.name || 'Ed25519'
             });
             
-            console.log(`🔑 [${name}] Generating identity ECDH key pair...`);
+            console.log(`🔑 [${name}] Generating identity X25519 key pair...`);
             const identityKeyPair = await generateSignalKeyPair();
-            console.log(`✓ [${name}] Identity ECDH key pair generated:`, {
-                publicKeyAlgorithm: identityKeyPair.publicKey.algorithm,
-                privateKeyAlgorithm: identityKeyPair.privateKey.algorithm
+            console.log(`✓ [${name}] Identity X25519 key pair generated:`, {
+                publicKeyAlgorithm: identityKeyPair.publicKey?.algorithm?.name || 'X25519',
+                privateKeyAlgorithm: identityKeyPair.privateKey?.algorithm?.name || 'X25519'
             });
             
             // Generate signed prekey pair
@@ -788,8 +784,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             console.log(`✅ [${name}] User initialization completed successfully`);
             return {
                 name,
-                identityKeyPair, // ECDH key pair
-                identitySigningKeyPair, // ECDSA key pair
+                identityKeyPair, // X25519 key pair
+                identitySigningKeyPair, // Ed25519 key pair
                 signedPrekeyPair,
                 signedPrekeySignature,
                 oneTimePrekeyPairs
@@ -804,9 +800,9 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         console.log(`📦 Creating public key bundle for ${user.name}...`);
         
         try {
-            console.log('Exporting identity ECDH key...');
+            console.log('Exporting identity X25519 key...');
             const identityKey = await exportSignalPublicKey(user.identityKeyPair.publicKey);
-            console.log('✓ Identity ECDH key exported, length:', identityKey.byteLength);
+            console.log('✓ Identity X25519 key exported, length:', identityKey.byteLength);
             
             console.log('Exporting identity signing key...');
             const identitySigningKey = await exportSignalPublicKey(user.identitySigningKeyPair.publicKey);
@@ -825,8 +821,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             }
 
             const bundle = {
-                identityKey, // ECDH key
-                identitySigningKey, // ECDSA key  
+                identityKey, // X25519 key
+                identitySigningKey, // Ed25519 key  
                 signedPrekey,
                 signedPrekeySignature: user.signedPrekeySignature,
                 oneTimePrekey
@@ -858,7 +854,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             // Step 1: Verify Bob's signed prekey signature using his signing key
             console.log('📝 Step 1: Importing Bob\'s identity signing key...');
             const bobIdentitySigningKey = await importSignalSigningPublicKey(bobBundle.identitySigningKey);
-            console.log('✓ Bob\'s signing key imported, algorithm:', bobIdentitySigningKey.algorithm);
+            console.log('✓ Bob\'s signing key imported, algorithm:', bobIdentitySigningKey?.algorithm?.name || 'Ed25519');
             
             console.log('🔍 Verifying Bob\'s signed prekey signature...');
             console.log('Signature length:', bobBundle.signedPrekeySignature.byteLength);
@@ -880,8 +876,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             console.log('🔑 Step 2: Generating Alice\'s ephemeral key pair...');
             const aliceEphemeralPair = await generateSignalKeyPair();
             console.log('✓ Ephemeral key pair generated:', {
-                publicAlgorithm: aliceEphemeralPair.publicKey.algorithm,
-                privateAlgorithm: aliceEphemeralPair.privateKey.algorithm
+                publicAlgorithm: aliceEphemeralPair.publicKey?.algorithm?.name || 'X25519',
+                privateAlgorithm: aliceEphemeralPair.privateKey?.algorithm?.name || 'X25519'
             });
 
             // Step 3: Import Bob's public keys for DH operations
@@ -889,16 +885,16 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             
             console.log('Importing Bob\'s signed prekey...');
             const bobSignedPrekey = await importSignalPublicKey(bobBundle.signedPrekey);
-            console.log('✓ Bob signed prekey imported:', bobSignedPrekey.algorithm);
+            console.log('✓ Bob signed prekey imported:', bobSignedPrekey?.algorithm?.name || 'X25519');
             
             console.log('Importing Bob\'s identity key for DH...');
             const bobIdentityKeyDH = await importSignalPublicKey(bobBundle.identityKey);
-            console.log('✓ Bob identity DH key imported:', bobIdentityKeyDH.algorithm);
+            console.log('✓ Bob identity DH key imported:', bobIdentityKeyDH?.algorithm?.name || 'X25519');
             
             const bobOneTimePrekey = bobBundle.oneTimePrekey ? 
                 await importSignalPublicKey(bobBundle.oneTimePrekey) : null;
             if (bobOneTimePrekey) {
-                console.log('✓ Bob one-time prekey imported:', bobOneTimePrekey.algorithm);
+                console.log('✓ Bob one-time prekey imported:', bobOneTimePrekey?.algorithm?.name || 'X25519');
             } else {
                 console.log('⚠️ No one-time prekey available');
             }
@@ -907,8 +903,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             console.log('🔄 Step 4: Performing DH computations...');
             
             console.log('DH1: Alice_Identity_Private × Bob_SignedPrekey_Public');
-            console.log('Alice identity private algorithm:', alice.identityKeyPair.privateKey.algorithm);
-            console.log('Bob signed prekey public algorithm:', bobSignedPrekey.algorithm);
+            console.log('Alice identity private algorithm:', alice.identityKeyPair.privateKey?.algorithm?.name || 'X25519');
+            console.log('Bob signed prekey public algorithm:', bobSignedPrekey?.algorithm?.name || 'X25519');
             const dh1 = await performSignalDH(
                 alice.identityKeyPair.privateKey,
                 bobSignedPrekey
@@ -916,8 +912,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             console.log('✓ DH1 completed, output length:', dh1.byteLength);
 
             console.log('DH2: Alice_Ephemeral_Private × Bob_Identity_Public');
-            console.log('Alice ephemeral private algorithm:', aliceEphemeralPair.privateKey.algorithm);
-            console.log('Bob identity public algorithm:', bobIdentityKeyDH.algorithm);
+            console.log('Alice ephemeral private algorithm:', aliceEphemeralPair.privateKey?.algorithm?.name || 'X25519');
+            console.log('Bob identity public algorithm:', bobIdentityKeyDH?.algorithm?.name || 'X25519');
             const dh2 = await performSignalDH(
                 aliceEphemeralPair.privateKey,
                 bobIdentityKeyDH

@@ -404,8 +404,8 @@ Signal Protocol is used by Signal, WhatsApp, and other messaging apps to establi
 
 ## Cryptographic Operations:
 
-- **ECDH with P-256**: For key agreement (Signal uses Curve25519)
-- **ECDSA with P-256**: For signing and verification
+- **X25519**: For key agreement (matches actual Signal Protocol)
+- **Ed25519**: For signing and verification (matches actual Signal Protocol)
 - **HKDF-SHA256**: For key derivation from shared secrets
         `
       }
@@ -667,7 +667,7 @@ console.log("Alice's identity established!");`}
                 maxHeight="150px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
-                🔐 Uses ECDSA with P-256 curve for digital signatures (industry standard, used by Bitcoin & TLS)
+                🔐 Uses Ed25519 for digital signatures (matches actual Signal Protocol)
               </Typography>
             </Paper>
             
@@ -699,7 +699,7 @@ const bobBundle = {
                 maxHeight="200px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
-                🔐 Uses ECDH with P-256 curve for key agreement (mathematically secure shared secrets)
+                🔐 Uses X25519 for key agreement (matches actual Signal Protocol)
               </Typography>
             </Paper>
             
@@ -732,7 +732,7 @@ const usedPrekey = oneTimePrekeys.pop(); // Take one ticket
                 maxHeight="200px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
-                🔐 Also uses ECDH with P-256 - same math, but each key is cryptographically unique
+                🔐 Also uses X25519 - same math, but each key is cryptographically unique
               </Typography>
             </Paper>
             
@@ -768,7 +768,7 @@ console.log("Lightning key destroyed - conversation now has perfect forward secr
                 maxHeight="250px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
-                🔐 ECDH with P-256 again - the same trusted math, but this key exists for seconds only
+                🔐 X25519 again - the same trusted math, but this key exists for seconds only
               </Typography>
             </Paper>
           </Box>
@@ -1041,37 +1041,39 @@ console.log("🗑️ All temporary keys have been securely destroyed!");
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper sx={{ p: 3, bgcolor: 'primary.light', color: 'primary.contrastText', borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom>🔢 ECDH with P-256 Curve (Key Agreement)</Typography>
+              <Typography variant="h6" gutterBottom>🔢 X25519 Curve (Key Agreement)</Typography>
               <Typography variant="body2" paragraph>
                 <strong>What it does:</strong> Lets two people create the same secret number without ever sharing it directly.
               </Typography>
               <Typography variant="body2" paragraph>
-                <strong>Why P-256 specifically:</strong>
+                <strong>Why X25519 specifically:</strong>
               </Typography>
               <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
-                <li>🏛️ <strong>Government approved:</strong> NIST standard, trusted by banks and governments</li>
-                <li>⚡ <strong>Fast:</strong> Hardware acceleration in most modern devices</li>
-                <li>🔐 <strong>Strong:</strong> 256-bit keys = virtually impossible to break (even with quantum computers for now)</li>
-                <li>🌍 <strong>Universal:</strong> Supported by all modern browsers and devices</li>
+                <li>🚀 <strong>Performance:</strong> Faster than P-256 ECDH operations</li>
+                <li>⚡ <strong>Constant-time:</strong> Resistant to timing attacks by design</li>
+                <li>🔐 <strong>Strong:</strong> 256-bit keys with excellent security properties</li>
+                <li>🌍 <strong>Modern browser support:</strong> Now supported in Web Crypto API</li>
+                <li>✅ <strong>Signal Protocol standard:</strong> The actual curve used by Signal, WhatsApp, etc.</li>
               </Box>
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
-                Note: Signal actually uses Curve25519 (which is faster), but this demo uses P-256 for browser compatibility
+                Note: This implementation now uses X25519, matching the actual Signal Protocol specification
               </Typography>
             </Paper>
 
             <Paper sx={{ p: 3, bgcolor: 'secondary.light', color: 'secondary.contrastText', borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom>✍️ ECDSA with P-256 (Digital Signatures)</Typography>
+              <Typography variant="h6" gutterBottom>✍️ Ed25519 (Digital Signatures)</Typography>
               <Typography variant="body2" paragraph>
                 <strong>What it does:</strong> Creates unforgeable digital signatures to prove who sent a message.
               </Typography>
               <Typography variant="body2" paragraph>
-                <strong>Why ECDSA specifically:</strong>
+                <strong>Why Ed25519 specifically:</strong>
               </Typography>
               <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
-                <li>🎯 <strong>Perfect match:</strong> Uses same curve as ECDH, so we only need one math library</li>
+                <li>🎯 <strong>Perfect match:</strong> Pairs with X25519 (both based on Curve25519)</li>
                 <li>⚖️ <strong>Non-repudiation:</strong> Impossible to forge someone else's signature</li>
                 <li>📏 <strong>Compact:</strong> Small signature size (64 bytes) saves bandwidth</li>
-                <li>🛡️ <strong>Battle-tested:</strong> Used in Bitcoin, TLS, and most secure systems</li>
+                <li>🛡️ <strong>Fast & secure:</strong> Faster than ECDSA, resistant to timing attacks</li>
+                <li>✅ <strong>Signal Protocol standard:</strong> The actual signature algorithm used by Signal</li>
               </Box>
             </Paper>
 
@@ -1114,9 +1116,9 @@ const masterSecret = HKDF_SHA256(
                 <strong>The Security Principle:</strong> "Defense in Depth"
               </Typography>
               <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
-                <li><strong>If ECDH breaks:</strong> ECDSA signatures still prove authenticity</li>
+                <li><strong>If X25519 breaks:</strong> Ed25519 signatures still prove authenticity</li>
                 <li><strong>If SHA256 breaks:</strong> ECDH still provides core secrecy</li>
-                <li><strong>If P-256 breaks:</strong> System can be upgraded to new curves</li>
+                <li><strong>If Curve25519 breaks:</strong> System can be upgraded to new curves</li>
                 <li><strong>If one key type compromised:</strong> Other key types maintain security</li>
               </Box>
               <Typography variant="body2" sx={{ mt: 2 }}>
