@@ -137,10 +137,7 @@ dist
 Cargo.lock
 
 # WASM
-/pkg/
-/pkg-bundler/
-/pkg-node/
-/pkg-web/
-
-# Build artifacts
-/Frontend/
+./pkg/
+./pkg-bundler/
+./pkg-node/
+./pkg-web/

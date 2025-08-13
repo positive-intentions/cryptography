@@ -125,8 +125,8 @@ const SignalProtocolWasmDemo = () => {
     const initializeWasm = async () => {
         setWasmInitializing(true);
         try {
-            // Try to load the real WASM module
-            const wasmModule = await import('../../../pkg/signal_protocol_wasm.js');
+            // Try to load the real WASM module from public directory
+            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
             await wasmModule.default(); // Initialize the WASM module
             
             // Create a wrapper that matches our expected interface

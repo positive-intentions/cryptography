@@ -1,0 +1,36 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_encryptionresult_free: (a: number, b: number) => void;
+export const encryptionresult_ciphertext: (a: number) => any;
+export const encryptionresult_message_key: (a: number) => any;
+export const generate_identity_keypair: () => [number, number, number];
+export const generate_signed_prekey: () => [number, number, number];
+export const generate_one_time_prekey: () => [number, number, number];
+export const generate_ephemeral_keypair: () => [number, number, number];
+export const sign_data: (a: any, b: any) => [number, number, number];
+export const verify_signature: (a: any, b: any, c: any) => [number, number, number];
+export const x3dh_initiate: (a: any, b: any, c: any, d: any, e: number) => [number, number, number];
+export const x3dh_respond: (a: any, b: any, c: number, d: any, e: any) => [number, number, number];
+export const encrypt_message: (a: any, b: any, c: number) => [number, number, number];
+export const decrypt_message: (a: any, b: any, c: any, d: number) => [number, number, number];
+export const hkdf_derive_key: (a: any, b: any, c: any, d: number) => [number, number, number];
+export const serialize_public_key: (a: any) => [number, number, number];
+export const deserialize_public_key: (a: any) => [number, number, number];
+export const free_keypair: (a: number) => void;
+export const free_buffer: (a: any) => void;
+export const main: () => void;
+export const __wbg_x3dhresult_free: (a: number, b: number) => void;
+export const __wbg_keypair_free: (a: number, b: number) => void;
+export const keypair_private_key: (a: number) => any;
+export const keypair_public_key: (a: number) => any;
+export const x3dhresult_associated_data: (a: number) => any;
+export const x3dhresult_shared_secret: (a: number) => any;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_export_2: WebAssembly.Table;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_start: () => void;
