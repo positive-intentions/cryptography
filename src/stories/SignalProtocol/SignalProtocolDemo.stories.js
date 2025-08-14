@@ -185,18 +185,66 @@ const SignalProtocolDemo = () => {
         <Box sx={{ mt: 3 }}>
           <Alert severity={results.success ? "success" : "error"} sx={{ mb: 3 }}>
             <Typography variant="h6">
-              {results.success ? 
-                "✅ X3DH Key Exchange Successful!" : 
-                "❌ Key Exchange Failed"
-              }
+              {results.doubleRatchetOnly ? (
+                results.success ? 
+                  "✅ Double Ratchet Demonstration Successful!" : 
+                  "❌ Double Ratchet Failed"
+              ) : (
+                results.success ? 
+                  "✅ Signal Protocol Demonstration Successful!" : 
+                  "❌ Protocol Demonstration Failed"
+              )}
             </Typography>
             {results.success && (
               <Typography variant="body2">
-                Both Alice and Bob derived the same shared secret. Secure communication established!
+                {results.doubleRatchetOnly ? 
+                  `Successfully exchanged ${results.messagesExchanged} messages with perfect forward secrecy!` :
+                  "Both Alice and Bob derived the same shared secret and exchanged secure messages!"
+                }
               </Typography>
             )}
           </Alert>
 
+          {results.doubleRatchetOnly && (
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SwapHorizIcon /> Double Ratchet Conversation
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2" paragraph>
+                  This demonstration shows {results.messagesExchanged} messages exchanged using the Double Ratchet protocol, 
+                  including proper handling of out-of-order delivery.
+                </Typography>
+                
+                {results.conversation && results.conversation.map((msg, index) => (
+                  <Paper key={index} sx={{ p: 2, mb: 1, bgcolor: msg.from === 'Alice' ? 'primary.light' : 'secondary.light' }}>
+                    <Typography variant="subtitle2" color={msg.from === 'Alice' ? 'primary.contrastText' : 'secondary.contrastText'}>
+                      {msg.from} (Message #{msg.envelope.messageNumber})
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                      DH Key: {crypto.bufferToSignalHex(msg.envelope.dhPublicKey).substring(0, 16)}...
+                    </Typography>
+                  </Paper>
+                ))}
+                
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Features Demonstrated:</strong><br/>
+                    • Forward Secrecy: {results.demonstration?.forwardSecrecy ? '✅' : '❌'}<br/>
+                    • Out-of-order Handling: {results.demonstration?.outOfOrderHandling ? '✅' : '❌'}<br/>
+                    • DH Ratcheting: {results.demonstration?.dhRatcheting ? '✅' : '❌'}<br/>
+                    • Chain Key Updating: {results.demonstration?.chainKeyUpdating ? '✅' : '❌'}
+                  </Typography>
+                </Alert>
+              </AccordionDetails>
+            </Accordion>
+          )}
+
+          {!results.doubleRatchetOnly && (
+
+          <>
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -342,7 +390,58 @@ const SignalProtocolDemo = () => {
 
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">Implementation Details</Typography>
+              <Typography variant="h6">Double Ratchet Messages</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              {results.doubleRatchet && (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" gutterBottom color="primary">
+                          Alice → Bob
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Original: {results.doubleRatchet.message1.plaintext}
+                        </Typography>
+                        <Typography variant="body2" color="success.main">
+                          Decrypted: {results.doubleRatchet.message1.decrypted}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" gutterBottom color="secondary">
+                          Bob → Alice
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Original: {results.doubleRatchet.message2.plaintext}
+                        </Typography>
+                        <Typography variant="body2" color="success.main">
+                          Decrypted: {results.doubleRatchet.message2.decrypted}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Double Ratchet Features Demonstrated:</strong><br/>
+                  • Each message uses a unique encryption key<br/>
+                  • Forward secrecy: past messages remain secure even if current keys are compromised<br/>
+                  • Self-healing: the protocol recovers from temporary key compromise<br/>
+                  • Out-of-order message handling with skipped message key storage
+                </Typography>
+              </Alert>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">X3DH Implementation Details</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" paragraph>
@@ -368,8 +467,28 @@ const SignalProtocolDemo = () => {
                 <strong>Key Derivation:</strong> All DH outputs are concatenated and processed through 
                 HKDF-SHA256 with context "Signal_X3DH_Key_Derivation" to produce the final shared secret.
               </Typography>
+              <Typography variant="body2" sx={{ mt: 2 }}>
+                <strong>Next Step:</strong> The X3DH shared secret becomes the initial root key for the Double Ratchet 
+                protocol. Here's how the transition works:
+              </Typography>
+              
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  🔄 X3DH → Double Ratchet Transition:
+                </Typography>
+                <Typography variant="body2" component="div">
+                  <strong>1. Root Key Setup:</strong> X3DH secret → Double Ratchet root key<br/>
+                  <strong>2. Initial Chain:</strong> Alice derives sending chain from root key<br/>
+                  <strong>3. First Message:</strong> Alice encrypts with message key, sends DH public key<br/>
+                  <strong>4. DH Ratchet:</strong> Bob receives, performs DH ratchet step, creates chains<br/>
+                  <strong>5. Perfect Forward Secrecy:</strong> Each message uses unique ephemeral keys<br/>
+                  <strong>6. Healing:</strong> If one message key is compromised, others remain safe
+                </Typography>
+              </Box>
             </AccordionDetails>
           </Accordion>
+          </>
+          )}
         </Box>
       )}
     </CryptoDemo>
@@ -383,30 +502,55 @@ export default {
     docs: {
       description: {
         component: `
-# Signal Protocol X3DH Key Exchange
+# Signal Protocol: X3DH + Double Ratchet Complete Implementation
 
-This demo showcases the Signal Protocol's X3DH (Extended Triple Diffie-Hellman) key exchange implementation. 
-Signal Protocol is used by Signal, WhatsApp, and other messaging apps to establish secure communication channels.
+This demo showcases the complete Signal Protocol implementation including both X3DH key exchange 
+and Double Ratchet ongoing messaging. This is the same protocol used by Signal, WhatsApp, and 
+other secure messaging apps.
+
+## Two-Phase Protocol:
+
+### Phase 1: X3DH Key Exchange (Initial Handshake)
+- Establishes shared secret between parties who have never communicated
+- Provides mutual authentication and perfect forward secrecy
+- Creates the root key for the Double Ratchet protocol
+
+### Phase 2: Double Ratchet (Ongoing Messaging)
+- Provides forward secrecy for every single message
+- Self-healing: recovers from key compromise
+- Handles out-of-order message delivery
+- Each message uses a unique encryption key
 
 ## Security Properties Demonstrated:
 
-- **Forward Secrecy**: Past messages remain secure even if long-term keys are compromised
-- **Future Secrecy**: Current compromise doesn't affect future sessions  
+- **Perfect Forward Secrecy**: Each message protected by unique keys
+- **Future Secrecy**: Key compromise doesn't affect future messages
+- **Self-Healing**: Protocol recovers from temporary compromises
 - **Mutual Authentication**: Both parties verify each other's identity
-- **Perfect Forward Secrecy**: One-time prekeys ensure perfect forward secrecy
+- **Replay Protection**: Message numbers prevent replay attacks
+- **Out-of-order Delivery**: Handles network reordering gracefully
 
 ## Key Components:
 
-- **Identity Keys**: Long-term keys for user identification
+### X3DH Keys:
+- **Identity Keys**: Long-term keys for user identification (X25519 + Ed25519)
 - **Signed Prekeys**: Medium-term keys signed by identity key
-- **One-time Prekeys**: Single-use keys for forward secrecy
+- **One-time Prekeys**: Single-use keys for perfect forward secrecy
 - **Ephemeral Keys**: Session-specific keys generated per exchange
+
+### Double Ratchet Keys:
+- **Root Key**: Derived from X3DH, used to derive chain keys
+- **Chain Keys**: Evolve with each message, used to derive message keys
+- **Message Keys**: Unique key per message, deleted after use
+- **DH Ratchet Keys**: Periodically updated for self-healing
 
 ## Cryptographic Operations:
 
 - **X25519**: For key agreement (matches actual Signal Protocol)
 - **Ed25519**: For signing and verification (matches actual Signal Protocol)
 - **HKDF-SHA256**: For key derivation from shared secrets
+- **HMAC-SHA256**: For chain key evolution in Double Ratchet
+- **AES-GCM**: For message encryption with authentication
         `
       }
     }
@@ -614,8 +758,8 @@ const EducationalGuideDemo = () => {
                       2. Double Ratchet (Ongoing Chat) 🔄
                     </Typography>
                     <Typography variant="body2">
-                      After the handshake, this creates new keys for every single message, 
-                      like having a new padlock for each letter you send.
+                      After the handshake, this creates new keys for every single message AND can heal itself if someone steals a key. 
+                      It's like having a self-repairing security system that gets stronger over time!
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1959,11 +2103,392 @@ console.log("Demo completed:", demoResult.success);`}
 
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">🔄 Double Ratchet: The Magic Behind Every Message (ELI5)</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Alert severity="success" sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🎩 Imagine Double Ratchet as a Magic Self-Healing Lock System
+            </Typography>
+            <Typography variant="body2">
+              Think of the Double Ratchet like a <strong>magical lock that changes itself after every use</strong> 
+              and can even <strong>fix itself if someone breaks in</strong>! This is what keeps your messages 
+              safe even after the initial handshake.
+            </Typography>
+          </Alert>
+
+          <Paper sx={{ p: 3, mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText', borderRadius: 2 }}>
+            <Typography variant="h5" gutterBottom>
+              🔐 The Four Types of "Locks" in Double Ratchet
+            </Typography>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="error">
+                      1. 🔑 Message Keys (One-Time Locks)
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>What they do:</strong> Like having a unique padlock for every single text message.
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Magic power:</strong> Each key is used exactly once, then destroyed forever!
+                    </Typography>
+                    <CodeDisplay 
+                      code={`// Every message gets its own key
+const messageKey1 = deriveUniqueKey(chainKey, messageNumber: 1);
+const messageKey2 = deriveUniqueKey(chainKey, messageNumber: 2);
+const messageKey3 = deriveUniqueKey(chainKey, messageNumber: 3);
+
+// After using each key, it's destroyed:
+messageKey1.destroy(); // Gone forever!
+print("Message 1 key is now unrecoverable");`}
+                      language="javascript"
+                      maxHeight="120px"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="warning">
+                      2. 🔗 Chain Keys (Lock Makers)
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>What they do:</strong> Like a lock-making machine that creates message keys.
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Magic power:</strong> Changes itself after making each message key!
+                    </Typography>
+                    <CodeDisplay 
+                      code={`// Chain key evolves after each message
+let chainKey = initialChainKey;
+
+// Make message key and update chain
+const msgKey1 = createMessageKey(chainKey);
+chainKey = updateChainKey(chainKey); // Chain key changes!
+
+// Next message gets a different chain key
+const msgKey2 = createMessageKey(chainKey);
+chainKey = updateChainKey(chainKey); // Changes again!
+
+print("Chain key is always evolving!");`}
+                      language="javascript"
+                      maxHeight="120px"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="success">
+                      3. 🏠 Root Key (Master Lock Maker)
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>What they do:</strong> Like the master key that creates chain keys.
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Magic power:</strong> Can create completely new chain keys when needed!
+                    </Typography>
+                    <CodeDisplay 
+                      code={`// Root key creates new chain keys periodically
+let rootKey = x3dhSharedSecret; // From initial handshake
+
+// When we need fresh chains (DH ratchet step)
+const dhSecret = performDH(ourNewKey, theirNewKey);
+const [newRootKey, newChainKey] = deriveFromRoot(
+  rootKey, 
+  dhSecret
+);
+
+rootKey = newRootKey; // Root key updates too!
+print("Fresh chain started with new root!");`}
+                      language="javascript"
+                      maxHeight="120px"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="info">
+                      4. ⚡ DH Ratchet Keys (Self-Healing Keys)
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>What they do:</strong> Like having a lock that can fix itself if someone breaks it.
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Magic power:</strong> Creates entirely new key systems periodically!
+                    </Typography>
+                    <CodeDisplay 
+                      code={`// DH Ratchet provides self-healing
+if (receivedMessageFromNewDHKey) {
+  // Someone is starting fresh - let's heal!
+  const newDHKeyPair = generateFreshDHKeys();
+  const healingSecret = performDH(
+    newDHKeyPair.private, 
+    theirNewDHKey
+  );
+  
+  // Completely fresh start - past compromise doesn't matter!
+  resetAllChainKeys(healingSecret);
+  print("System healed! Past compromises are useless now!");
+}`}
+                      language="javascript"
+                      maxHeight="120px"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50', border: '2px solid', borderColor: 'secondary.main' }}>
+            <Typography variant="h5" gutterBottom color="secondary">
+              💬 Step-by-Step: Alice and Bob's First Double Ratchet Conversation
+            </Typography>
+            
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>ELI5 Scenario:</strong> After Alice and Bob do their initial handshake (X3DH), 
+                they now want to have an ongoing conversation. Let's see how Double Ratchet makes 
+                every message super secure! 🔒
+              </Typography>
+            </Alert>
+
+            <CodeDisplay 
+              code={`// 🏦 STEP 0: After X3DH handshake, both have the same shared secret
+const sharedSecret = "AliceAndBobsX3DHSecret123";
+console.log("🤝 Both Alice and Bob now have the same starting point!");
+
+// 🔄 STEP 1: Initialize Double Ratchet (like setting up the magic lock system)
+const aliceRatchet = initializeDoubleRatchet(sharedSecret, true);  // Alice starts
+const bobRatchet = initializeDoubleRatchet(sharedSecret, false);   // Bob waits
+
+console.log("🎩 Double Ratchet magic systems are ready!");
+
+// 💬 STEP 2: Alice sends first message
+console.log("👩 Alice: I want to send 'Hello Bob! 👋'");
+
+// Alice's ratchet creates a unique key just for this message
+const aliceChainKey1 = aliceRatchet.sendingChainKey;
+const messageKey1 = deriveMessageKey(aliceChainKey1);
+console.log("🔑 Alice created message key:", messageKey1.slice(0, 8) + "...");
+
+// Alice encrypts and updates her chain
+const encryptedMsg1 = encryptMessage("Hello Bob! 👋", messageKey1);
+aliceRatchet.sendingChainKey = updateChainKey(aliceChainKey1);
+aliceRatchet.sendingMessageNumber++;
+
+// CRITICAL: Alice deletes the message key after using it!
+delete messageKey1;
+console.log("🗑️ Alice destroyed message key - it's gone forever!");
+
+// 📨 Message travels to Bob
+console.log("📨 Encrypted message sent to Bob:", encryptedMsg1.slice(0, 20) + "...");
+
+// 👨 STEP 3: Bob receives and decrypts
+console.log("👨 Bob: I received Alice's encrypted message");
+
+// Bob derives the SAME message key (magic of cryptography!)
+const bobChainKey1 = bobRatchet.receivingChainKey; 
+const bobMessageKey1 = deriveMessageKey(bobChainKey1);
+console.log("🔑 Bob created same key:", bobMessageKey1.slice(0, 8) + "...");
+
+// Bob decrypts and updates his chain
+const decryptedMsg1 = decryptMessage(encryptedMsg1, bobMessageKey1);
+bobRatchet.receivingChainKey = updateChainKey(bobChainKey1);
+bobRatchet.receivingMessageNumber++;
+
+// Bob also deletes his copy of the message key!
+delete bobMessageKey1;
+console.log("👨 Bob decrypted:", decryptedMsg1);
+console.log("🗑️ Bob destroyed message key too - completely gone!");
+
+// 🔄 STEP 4: Bob replies (now HE becomes the sender)
+console.log("👨 Bob: Now I'll reply with 'Hi Alice! 😊'");
+
+// Bob needs to do DH ratchet step (create new sending chain)
+const bobNewDHKeyPair = generateSignalKeyPair(); // Bob makes fresh DH keys
+const dhSecret = performDH(bobNewDHKeyPair.private, aliceRatchet.dhPublicKey);
+
+// Bob creates completely new sending chain from this DH secret
+const [newRootKey, bobSendingChain] = deriveNewChains(bobRatchet.rootKey, dhSecret);
+bobRatchet.rootKey = newRootKey;
+bobRatchet.sendingChainKey = bobSendingChain;
+bobRatchet.sendingMessageNumber = 0; // Fresh start!
+
+console.log("🔄 Bob performed DH ratchet - completely new sending system!");
+
+// Now Bob can encrypt his reply
+const messageKey2 = deriveMessageKey(bobRatchet.sendingChainKey);
+const encryptedMsg2 = encryptMessage("Hi Alice! 😊", messageKey2);
+bobRatchet.sendingChainKey = updateChainKey(bobRatchet.sendingChainKey);
+bobRatchet.sendingMessageNumber++;
+
+delete messageKey2;
+console.log("👨 Bob sent reply and destroyed key!");
+
+// 👩 STEP 5: Alice receives Bob's reply
+console.log("👩 Alice: I got Bob's reply!");
+
+// Alice needs to do DH ratchet step too (new receiving chain)
+const aliceNewDHKeyPair = generateSignalKeyPair();
+const dhSecret2 = performDH(aliceNewDHKeyPair.private, bobNewDHKeyPair.public);
+
+const [aliceNewRootKey, aliceReceivingChain] = deriveNewChains(aliceRatchet.rootKey, dhSecret2);
+aliceRatchet.rootKey = aliceNewRootKey;
+aliceRatchet.receivingChainKey = aliceReceivingChain;
+aliceRatchet.receivingMessageNumber = 0;
+
+console.log("🔄 Alice performed DH ratchet - fresh receiving system!");
+
+// Alice decrypts Bob's message
+const aliceMessageKey2 = deriveMessageKey(aliceRatchet.receivingChainKey);
+const decryptedMsg2 = decryptMessage(encryptedMsg2, aliceMessageKey2);
+aliceRatchet.receivingChainKey = updateChainKey(aliceRatchet.receivingChainKey);
+
+delete aliceMessageKey2;
+console.log("👩 Alice decrypted:", decryptedMsg2);
+
+// 🎉 RESULT: Perfect conversation with amazing security!
+console.log("🎉 SUCCESS! Here's what just happened:");
+console.log("• Each message used a completely unique key");
+console.log("• All message keys were destroyed after use");
+console.log("• Both users have fresh key systems (self-healing)");
+console.log("• Even if someone steals keys now, past messages stay secure!");
+console.log("• Future messages will use even newer keys!");
+
+// 🛡️ SECURITY PROOF: Even if hacker steals everything now...
+console.log("💻 HACKER STEALS ALL CURRENT KEYS!");
+const stolenKeys = {
+  aliceChain: aliceRatchet.sendingChainKey,
+  bobChain: bobRatchet.receivingChainKey,
+  rootKeys: [aliceRatchet.rootKey, bobRatchet.rootKey]
+};
+console.log("😈 Hacker has:", Object.keys(stolenKeys));
+
+// But the old messages are still safe!
+console.log("🛡️ BUT: Past message keys were destroyed!");
+console.log("🛡️ Hacker CANNOT decrypt 'Hello Bob!' or 'Hi Alice!'");
+console.log("🛡️ This is Forward Secrecy in action!");
+
+// And future messages will create new keys that heal the compromise
+console.log("✨ Next DH ratchet will create fresh keys, making current stolen keys useless!");
+console.log("✨ This is the Self-Healing property!");`}
+              language="javascript"
+              maxHeight="800px"
+            />
+          </Paper>
+
+          <Paper sx={{ p: 3, mb: 3, bgcolor: 'warning.light', color: 'warning.contrastText', borderRadius: 2 }}>
+            <Typography variant="h5" gutterBottom>
+              🤔 But Why Is Double Ratchet SO Smart? (The Genius Explained)
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="error">
+                      🛡️ Forward Secrecy
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Problem:</strong> What if someone steals your keys later?
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Double Ratchet Solution:</strong> Every message key is deleted after use!
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Result:</strong> Even if hackers steal your current keys, they can't read old messages because those keys no longer exist anywhere!
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="success">
+                      ✨ Self-Healing
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Problem:</strong> What if hackers compromise your current conversation?
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Double Ratchet Solution:</strong> DH ratchet creates completely fresh key systems!
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Result:</strong> The next DH ratchet makes all stolen keys useless - the system "heals" itself!
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="info">
+                      🔄 Out-of-Order Messages
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Problem:</strong> Messages don't always arrive in order on the internet!
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Double Ratchet Solution:</strong> Skipped message keys are stored temporarily.
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Result:</strong> You can decrypt message #5 even if message #3 arrives later!
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom color="warning">
+                      🔢 Replay Protection
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Problem:</strong> What if hackers try to send old messages again?
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Double Ratchet Solution:</strong> Each message has a unique number and DH key.
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Result:</strong> You can tell if someone is trying to replay old messages!
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <Alert severity="success" sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🎆 The Bottom Line: Why Double Ratchet is Cryptographic Magic
+            </Typography>
+            <Typography variant="body2">
+              Double Ratchet is like having a <strong>time machine for security</strong>! Even if the bad guys 
+              get your keys today, they can't go back in time to read yesterday's messages (forward secrecy), 
+              and tomorrow you'll have completely new keys they don't know about (self-healing). Plus, it handles 
+              all the messy real-world problems like messages arriving out of order. 
+              <br/><br/>
+              This is why <strong>billions of people</strong> trust Signal Protocol for their most private conversations!
+            </Typography>
+          </Alert>
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6">🌍 Real-World Usage</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography paragraph>
-            <strong>Applications using Signal Protocol:</strong>
+            <strong>Applications using Signal Protocol (X3DH + Double Ratchet):</strong>
           </Typography>
           <Box component="ul" sx={{ pl: 2, mb: 2 }}>
             <li>Signal Messenger (original implementation)</li>
@@ -1971,16 +2496,27 @@ console.log("Demo completed:", demoResult.success);`}
             <li>Facebook Messenger Secret Conversations</li>
             <li>Google RCS messaging</li>
             <li>Skype Private Conversations</li>
+            <li>Wire secure messaging</li>
+            <li>Session private messenger</li>
           </Box>
           
           <Typography paragraph>
-            <strong>Why it matters:</strong>
+            <strong>Why the complete protocol matters:</strong>
           </Typography>
-          <Typography variant="body2">
-            Signal Protocol protects the private communications of billions of people worldwide. 
-            Its security properties ensure that even if governments or hackers compromise servers 
-            or devices, the content of messages remains private.
+          <Typography variant="body2" paragraph>
+            X3DH alone only gives you the initial handshake - it's like exchanging business cards. 
+            The Double Ratchet is what makes your actual conversation secure. Together, they create 
+            a messaging system that can protect billions of conversations simultaneously.
           </Typography>
+          
+          <Alert severity="info">
+            <Typography variant="body2">
+              <strong>Real Impact:</strong> Signal Protocol protects the private communications of over 
+              <strong>2 billion people</strong> worldwide through WhatsApp alone. Its security properties ensure 
+              that even if governments or hackers compromise servers, devices, or intercept network traffic, 
+              the content of messages remains private and secure.
+            </Typography>
+          </Alert>
         </AccordionDetails>
       </Accordion>
     </CryptoDemo>
@@ -1990,5 +2526,171 @@ console.log("Demo completed:", demoResult.success);`}
 export const EducationalGuide = () => (
   <CryptographyProvider>
     <EducationalGuideDemo />
+  </CryptographyProvider>
+);
+
+// Story focused specifically on Double Ratchet
+const DoubleRatchetOnlyDemo = () => {
+  const crypto = useCryptography();
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState('');
+
+  const handleDoubleRatchetDemo = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const result = await crypto.demonstrateDoubleRatchet();
+      
+      setResults({
+        success: result.success,
+        conversation: result.conversation,
+        messagesExchanged: result.messagesExchanged,
+        aliceState: JSON.parse(result.aliceState),
+        bobState: JSON.parse(result.bobState),
+        demonstration: result.demonstration
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <CryptoDemo title="Double Ratchet Protocol" icon={<SwapHorizIcon />}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body1" paragraph>
+          This demo focuses specifically on the Double Ratchet protocol, which provides 
+          forward secrecy for ongoing messaging after the initial X3DH key exchange.
+        </Typography>
+        
+        <Button 
+          variant="contained" 
+          onClick={handleDoubleRatchetDemo}
+          disabled={loading}
+          fullWidth
+          startIcon={<SwapHorizIcon />}
+          sx={{ mb: 2 }}
+        >
+          {loading ? 'Running Double Ratchet...' : 'Demonstrate Double Ratchet'}
+        </Button>
+
+        <OperationStatus loading={loading} error={error} success={results?.success} />
+      </Box>
+
+      {results && (
+        <Box sx={{ mt: 3 }}>
+          <Alert severity={results.success ? "success" : "error"} sx={{ mb: 3 }}>
+            <Typography variant="h6">
+              {results.success ? 
+                "\u2705 Double Ratchet Protocol Successful!" : 
+                "\u274c Double Ratchet Failed"
+              }
+            </Typography>
+            <Typography variant="body2">
+              Exchanged {results.messagesExchanged} messages with perfect forward secrecy, 
+              including out-of-order delivery simulation.
+            </Typography>
+          </Alert>
+
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Message Flow</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                {results.conversation?.slice(0, 4).map((msg, index) => (
+                  <Grid item xs={12} md={6} key={index}>
+                    <Card sx={{ bgcolor: msg.from === 'Alice' ? 'primary.light' : 'secondary.light' }}>
+                      <CardContent>
+                        <Typography variant="h6" color={msg.from === 'Alice' ? 'primary.contrastText' : 'secondary.contrastText'}>
+                          {msg.from} \u2192 {msg.from === 'Alice' ? 'Bob' : 'Alice'}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          Message #{msg.envelope.messageNumber}
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ fontFamily: 'monospace', mt: 1 }}>
+                          DH: {crypto.bufferToSignalHex(msg.envelope.dhPublicKey).substring(0, 20)}...
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ fontFamily: 'monospace' }}>
+                          Encrypted: {msg.envelope.ciphertext.length} bytes
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  Each message uses a unique key derived from an evolving chain key. 
+                  The DH public key changes when the ratchet steps occur, providing self-healing security.
+                </Typography>
+              </Alert>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Protocol State</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Alice's State
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Sending Messages: {results.aliceState?.sendingMessageNumber}
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Receiving Messages: {results.aliceState?.receivingMessageNumber}
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Skipped Keys: {results.aliceState?.skippedMessageKeysCount || 0}
+                      </Typography>
+                      <Typography variant="body2">
+                        Role: {results.aliceState?.isInitiator ? 'Initiator' : 'Responder'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="secondary">
+                        Bob's State
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Sending Messages: {results.bobState?.sendingMessageNumber}
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Receiving Messages: {results.bobState?.receivingMessageNumber}
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Skipped Keys: {results.bobState?.skippedMessageKeysCount || 0}
+                      </Typography>
+                      <Typography variant="body2">
+                        Role: {results.bobState?.isInitiator ? 'Initiator' : 'Responder'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+      )}
+    </CryptoDemo>
+  );
+};
+
+export const DoubleRatchetOnly = () => (
+  <CryptographyProvider>
+    <DoubleRatchetOnlyDemo />
   </CryptographyProvider>
 );

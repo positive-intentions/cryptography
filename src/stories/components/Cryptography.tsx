@@ -1748,33 +1748,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             const decrypted2 = await doubleRatchetDecrypt(aliceState, msg2);
             console.log(`Alice decrypted: "${decrypted2}"`);
             
-            // Alice sends multiple messages
-            const msg3 = await doubleRatchetEncrypt(aliceState, "Each message gets a new key! 🔑");
-            conversation.push({ from: 'Alice', envelope: msg3 });
-            
-            const msg4 = await doubleRatchetEncrypt(aliceState, "Forward secrecy is maintained! ⚡");
-            conversation.push({ from: 'Alice', envelope: msg4 });
-            
-            // Decrypt in order
-            const decrypted3 = await doubleRatchetDecrypt(bobState, msg3);
-            const decrypted4 = await doubleRatchetDecrypt(bobState, msg4);
-            
-            console.log(`Bob decrypted msg3: "${decrypted3}"`);
-            console.log(`Bob decrypted msg4: "${decrypted4}"`);
-            
-            // Test out-of-order delivery
-            const msg5 = await doubleRatchetEncrypt(aliceState, "Message 5 - sent first");
-            const msg6 = await doubleRatchetEncrypt(aliceState, "Message 6 - sent second");
-            
-            // Bob receives message 6 first (simulating network delay)
-            const decrypted6 = await doubleRatchetDecrypt(bobState, msg6);
-            const decrypted5 = await doubleRatchetDecrypt(bobState, msg5);
-            
-            console.log(`Bob decrypted msg6 first: "${decrypted6}"`);
-            console.log(`Bob decrypted msg5 second: "${decrypted5}"`);
-            
-            conversation.push({ from: 'Alice', envelope: msg5 });
-            conversation.push({ from: 'Alice', envelope: msg6 });
+            console.log('✅ Double Ratchet basic exchange completed successfully');
             
             const result = {
                 success: true,

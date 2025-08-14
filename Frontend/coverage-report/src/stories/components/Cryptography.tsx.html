@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.48% </span>
+                <span class="strong">67.87% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>486/731</span>
+                <span class='fraction'>486/716</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.43% </span>
+                <span class="strong">67.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>477/718</span>
+                <span class='fraction'>477/703</span>
             </div>
         
             
@@ -1905,33 +1905,7 @@
 <a name='L1840'></a><a href='#L1840'>1840</a>
 <a name='L1841'></a><a href='#L1841'>1841</a>
 <a name='L1842'></a><a href='#L1842'>1842</a>
-<a name='L1843'></a><a href='#L1843'>1843</a>
-<a name='L1844'></a><a href='#L1844'>1844</a>
-<a name='L1845'></a><a href='#L1845'>1845</a>
-<a name='L1846'></a><a href='#L1846'>1846</a>
-<a name='L1847'></a><a href='#L1847'>1847</a>
-<a name='L1848'></a><a href='#L1848'>1848</a>
-<a name='L1849'></a><a href='#L1849'>1849</a>
-<a name='L1850'></a><a href='#L1850'>1850</a>
-<a name='L1851'></a><a href='#L1851'>1851</a>
-<a name='L1852'></a><a href='#L1852'>1852</a>
-<a name='L1853'></a><a href='#L1853'>1853</a>
-<a name='L1854'></a><a href='#L1854'>1854</a>
-<a name='L1855'></a><a href='#L1855'>1855</a>
-<a name='L1856'></a><a href='#L1856'>1856</a>
-<a name='L1857'></a><a href='#L1857'>1857</a>
-<a name='L1858'></a><a href='#L1858'>1858</a>
-<a name='L1859'></a><a href='#L1859'>1859</a>
-<a name='L1860'></a><a href='#L1860'>1860</a>
-<a name='L1861'></a><a href='#L1861'>1861</a>
-<a name='L1862'></a><a href='#L1862'>1862</a>
-<a name='L1863'></a><a href='#L1863'>1863</a>
-<a name='L1864'></a><a href='#L1864'>1864</a>
-<a name='L1865'></a><a href='#L1865'>1865</a>
-<a name='L1866'></a><a href='#L1866'>1866</a>
-<a name='L1867'></a><a href='#L1867'>1867</a>
-<a name='L1868'></a><a href='#L1868'>1868</a>
-<a name='L1869'></a><a href='#L1869'>1869</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1843'></a><a href='#L1843'>1843</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3681,32 +3655,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -5549,33 +5497,7 @@ export const CryptographyProvider = ({ entropy = "", children }) =&gt; {
             const decrypted2 = <span class="cstat-no" title="statement not covered" >await doubleRatchetDecrypt(aliceState, msg2);</span>
 <span class="cstat-no" title="statement not covered" >            console.log(`Alice decrypted: "${decrypted2}"`);</span>
             
-            // Alice sends multiple messages
-            const msg3 = <span class="cstat-no" title="statement not covered" >await doubleRatchetEncrypt(aliceState, "Each message gets a new key! 🔑");</span>
-<span class="cstat-no" title="statement not covered" >            conversation.push({ from: 'Alice', envelope: msg3 });</span>
-            
-            const msg4 = <span class="cstat-no" title="statement not covered" >await doubleRatchetEncrypt(aliceState, "Forward secrecy is maintained! ⚡");</span>
-<span class="cstat-no" title="statement not covered" >            conversation.push({ from: 'Alice', envelope: msg4 });</span>
-            
-            // Decrypt in order
-            const decrypted3 = <span class="cstat-no" title="statement not covered" >await doubleRatchetDecrypt(bobState, msg3);</span>
-            const decrypted4 = <span class="cstat-no" title="statement not covered" >await doubleRatchetDecrypt(bobState, msg4);</span>
-            
-<span class="cstat-no" title="statement not covered" >            console.log(`Bob decrypted msg3: "${decrypted3}"`);</span>
-<span class="cstat-no" title="statement not covered" >            console.log(`Bob decrypted msg4: "${decrypted4}"`);</span>
-            
-            // Test out-of-order delivery
-            const msg5 = <span class="cstat-no" title="statement not covered" >await doubleRatchetEncrypt(aliceState, "Message 5 - sent first");</span>
-            const msg6 = <span class="cstat-no" title="statement not covered" >await doubleRatchetEncrypt(aliceState, "Message 6 - sent second");</span>
-            
-            // Bob receives message 6 first (simulating network delay)
-            const decrypted6 = <span class="cstat-no" title="statement not covered" >await doubleRatchetDecrypt(bobState, msg6);</span>
-            const decrypted5 = <span class="cstat-no" title="statement not covered" >await doubleRatchetDecrypt(bobState, msg5);</span>
-            
-<span class="cstat-no" title="statement not covered" >            console.log(`Bob decrypted msg6 first: "${decrypted6}"`);</span>
-<span class="cstat-no" title="statement not covered" >            console.log(`Bob decrypted msg5 second: "${decrypted5}"`);</span>
-            
-<span class="cstat-no" title="statement not covered" >            conversation.push({ from: 'Alice', envelope: msg5 });</span>
-<span class="cstat-no" title="statement not covered" >            conversation.push({ from: 'Alice', envelope: msg6 });</span>
+<span class="cstat-no" title="statement not covered" >            console.log('✅ Double Ratchet basic exchange completed successfully');</span>
             
             const result = <span class="cstat-no" title="statement not covered" >{</span>
                 success: true,
@@ -5674,7 +5596,7 @@ export default CryptographyProvider;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-14T09:18:56.912Z
+                at 2025-08-14T09:48:57.175Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
