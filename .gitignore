@@ -141,3 +141,5 @@ Cargo.lock
 ./pkg-bundler/
 ./pkg-node/
 ./pkg-web/
+
+coverage-rust/

@@ -30,6 +30,10 @@ thiserror = "1.0"
 # Hex encoding for debugging
 hex = "0.4"
 
+# Development dependencies for testing and coverage
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
 # Enable optimizations for WASM build
 [profile.release]
 opt-level = "s"  # Optimize for size

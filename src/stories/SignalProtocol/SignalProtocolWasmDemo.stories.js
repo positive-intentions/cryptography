@@ -92,6 +92,35 @@ const mockWasmImplementation = {
         return new TextEncoder().encode(`WASM decrypted message ${messageNumber}`);
     },
 
+    async initializeDoubleRatchet(sharedSecret, isInitiator) {
+        await new Promise(resolve => setTimeout(resolve, 15));
+        return {
+            rootKey: new Uint8Array(32).fill(Math.floor(Math.random() * 256)),
+            sendingChainKey: isInitiator ? new Uint8Array(32).fill(42) : null,
+            receivingChainKey: isInitiator ? null : new Uint8Array(32).fill(43),
+            sendingMessageNumber: 0,
+            receivingMessageNumber: 0,
+            isInitiator
+        };
+    },
+
+    async doubleRatchetEncrypt(ratchetState, plaintext) {
+        await new Promise(resolve => setTimeout(resolve, 8)); // Faster than JS
+        const messageNumber = ratchetState.sendingMessageNumber++;
+        return {
+            ciphertext: new Uint8Array(plaintext.length + 16).fill(Math.floor(Math.random() * 256)),
+            dhPublicKey: new Uint8Array(32).fill(102),
+            messageNumber,
+            previousChainLength: 0
+        };
+    },
+
+    async doubleRatchetDecrypt(ratchetState, envelope) {
+        await new Promise(resolve => setTimeout(resolve, 7)); // Faster than JS
+        ratchetState.receivingMessageNumber = Math.max(ratchetState.receivingMessageNumber, envelope.messageNumber + 1);
+        return `WASM mock decrypted message ${envelope.messageNumber}`;
+    },
+
     bufferToHex(buffer) {
         return Array.from(new Uint8Array(buffer))
             .map(b => b.toString(16).padStart(2, '0'))
@@ -442,7 +471,8 @@ const SignalProtocolWasmDemo = () => {
             keyGeneration: { js: 0, wasm: 0 },
             signing: { js: 0, wasm: 0 },
             x3dh: { js: 0, wasm: 0 },
-            encryption: { js: 0, wasm: 0 }
+            encryption: { js: 0, wasm: 0 },
+            doubleRatchet: { js: 0, wasm: 0 }
         };
 
         const iterations = 10;
@@ -456,6 +486,15 @@ const SignalProtocolWasmDemo = () => {
             }
             benchmarks.keyGeneration.js = (performance.now() - start) / iterations;
 
+            // Signing
+            const testUser = await crypto.initializeSignalUser('TestUser');
+            const testSigningData = new TextEncoder().encode('benchmark test data for signing operations');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                await crypto.signSignalData(testUser.identitySigningKeyPair.privateKey, testSigningData);
+            }
+            benchmarks.signing.js = (performance.now() - start) / iterations;
+
             // X3DH (simplified)
             start = performance.now();
             for (let i = 0; i < Math.min(3, iterations); i++) {
@@ -465,6 +504,28 @@ const SignalProtocolWasmDemo = () => {
                 await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
             }
             benchmarks.x3dh.js = (performance.now() - start) / Math.min(3, iterations);
+
+            // Encryption (using symmetric encryption)
+            const symmetricKey = await crypto.generateSymmetricKey();
+            const deserializedKey = await crypto.deserializeSymmetricKey(symmetricKey);
+            const testMessage = 'Benchmark message for encryption testing';
+            
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                await crypto.encryptWithSymmetricKey(testMessage, deserializedKey);
+            }
+            benchmarks.encryption.js = (performance.now() - start) / iterations;
+
+            // Double Ratchet
+            const aliceRatchet = await crypto.initializeDoubleRatchet(exchangeResult.masterSecret, true);
+            const bobRatchet = await crypto.initializeDoubleRatchet(exchangeResult.masterSecret, false);
+            
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                const envelope = await crypto.doubleRatchetEncrypt(aliceRatchet, `Test message ${i}`);
+                await crypto.doubleRatchetDecrypt(bobRatchet, envelope);
+            }
+            benchmarks.doubleRatchet.js = (performance.now() - start) / iterations;
         }
 
         // Benchmark WASM
@@ -510,6 +571,20 @@ const SignalProtocolWasmDemo = () => {
                 await wasmInstance.encryptMessage(sharedSecret, message, i + 1);
             }
             benchmarks.encryption.wasm = (performance.now() - start) / iterations;
+
+            // Double Ratchet
+            if (wasmInstance.initializeDoubleRatchet) {
+                const wasmSharedSecret = new Uint8Array(32).fill(42);
+                const wasmAliceRatchet = await wasmInstance.initializeDoubleRatchet(wasmSharedSecret, true);
+                const wasmBobRatchet = await wasmInstance.initializeDoubleRatchet(wasmSharedSecret, false);
+                
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    const envelope = await wasmInstance.doubleRatchetEncrypt(wasmAliceRatchet, `WASM test ${i}`);
+                    await wasmInstance.doubleRatchetDecrypt(wasmBobRatchet, envelope);
+                }
+                benchmarks.doubleRatchet.wasm = (performance.now() - start) / iterations;
+            }
         }
 
         return benchmarks;
@@ -1024,6 +1099,15 @@ const PerformanceFocusDemo = () => {
                 async encryptMessage(sharedSecret, plaintext, messageNumber) {
                     const result = wasmModule.encrypt_message(sharedSecret, plaintext, messageNumber);
                     return { ciphertext: result.ciphertext, messageKey: result.message_key, messageNumber };
+                },
+                async initializeDoubleRatchet(sharedSecret, isInitiator) {
+                    return wasmModule.initialize_double_ratchet(sharedSecret, isInitiator);
+                },
+                async doubleRatchetEncrypt(ratchetState, plaintext) {
+                    return wasmModule.double_ratchet_encrypt(ratchetState, plaintext);
+                },
+                async doubleRatchetDecrypt(ratchetState, envelope) {
+                    return wasmModule.double_ratchet_decrypt(ratchetState, envelope);
                 }
             };
             
@@ -1045,7 +1129,8 @@ const PerformanceFocusDemo = () => {
                 keyGeneration: { js: 0, wasm: 0 },
                 signing: { js: 0, wasm: 0 },
                 x3dh: { js: 0, wasm: 0 },
-                encryption: { js: 0, wasm: 0 }
+                encryption: { js: 0, wasm: 0 },
+                doubleRatchet: { js: 0, wasm: 0 }
             };
 
             const iterations = 10;
@@ -1062,6 +1147,15 @@ const PerformanceFocusDemo = () => {
                 }
                 benchmarkResults.keyGeneration.js = (performance.now() - start) / iterations;
 
+                // Signing Benchmark
+                const testUser = await crypto.initializeSignalUser('TestUser');
+                const testSigningData = new TextEncoder().encode('benchmark test data for signing operations');
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await crypto.signSignalData(testUser.identitySigningKeyPair.privateKey, testSigningData);
+                }
+                benchmarkResults.signing.js = (performance.now() - start) / iterations;
+
                 // X3DH Benchmark (simplified for performance testing)
                 start = performance.now();
                 for (let i = 0; i < Math.min(5, iterations); i++) {
@@ -1071,6 +1165,33 @@ const PerformanceFocusDemo = () => {
                     await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
                 }
                 benchmarkResults.x3dh.js = (performance.now() - start) / Math.min(5, iterations);
+
+                // Encryption Benchmark (using symmetric encryption)
+                const symmetricKey = await crypto.generateSymmetricKey();
+                const deserializedKey = await crypto.deserializeSymmetricKey(symmetricKey);
+                const testMessage = 'This is a benchmark message for encryption performance testing';
+                
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await crypto.encryptWithSymmetricKey(testMessage, deserializedKey);
+                }
+                benchmarkResults.encryption.js = (performance.now() - start) / iterations;
+
+                // Double Ratchet Benchmark
+                const alice = await crypto.initializeSignalUser('Alice');
+                const bob = await crypto.initializeSignalUser('Bob');
+                const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
+                const exchangeResult = await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
+                
+                const aliceRatchet = await crypto.initializeDoubleRatchet(exchangeResult.masterSecret, true);
+                const bobRatchet = await crypto.initializeDoubleRatchet(exchangeResult.masterSecret, false);
+                
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    const envelope = await crypto.doubleRatchetEncrypt(aliceRatchet, `Double ratchet test ${i}`);
+                    await crypto.doubleRatchetDecrypt(bobRatchet, envelope);
+                }
+                benchmarkResults.doubleRatchet.js = (performance.now() - start) / iterations;
 
                 console.log('✅ JavaScript benchmarks completed');
             }
@@ -1120,6 +1241,20 @@ const PerformanceFocusDemo = () => {
                     await wasmInstance.encryptMessage(sharedSecret, message, i + 1);
                 }
                 benchmarkResults.encryption.wasm = (performance.now() - start) / iterations;
+
+                // Double Ratchet Benchmark
+                if (wasmInstance.initializeDoubleRatchet) {
+                    const wasmSharedSecret = new Uint8Array(32).fill(42);
+                    const wasmAliceRatchet = await wasmInstance.initializeDoubleRatchet(wasmSharedSecret, true);
+                    const wasmBobRatchet = await wasmInstance.initializeDoubleRatchet(wasmSharedSecret, false);
+                    
+                    start = performance.now();
+                    for (let i = 0; i < iterations; i++) {
+                        const envelope = await wasmInstance.doubleRatchetEncrypt(wasmAliceRatchet, `Double ratchet WASM test ${i}`);
+                        await wasmInstance.doubleRatchetDecrypt(wasmBobRatchet, envelope);
+                    }
+                    benchmarkResults.doubleRatchet.wasm = (performance.now() - start) / iterations;
+                }
 
                 console.log('✅ WASM benchmarks completed');
             }
