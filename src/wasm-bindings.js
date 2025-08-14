@@ -19,13 +19,9 @@ export async function loadWasmModule() {
     }
 
     try {
-        // In development/testing, the module might not be available
-        if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-            console.warn('WASM module not available in test environment, using mocks');
-            return null;
-        }
-
-        // Load the WASM module
+        // Load the WASM module - no fallback behavior in unit tests
+        // If you need JavaScript-only tests, use signal-protocol-javascript.test.js
+        // If you need WASM-only tests, use signal-protocol-wasm-only.test.js
         wasmModule = await import('../pkg/signal_protocol_wasm.js');
         await wasmModule.default(); // Initialize the WASM module
         wasmLoaded = true;
@@ -33,8 +29,8 @@ export async function loadWasmModule() {
         console.log('✅ Signal Protocol WASM module loaded successfully');
         return wasmModule;
     } catch (error) {
-        console.warn('⚠️ Failed to load WASM module, falling back to JavaScript implementation:', error.message);
-        return null;
+        console.error('❌ Failed to load WASM module:', error.message);
+        throw new Error(`WASM module loading failed: ${error.message}. Ensure WASM files are built with 'npm run build:wasm'`);
     }
 }
 
