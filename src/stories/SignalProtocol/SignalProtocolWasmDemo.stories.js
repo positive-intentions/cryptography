@@ -126,7 +126,9 @@ const SignalProtocolWasmDemo = () => {
         setWasmInitializing(true);
         try {
             // Try to load the real WASM module from public directory
+            // Note: Commenting out real WASM loading as it's not available
             const wasmModule = await import('/pkg/signal_protocol_wasm.js');
+            // throw new Error('WASM module not available - using mock implementation');
             await wasmModule.default(); // Initialize the WASM module
             
             // Create a wrapper that matches our expected interface
@@ -940,7 +942,7 @@ export default {
 This demo compares two implementations of the Signal Protocol:
 
 ## 🟨 JavaScript Implementation
-- Uses Web Crypto API with P-256 curves
+- Uses Web Crypto API with X25519/Ed25519 curves
 - Relies on browser optimizations and JIT compilation
 - Easy to debug and integrate with web applications
 - Good performance for most use cases
@@ -982,60 +984,292 @@ export const Default = () => (
 const PerformanceFocusDemo = () => {
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [wasmAvailable, setWasmAvailable] = useState(false);
+    const [wasmInstance, setWasmInstance] = useState(null);
+    const [error, setError] = useState('');
+    
+    const crypto = useCryptography();
+
+    // Initialize WASM on component mount
+    useEffect(() => {
+        initializeWasm();
+    }, []);
+
+    const initializeWasm = async () => {
+        try {
+            // Try to load the real WASM module
+            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
+            await wasmModule.default();
+            
+            const wasmWrapper = {
+                async generateIdentityKeyPair() {
+                    const result = wasmModule.generate_identity_keypair();
+                    return { publicKey: result.public_key, privateKey: result.private_key };
+                },
+                async generateSignedPrekey() {
+                    const result = wasmModule.generate_signed_prekey();
+                    return { publicKey: result.public_key, privateKey: result.private_key };
+                },
+                async generateEphemeralKeyPair() {
+                    const result = wasmModule.generate_ephemeral_keypair();
+                    return { publicKey: result.public_key, privateKey: result.private_key };
+                },
+                async signData(privateKey, data) {
+                    return wasmModule.sign_data(privateKey, data);
+                },
+                async x3dhInitiate(aliceIdentityPrivate, aliceEphemeralPrivate, bobIdentityPublic, bobSignedPrekeyPublic, bobOneTimePrekeyPublic) {
+                    const result = wasmModule.x3dh_initiate(aliceIdentityPrivate, aliceEphemeralPrivate, bobIdentityPublic, bobSignedPrekeyPublic, bobOneTimePrekeyPublic);
+                    return { sharedSecret: result.shared_secret, associatedData: result.associated_data };
+                },
+                async encryptMessage(sharedSecret, plaintext, messageNumber) {
+                    const result = wasmModule.encrypt_message(sharedSecret, plaintext, messageNumber);
+                    return { ciphertext: result.ciphertext, messageKey: result.message_key, messageNumber };
+                }
+            };
+            
+            setWasmInstance(wasmWrapper);
+            setWasmAvailable(true);
+        } catch (error) {
+            console.warn('Real WASM module failed to load, using mock:', error);
+            setWasmInstance(mockWasmImplementation);
+            setWasmAvailable(false);
+        }
+    };
 
     const runBenchmarks = async () => {
         setLoading(true);
+        setError('');
         
-        // Simulate performance results
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        setResults({
-            keyGeneration: { js: 45.2, wasm: 12.1 },
-            signing: { js: 23.7, wasm: 8.3 },
-            x3dh: { js: 156.8, wasm: 38.4 },
-            encryption: { js: 15.1, wasm: 4.7 }
-        });
-        
-        setLoading(false);
+        try {
+            const benchmarkResults = {
+                keyGeneration: { js: 0, wasm: 0 },
+                signing: { js: 0, wasm: 0 },
+                x3dh: { js: 0, wasm: 0 },
+                encryption: { js: 0, wasm: 0 }
+            };
+
+            const iterations = 10;
+            console.log(`🔬 Running ${iterations} iterations of each benchmark...`);
+
+            // Benchmark JavaScript Implementation
+            if (crypto) {
+                console.log('📊 Benchmarking JavaScript operations...');
+                
+                // Key Generation Benchmark
+                let start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await crypto.generateSignalSigningKeyPair();
+                }
+                benchmarkResults.keyGeneration.js = (performance.now() - start) / iterations;
+
+                // X3DH Benchmark (simplified for performance testing)
+                start = performance.now();
+                for (let i = 0; i < Math.min(5, iterations); i++) {
+                    const alice = await crypto.initializeSignalUser(`Alice${i}`);
+                    const bob = await crypto.initializeSignalUser(`Bob${i}`);
+                    const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
+                    await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
+                }
+                benchmarkResults.x3dh.js = (performance.now() - start) / Math.min(5, iterations);
+
+                console.log('✅ JavaScript benchmarks completed');
+            }
+
+            // Benchmark WASM Implementation
+            if (wasmInstance) {
+                console.log('📊 Benchmarking WASM operations...');
+
+                // Key Generation Benchmark
+                let start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await wasmInstance.generateIdentityKeyPair();
+                }
+                benchmarkResults.keyGeneration.wasm = (performance.now() - start) / iterations;
+
+                // Signing Benchmark
+                const testKey = await wasmInstance.generateIdentityKeyPair();
+                const testData = new TextEncoder().encode('benchmark test data for signing operations');
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await wasmInstance.signData(testKey.privateKey, testData);
+                }
+                benchmarkResults.signing.wasm = (performance.now() - start) / iterations;
+
+                // X3DH Benchmark (simplified)
+                start = performance.now();
+                for (let i = 0; i < Math.min(5, iterations); i++) {
+                    const alice = await wasmInstance.generateIdentityKeyPair();
+                    const bob = await wasmInstance.generateIdentityKeyPair();
+                    const ephemeral = await wasmInstance.generateEphemeralKeyPair();
+                    const prekey = await wasmInstance.generateSignedPrekey();
+                    await wasmInstance.x3dhInitiate(
+                        alice.privateKey,
+                        ephemeral.privateKey,
+                        bob.publicKey,
+                        prekey.publicKey,
+                        null
+                    );
+                }
+                benchmarkResults.x3dh.wasm = (performance.now() - start) / Math.min(5, iterations);
+
+                // Encryption Benchmark
+                const sharedSecret = new Uint8Array(32).fill(42);
+                const message = new TextEncoder().encode('This is a benchmark message for encryption performance testing');
+                start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    await wasmInstance.encryptMessage(sharedSecret, message, i + 1);
+                }
+                benchmarkResults.encryption.wasm = (performance.now() - start) / iterations;
+
+                console.log('✅ WASM benchmarks completed');
+            }
+
+            setResults({
+                ...benchmarkResults,
+                iterations,
+                wasmAvailable,
+                timestamp: Date.now()
+            });
+            
+        } catch (err) {
+            console.error('Benchmark error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateSpeedup = (jsTime, wasmTime) => {
+        if (wasmTime === 0) return 'N/A';
+        return (jsTime / wasmTime).toFixed(2) + 'x';
     };
 
     return (
         <CryptoDemo title="WASM Performance Benchmarks" icon={<SpeedIcon />}>
-            <Typography paragraph>
-                Detailed performance comparison focusing on individual cryptographic operations.
-            </Typography>
-            
-            <Button 
-                variant="contained" 
-                onClick={runBenchmarks}
-                disabled={loading}
-                startIcon={<SpeedIcon />}
-            >
-                {loading ? 'Benchmarking...' : 'Run Performance Tests'}
-            </Button>
+            <Box sx={{ mb: 3 }}>
+                <Typography paragraph>
+                    Detailed performance comparison focusing on individual cryptographic operations.
+                    This benchmark runs actual cryptographic functions and measures their execution time.
+                </Typography>
+                
+                {/* WASM Status */}
+                <Paper sx={{ p: 2, mb: 3, bgcolor: wasmAvailable ? 'success.light' : 'warning.light' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                        <WebAssemblyIcon color={wasmAvailable ? 'success' : 'warning'} />
+                        <Typography variant="h6">
+                            WebAssembly Status: {wasmAvailable ? 'Available' : 'Using Mock Implementation'}
+                        </Typography>
+                    </Box>
+                    <Typography variant="body2">
+                        {wasmAvailable 
+                            ? '✅ WASM module loaded successfully. Real performance comparison available.'
+                            : '⚠️ WASM module not available. Using mock implementation with simulated timings.'
+                        }
+                    </Typography>
+                </Paper>
+                
+                <Button 
+                    variant="contained" 
+                    onClick={runBenchmarks}
+                    disabled={loading}
+                    startIcon={<SpeedIcon />}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                >
+                    {loading ? 'Running Benchmarks...' : 'Run Performance Tests'}
+                </Button>
+
+                <OperationStatus loading={loading} error={error} success={results !== null} />
+            </Box>
 
             {results && (
                 <Box sx={{ mt: 3 }}>
-                    {Object.entries(results).map(([operation, times]) => (
-                        <Paper key={operation} sx={{ p: 2, mb: 2 }}>
+                    <Alert severity="info" sx={{ mb: 3 }}>
+                        <Typography variant="body2">
+                            <strong>Benchmark Results</strong><br />
+                            Executed {results.iterations} iterations per operation. 
+                            Times shown are averages per operation in milliseconds.
+                            {results.wasmAvailable ? ' Real WASM performance.' : ' Mock implementation with simulated timings.'}
+                        </Typography>
+                    </Alert>
+
+                    {/* Performance Summary */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom color="warning.main">
+                                        🟨 JavaScript Performance
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Using Web Crypto API
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom color="success.main">
+                                        🦀 WASM Performance
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {wasmAvailable ? 'Rust-compiled WebAssembly' : 'Mock implementation'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+
+                    {/* Detailed Results */}
+                    {Object.entries(results)
+                        .filter(([key]) => !['iterations', 'wasmAvailable', 'timestamp'].includes(key))
+                        .map(([operation, times]) => (
+                        <Paper key={operation} sx={{ p: 3, mb: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textTransform: 'capitalize' }}>
-                                {operation.replace(/([A-Z])/g, ' $1')}
+                                {operation.replace(/([A-Z])/g, ' $1')} Performance
                             </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={6}>
-                                    <Typography>JavaScript: {times.js}ms</Typography>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} sm={4}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary">JavaScript</Typography>
+                                        <Typography variant="h4" color="warning.main">
+                                            {times.js > 0 ? `${times.js.toFixed(2)}ms` : 'N/A'}
+                                        </Typography>
+                                    </Box>
                                 </Grid>
-                                <Grid item xs={6}>
-                                    <Typography>WASM: {times.wasm}ms</Typography>
-                                    <Chip 
-                                        label={`${(times.js / times.wasm).toFixed(1)}x faster`}
-                                        color="success"
-                                        size="small"
-                                    />
+                                <Grid item xs={12} sm={4}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary">WASM</Typography>
+                                        <Typography variant="h4" color="success.main">
+                                            {times.wasm > 0 ? `${times.wasm.toFixed(2)}ms` : 'N/A'}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary">Speedup</Typography>
+                                        <Typography variant="h4" color="primary">
+                                            {calculateSpeedup(times.js, times.wasm)}
+                                        </Typography>
+                                        {times.js > 0 && times.wasm > 0 && times.js > times.wasm && (
+                                            <Chip
+                                                label="WASM Faster"
+                                                color="success"
+                                                size="small"
+                                                sx={{ mt: 1 }}
+                                            />
+                                        )}
+                                    </Box>
                                 </Grid>
                             </Grid>
                         </Paper>
                     ))}
+
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                        * Results may vary based on browser, device performance, and system load.
+                        Benchmarks run {results.iterations} iterations each for accuracy.
+                    </Typography>
                 </Box>
             )}
         </CryptoDemo>
