@@ -1268,46 +1268,28 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         };
         
         if (isInitiator) {
-            // Initiator: Generate initial DH key pair and sending chain
+            // Initiator: Generate initial DH key pair and derive sending chain directly from root key
+            // This ensures Bob can derive the same receiving chain from his root key
             console.log('🔑 Generating initial DH key pair for initiator');
             state.sendingDHKeyPair = await generateSignalKeyPair();
             
-            if (remotePublicKey) {
-                // Perform initial DH and derive sending chain
-                const dhOutput = await performSignalDH(
-                    state.sendingDHKeyPair.privateKey,
-                    remotePublicKey
-                );
-                
-                const hkdfOutput = await doubleRatchetHKDF(
-                    new Uint8Array(initialRootKey),
-                    dhOutput,
-                    DOUBLE_RATCHET_INFO_CHAIN_KEY,
-                    64 // 32 bytes root key + 32 bytes chain key
-                );
-                
-                state.rootKey = hkdfOutput.slice(0, 32);
-                state.sendingChainKey = hkdfOutput.slice(32, 64);
-                console.log('✓ Initial sending chain derived for initiator');
-            } else {
-                // No remote key provided - initiator starts conversation with direct key derivation
-                // Bob will need to derive his receiving chain to match this sending chain
-                const hkdfOutput = await doubleRatchetHKDF(
-                    new Uint8Array(0), // Empty salt for direct derivation
-                    new Uint8Array(initialRootKey),
-                    DOUBLE_RATCHET_INFO_CHAIN_KEY,
-                    64 // 32 bytes root key + 32 bytes chain key
-                );
-                
-                state.rootKey = hkdfOutput.slice(0, 32);
-                state.sendingChainKey = hkdfOutput.slice(32, 64);
-                console.log('✓ Initial sending chain derived directly from root key:', {
-                    rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
-                    sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
-                });
-            }
+            // Derive initial sending chain directly from root key for first message
+            // Bob will derive the same receiving chain from his root key
+            const hkdfOutput = await doubleRatchetHKDF(
+                new Uint8Array(0), // Empty salt for direct derivation
+                new Uint8Array(initialRootKey),
+                DOUBLE_RATCHET_INFO_CHAIN_KEY,
+                64 // 32 bytes root key + 32 bytes chain key
+            );
+            
+            state.rootKey = hkdfOutput.slice(0, 32);
+            state.sendingChainKey = hkdfOutput.slice(32, 64);
+            console.log('✓ Initial sending chain derived directly from root key:', {
+                rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
+                sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
+            });
         } else {
-            // Responder: Start with receiving mode, will create sending chain on first send
+            // Responder: Start with receiving mode, will derive receiving chain from root key on first message
             console.log('📥 Responder initialized, waiting for first message');
         }
         
@@ -1362,7 +1344,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         
         let receivingDHOutput;
         // Check if this is the responder's first message from the initiator
-        const isResponderFirstReceive = !state.receivingChainKey && state.receivingMessageNumber === 0 && !state.sendingDHKeyPair;
+        const isResponderFirstReceive = !state.isInitiator && !state.receivingChainKey && state.receivingMessageNumber === 0;
         
         if (isResponderFirstReceive) {
             console.log('🔄 First receive: matching initiator\'s direct root key derivation (responder only)');
@@ -1634,9 +1616,9 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             });
         }
         
-        // Prepare AAD for verification
+        // Prepare AAD for verification - ensure same format as encryption
         const aad = new Uint8Array(dhPublicKey.length + 8);
-        aad.set(new Uint8Array(dhPublicKey));
+        aad.set(dhPublicKey); // dhPublicKey is already a Uint8Array from message envelope
         const view = new DataView(aad.buffer, dhPublicKey.length);
         view.setUint32(0, messageNumber, true);
         view.setUint32(4, previousChainLength, true);

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">65.94% </span>
+                <span class="strong">66.48% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>486/737</span>
+                <span class='fraction'>486/731</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">61.11% </span>
+                <span class="strong">61.73% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>121/198</span>
+                <span class='fraction'>121/196</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">65.88% </span>
+                <span class="strong">66.43% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>477/724</span>
+                <span class='fraction'>477/718</span>
             </div>
         
             
@@ -1931,25 +1931,7 @@
 <a name='L1866'></a><a href='#L1866'>1866</a>
 <a name='L1867'></a><a href='#L1867'>1867</a>
 <a name='L1868'></a><a href='#L1868'>1868</a>
-<a name='L1869'></a><a href='#L1869'>1869</a>
-<a name='L1870'></a><a href='#L1870'>1870</a>
-<a name='L1871'></a><a href='#L1871'>1871</a>
-<a name='L1872'></a><a href='#L1872'>1872</a>
-<a name='L1873'></a><a href='#L1873'>1873</a>
-<a name='L1874'></a><a href='#L1874'>1874</a>
-<a name='L1875'></a><a href='#L1875'>1875</a>
-<a name='L1876'></a><a href='#L1876'>1876</a>
-<a name='L1877'></a><a href='#L1877'>1877</a>
-<a name='L1878'></a><a href='#L1878'>1878</a>
-<a name='L1879'></a><a href='#L1879'>1879</a>
-<a name='L1880'></a><a href='#L1880'>1880</a>
-<a name='L1881'></a><a href='#L1881'>1881</a>
-<a name='L1882'></a><a href='#L1882'>1882</a>
-<a name='L1883'></a><a href='#L1883'>1883</a>
-<a name='L1884'></a><a href='#L1884'>1884</a>
-<a name='L1885'></a><a href='#L1885'>1885</a>
-<a name='L1886'></a><a href='#L1886'>1886</a>
-<a name='L1887'></a><a href='#L1887'>1887</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1869'></a><a href='#L1869'>1869</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3220,24 +3202,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3255,7 +3220,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -5105,46 +5069,28 @@ export const CryptographyProvider = ({ entropy = "", children }) =&gt; {
         };
         
 <span class="cstat-no" title="statement not covered" >        if (isInitiator) {</span>
-            // Initiator: Generate initial DH key pair and sending chain
+            // Initiator: Generate initial DH key pair and derive sending chain directly from root key
+            // This ensures Bob can derive the same receiving chain from his root key
 <span class="cstat-no" title="statement not covered" >            console.log('🔑 Generating initial DH key pair for initiator');</span>
 <span class="cstat-no" title="statement not covered" >            state.sendingDHKeyPair = await generateSignalKeyPair();</span>
             
-<span class="cstat-no" title="statement not covered" >            if (remotePublicKey) {</span>
-                // Perform initial DH and derive sending chain
-                const dhOutput = <span class="cstat-no" title="statement not covered" >await performSignalDH(</span>
-                    state.sendingDHKeyPair.privateKey,
-                    remotePublicKey
-                );
-                
-                const hkdfOutput = <span class="cstat-no" title="statement not covered" >await doubleRatchetHKDF(</span>
-                    new Uint8Array(initialRootKey),
-                    dhOutput,
-                    DOUBLE_RATCHET_INFO_CHAIN_KEY,
-                    64 // 32 bytes root key + 32 bytes chain key
-                );
-                
-<span class="cstat-no" title="statement not covered" >                state.rootKey = hkdfOutput.slice(0, 32);</span>
-<span class="cstat-no" title="statement not covered" >                state.sendingChainKey = hkdfOutput.slice(32, 64);</span>
-<span class="cstat-no" title="statement not covered" >                console.log('✓ Initial sending chain derived for initiator');</span>
-            } else {
-                // No remote key provided - initiator starts conversation with direct key derivation
-                // Bob will need to derive his receiving chain to match this sending chain
-                const hkdfOutput = <span class="cstat-no" title="statement not covered" >await doubleRatchetHKDF(</span>
-                    new Uint8Array(0), // Empty salt for direct derivation
-                    new Uint8Array(initialRootKey),
-                    DOUBLE_RATCHET_INFO_CHAIN_KEY,
-                    64 // 32 bytes root key + 32 bytes chain key
-                );
-                
-<span class="cstat-no" title="statement not covered" >                state.rootKey = hkdfOutput.slice(0, 32);</span>
-<span class="cstat-no" title="statement not covered" >                state.sendingChainKey = hkdfOutput.slice(32, 64);</span>
-<span class="cstat-no" title="statement not covered" >                console.log('✓ Initial sending chain derived directly from root key:', {</span>
-                    rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(<span class="fstat-no" title="function not covered" >b </span>=&gt; <span class="cstat-no" title="statement not covered" >b.toString(16).padStart(2, '0'))</span>.join(''),
-                    sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(<span class="fstat-no" title="function not covered" >b </span>=&gt; <span class="cstat-no" title="statement not covered" >b.toString(16).padStart(2, '0'))</span>.join('')
-                });
-            }
+            // Derive initial sending chain directly from root key for first message
+            // Bob will derive the same receiving chain from his root key
+            const hkdfOutput = <span class="cstat-no" title="statement not covered" >await doubleRatchetHKDF(</span>
+                new Uint8Array(0), // Empty salt for direct derivation
+                new Uint8Array(initialRootKey),
+                DOUBLE_RATCHET_INFO_CHAIN_KEY,
+                64 // 32 bytes root key + 32 bytes chain key
+            );
+            
+<span class="cstat-no" title="statement not covered" >            state.rootKey = hkdfOutput.slice(0, 32);</span>
+<span class="cstat-no" title="statement not covered" >            state.sendingChainKey = hkdfOutput.slice(32, 64);</span>
+<span class="cstat-no" title="statement not covered" >            console.log('✓ Initial sending chain derived directly from root key:', {</span>
+                rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(<span class="fstat-no" title="function not covered" >b </span>=&gt; <span class="cstat-no" title="statement not covered" >b.toString(16).padStart(2, '0'))</span>.join(''),
+                sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(<span class="fstat-no" title="function not covered" >b </span>=&gt; <span class="cstat-no" title="statement not covered" >b.toString(16).padStart(2, '0'))</span>.join('')
+            });
         } else {
-            // Responder: Start with receiving mode, will create sending chain on first send
+            // Responder: Start with receiving mode, will derive receiving chain from root key on first message
 <span class="cstat-no" title="statement not covered" >            console.log('📥 Responder initialized, waiting for first message');</span>
         }
         
@@ -5199,7 +5145,7 @@ export const CryptographyProvider = ({ entropy = "", children }) =&gt; {
         
         let receivingDHOutput;
         // Check if this is the responder's first message from the initiator
-        const isResponderFirstReceive = <span class="cstat-no" title="statement not covered" >!state.receivingChainKey &amp;&amp; state.receivingMessageNumber === 0 &amp;&amp; !state.sendingDHKeyPair;</span>
+        const isResponderFirstReceive = <span class="cstat-no" title="statement not covered" >!state.isInitiator &amp;&amp; !state.receivingChainKey &amp;&amp; state.receivingMessageNumber === 0;</span>
         
 <span class="cstat-no" title="statement not covered" >        if (isResponderFirstReceive) {</span>
 <span class="cstat-no" title="statement not covered" >            console.log('🔄 First receive: matching initiator\'s direct root key derivation (responder only)');</span>
@@ -5471,9 +5417,9 @@ export const CryptographyProvider = ({ entropy = "", children }) =&gt; {
             });
         }
         
-        // Prepare AAD for verification
+        // Prepare AAD for verification - ensure same format as encryption
         const aad = <span class="cstat-no" title="statement not covered" >new Uint8Array(dhPublicKey.length + 8);</span>
-<span class="cstat-no" title="statement not covered" >        aad.set(new Uint8Array(dhPublicKey));</span>
+<span class="cstat-no" title="statement not covered" >        aad.set(dhPublicKey); </span>// dhPublicKey is already a Uint8Array from message envelope
         const view = <span class="cstat-no" title="statement not covered" >new DataView(aad.buffer, dhPublicKey.length);</span>
 <span class="cstat-no" title="statement not covered" >        view.setUint32(0, messageNumber, true);</span>
 <span class="cstat-no" title="statement not covered" >        view.setUint32(4, previousChainLength, true);</span>
@@ -5728,7 +5674,7 @@ export default CryptographyProvider;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-14T08:21:07.725Z
+                at 2025-08-14T09:18:56.912Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
