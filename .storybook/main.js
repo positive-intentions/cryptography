@@ -45,11 +45,22 @@ const moduleRedundency = ({
   const urlPings = await Promise.all(availabilityPromises)
     .catch(error => {
       // Handle the case where none of the URLs are available
-      reject(new Error('None of the URLs responded positively: ' + error.message));
+      console.warn('Module federation remote not available:', error.message);
+      return [];
     });
   
-  const firstAvailableUrl = urlPings
-    .filter(url => !!url)
+  const availableUrls = urlPings.filter(url => !!url);
+  
+  if (availableUrls.length === 0) {
+    console.warn('No remote URLs available for', '${moduleName}');
+    resolve({
+      get: () => Promise.reject(new Error('Remote module not available')),
+      init: () => {}
+    });
+    return;
+  }
+  
+  const firstAvailableUrl = availableUrls
     .reduce((lowest, item) => {
         return item.ping < lowest.ping ? item : lowest;
     });
