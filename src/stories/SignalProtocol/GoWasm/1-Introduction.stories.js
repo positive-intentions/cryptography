@@ -1,0 +1,191 @@
+import React from 'react';
+import { 
+    Box, Typography, Paper, Alert, Card, CardContent, List, ListItem, ListItemText, 
+    Divider, Chip
+} from '@mui/material';
+import SecurityIcon from '@mui/icons-material/Security';
+import { CryptographyProvider } from '../../components/Cryptography';
+import { CryptoDemo, CodeDisplay } from '../../components/shared';
+
+const IntroductionStory = () => {
+    return (
+        <CryptoDemo title="Signal Protocol: Introduction" icon={<SecurityIcon />}>
+            <Box sx={{ mb: 3 }}>
+                <Alert severity="info" sx={{ mb: 3 }}>
+                    <Typography variant="body1">
+                        <strong>Welcome to the Signal Protocol!</strong><br />
+                        This is the same encryption that WhatsApp, Signal, and Facebook Messenger use to keep your messages private.
+                        We'll learn how it works step by step, like building a secret communication system from scratch!
+                    </Typography>
+                </Alert>
+
+                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
+                    📚 What is the Signal Protocol?
+                </Typography>
+                <Paper sx={{ p: 3, mb: 3 }}>
+                    <Typography variant="body1" paragraph>
+                        Imagine you want to send a secret message to your friend, but you're worried someone might read it.
+                        The Signal Protocol is like having an unbreakable lockbox that only you and your friend can open.
+                    </Typography>
+                    <Typography variant="body1" paragraph>
+                        <strong>The cool part?</strong> Even if someone steals your keys tomorrow, they can't read the messages 
+                        you sent yesterday! This is called "Perfect Forward Secrecy" - past messages stay secret forever.
+                    </Typography>
+                </Paper>
+
+                <Typography variant="h5" gutterBottom>
+                    🔑 Key Concepts (ELI15)
+                </Typography>
+                <List>
+                    <ListItem>
+                        <ListItemText 
+                            primary="🔐 End-to-End Encryption"
+                            secondary="Your messages are locked from the moment you send them until your friend opens them. Nobody in between (not even the app company) can read them."
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemText 
+                            primary="🎭 Public and Private Keys"
+                            secondary="Think of it like a mailbox: anyone can put mail in (public key), but only you have the key to open it (private key)."
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemText 
+                            primary="🔄 Double Ratchet"
+                            secondary="Like changing your password after every message - but automatically! Each message gets its own unique lock."
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemText 
+                            primary="🤝 X3DH (Extended Triple Diffie-Hellman)"
+                            secondary="A fancy handshake that lets you start talking securely even if your friend is offline."
+                        />
+                    </ListItem>
+                </List>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography variant="h5" gutterBottom>
+                    🎯 What We'll Build
+                </Typography>
+                <Card>
+                    <CardContent>
+                        <Typography variant="body1" paragraph>
+                            In this tutorial series, we'll build a complete secure messaging system step by step:
+                        </Typography>
+                        <Box sx={{ pl: 2 }}>
+                            <Typography variant="body2" paragraph>
+                                <strong>Step 1:</strong> Generate identity keys (your permanent ID card)
+                            </Typography>
+                            <Typography variant="body2" paragraph>
+                                <strong>Step 2:</strong> Create pre-keys (temporary keys for when you're offline)
+                            </Typography>
+                            <Typography variant="body2" paragraph>
+                                <strong>Step 3:</strong> Exchange keys with a friend (the secret handshake)
+                            </Typography>
+                            <Typography variant="body2" paragraph>
+                                <strong>Step 4:</strong> Send encrypted messages (the actual conversation)
+                            </Typography>
+                            <Typography variant="body2" paragraph>
+                                <strong>Step 5:</strong> Understand the Double Ratchet (automatic security updates)
+                            </Typography>
+                        </Box>
+                    </CardContent>
+                </Card>
+
+                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
+                    💻 The Technology
+                </Typography>
+                <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50' }}>
+                    <Typography variant="body1" paragraph>
+                        We're using <Chip label="libsignal-protocol-go" size="small" color="primary" /> - the same 
+                        battle-tested library used in production, compiled to WebAssembly so it runs in your browser!
+                    </Typography>
+                    <CodeDisplay 
+                        code={`// This is real Signal Protocol code!
+// It's written in Go and compiled to WebAssembly
+
+// Generate keys for Alice
+const alice = await SignalProtocol.generateIdentityKeyPair();
+console.log("Alice's public key:", alice.publicKey);
+// Output: "BGKz9Ew3..." (base64 encoded)
+
+// The private key stays secret!
+console.log("Alice's private key: [HIDDEN - Never share this!]");`}
+                        language="javascript"
+                    />
+                </Paper>
+
+                <Alert severity="success">
+                    <Typography variant="body2">
+                        <strong>Fun Fact:</strong> The math behind this protocol is so good that even with all the world's 
+                        computers working together, it would take longer than the age of the universe to crack a single message!
+                    </Typography>
+                </Alert>
+
+                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
+                    🚀 Why This Matters
+                </Typography>
+                <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                    <CardContent>
+                        <Typography variant="body1" paragraph>
+                            In a world where everything is online, privacy is a fundamental right. The Signal Protocol ensures:
+                        </Typography>
+                        <List dense>
+                            <ListItem>
+                                <ListItemText primary="✅ Your conversations stay private" />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemText primary="✅ No one can impersonate you" />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemText primary="✅ Messages can't be tampered with" />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemText primary="✅ Past messages stay secret even if keys are stolen" />
+                            </ListItem>
+                        </List>
+                        <Typography variant="body2" sx={{ mt: 2 }}>
+                            Ready to learn how it all works? Let's start with generating your identity keys! →
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Box>
+        </CryptoDemo>
+    );
+};
+
+export default {
+    title: 'Signal Protocol/Go WASM Tutorial/1. Introduction',
+    component: CryptographyProvider,
+    parameters: {
+        docs: {
+            description: {
+                component: `
+# Signal Protocol Introduction - Learn Secure Messaging!
+
+## What You'll Learn
+- How WhatsApp and Signal keep messages private
+- The basics of public key cryptography
+- Why the Signal Protocol is considered unbreakable
+- How to build your own secure messaging system
+
+## Prerequisites
+- Basic understanding of JavaScript
+- Curiosity about cryptography
+- No advanced math required!
+
+## The Journey Ahead
+We'll go from zero to hero in understanding one of the most important protocols on the internet.
+By the end, you'll understand exactly how billions of messages stay private every day.
+                `
+            }
+        }
+    }
+};
+
+export const Introduction = () => (
+    <CryptographyProvider>
+        <IntroductionStory />
+    </CryptographyProvider>
+);
