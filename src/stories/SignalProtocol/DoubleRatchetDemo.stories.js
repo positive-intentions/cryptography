@@ -11,7 +11,7 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import SendIcon from '@mui/icons-material/Send';
 import KeyIcon from '@mui/icons-material/VpnKey';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 // Define the component first
 const DoubleRatchetDemo = () => {

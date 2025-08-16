@@ -14,7 +14,7 @@ import KeyIcon from '@mui/icons-material/VpnKey';
 import MessageIcon from '@mui/icons-material/Message';
 import LockIcon from '@mui/icons-material/Lock';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 // Mock WASM Double Ratchet implementation for demo purposes
 const mockWasmDoubleRatchet = {

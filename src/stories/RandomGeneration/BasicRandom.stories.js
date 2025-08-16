@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
 import {
   Button,
   TextField,
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Typography,
   Slider,
-  Stack
-} from '@mui/material';
-import { Refresh, Casino } from '@mui/icons-material';
-
-import { Button as Button2, ThemeProvider } from 'ui';
+  Stack,
+  RefreshIcon as Refresh,
+  Casino,
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus
+} from 'ui';
 
 export default {
   title: 'Cryptography/Random Generation/Basic Random',
@@ -49,12 +46,10 @@ const RandomStringDemo = () => {
   };
 
   return (
-    <ThemeProvider>
-
-      <CryptoDemo
-        title="Cryptographically Secure Random Strings"
-        description="Generate random strings using crypto.getRandomValues() for maximum security. Perfect for tokens, IDs, and passwords."
-      >
+    <CryptoDemo
+      title="Cryptographically Secure Random Strings"
+      description="Generate random strings using crypto.getRandomValues() for maximum security. Perfect for tokens, IDs, and passwords."
+    >
         <Box className="demo-section">
           <Stack spacing={3}>
             <Box>
@@ -92,16 +87,6 @@ const RandomStringDemo = () => {
               Generate Random String
             </Button>
 
-            <Button2
-              variant="contained"
-              onClick={generateRandom}
-              disabled={loading}
-              startIcon={<Casino />}
-              size="large"
-            >
-              Generate Random String!!11hbhb
-            </Button2>
-
             <OperationStatus loading={loading} />
 
             {result && (
@@ -136,7 +121,6 @@ const RandomStringDemo = () => {
           </Typography>
         </Box>
       </CryptoDemo>
-    </ThemeProvider>
   );
 };
 

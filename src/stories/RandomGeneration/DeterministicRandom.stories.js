@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
 import { 
+  CryptoDemo, 
+  CodeDisplay, 
+  OperationStatus,
   Button, 
   TextField, 
   Box, 
@@ -10,9 +12,10 @@ import {
   Alert,
   Chip,
   Paper,
-  Grid
-} from '@mui/material';
-import { Autorenew, Science } from '@mui/icons-material';
+  Grid,
+  Autorenew, 
+  Science 
+} from 'ui';
 
 export default {
   title: 'Cryptography/Random Generation/Deterministic Random',

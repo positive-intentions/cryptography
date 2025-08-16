@@ -17,7 +17,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import InfoIcon from '@mui/icons-material/Info';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 // Load Go WASM support
 const loadGoWasm = async () => {

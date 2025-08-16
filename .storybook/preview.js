@@ -3,23 +3,24 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import '@fontsource/material-icons';
+import React from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CssBaseline } from '@mui/material';
 
-// import { CssBaseline, ThemeProvider } from '@mui/material';
-// import { withThemeFromJSXProvider } from '@storybook/addon-themes';
-// import { lightTheme, darkTheme } from '../src/themes.js';
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
 
-// /* snipped for brevity */
-
-// export const decorators = [
-//   withThemeFromJSXProvider({
-//   themes: {
-//     light: lightTheme,
-//     dark: darkTheme,
-//   },
-//   defaultTheme: 'light',
-//   Provider: ThemeProvider,
-//   GlobalStyles: CssBaseline,
-// })];
+export const decorators = [
+  (Story) => (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Story />
+    </ThemeProvider>
+  ),
+];
 
 /** @type { import('@storybook/react-webpack5').Preview } */
 const preview = {

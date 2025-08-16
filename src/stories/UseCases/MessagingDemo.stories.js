@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 import { 
   Button, 
   TextField, 

@@ -17,7 +17,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { CryptographyProvider, useCryptography } from '../../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 const AdvancedConceptsStory = () => {
     const [expandedPanel, setExpandedPanel] = useState('panel1');

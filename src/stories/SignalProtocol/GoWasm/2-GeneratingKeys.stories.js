@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-    Box, Typography, Button, Card, CardContent, Alert, Paper, 
-    Grid, CircularProgress, Chip, List, ListItem, ListItemText,
-    Accordion, AccordionSummary, AccordionDetails
-} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import KeyIcon from '@mui/icons-material/VpnKey';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PersonIcon from '@mui/icons-material/Person';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import PersonIcon from '@mui/icons-material/Person';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import KeyIcon from '@mui/icons-material/VpnKey';
+import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    Alert,
+    Box,
+    Button, Card, CardContent,
+    CircularProgress,
+    Grid,
+    List, ListItem, ListItemText,
+    Paper,
+    Typography
+} from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { CodeDisplay, CryptoDemo, OperationStatus } from 'ui';
 import { CryptographyProvider } from '../../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../../components/shared';
 
 const GeneratingKeysStory = () => {
     const [loading, setLoading] = useState(false);

@@ -6,7 +6,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import KeyIcon from '@mui/icons-material/VpnKey';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 // Define the component first
 const SignalProtocolDemo = () => {

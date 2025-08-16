@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  TextField, 
-  Box, 
+import {
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus,
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Card,
@@ -17,18 +19,15 @@ import {
   Tabs,
   Tab,
   IconButton,
-  Slider
-} from '@mui/material';
-import { 
-  VpnKey, 
-  Lock, 
-  LockOpen, 
+  Slider,
+  VpnKey,
+  Lock,
+  LockOpen,
   Speed,
-  Storage,
-  Refresh,
+  RefreshIcon as Refresh,
   Download,
   Upload
-} from '@mui/icons-material';
+} from 'ui';
 
 export default {
   title: 'Cryptography/Symmetric/AES Encryption',

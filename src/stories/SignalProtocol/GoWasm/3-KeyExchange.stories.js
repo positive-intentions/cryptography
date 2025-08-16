@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-    Box, Typography, Button, Card, CardContent, Alert, Paper, 
-    Grid, CircularProgress, Stepper, Step, StepLabel, StepContent,
-    Chip, Avatar, Divider
-} from '@mui/material';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import LockIcon from '@mui/icons-material/Lock';
-import PersonIcon from '@mui/icons-material/Person';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HandshakeIcon from '@mui/icons-material/Handshake';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import {
+    Alert,
+    Avatar,
+    Box,
+    Button, Card, CardContent,
+    CircularProgress,
+    Divider,
+    Grid,
+    Paper,
+    Step,
+    StepContent,
+    StepLabel,
+    Stepper,
+    Typography
+} from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { CodeDisplay, CryptoDemo, OperationStatus } from 'ui';
 import { CryptographyProvider } from '../../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../../components/shared';
 
 const KeyExchangeStory = () => {
     const [loading, setLoading] = useState(false);

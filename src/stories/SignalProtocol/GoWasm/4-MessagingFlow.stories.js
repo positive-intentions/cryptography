@@ -11,7 +11,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PersonIcon from '@mui/icons-material/Person';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { CryptographyProvider, useCryptography } from '../../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 const MessagingFlowStory = () => {
     const [loading, setLoading] = useState(false);

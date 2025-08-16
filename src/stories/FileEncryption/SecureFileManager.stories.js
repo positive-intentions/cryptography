@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  TextField, 
-  Box, 
+import {
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus,
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Card,
@@ -26,24 +28,22 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  LinearProgress
-} from '@mui/material';
-import { 
-  Lock, 
-  LockOpen, 
+  LinearProgress,
+  Lock,
+  LockOpen,
   Upload,
   Download,
   Delete,
   Visibility,
   VisibilityOff,
-  Security,
+  SecurityIcon as Security,
   Folder,
   InsertDriveFile,
   Image,
   Description,
   VideoFile,
   AudioFile
-} from '@mui/icons-material';
+} from 'ui';
 
 export default {
   title: 'Cryptography/File Encryption/Secure File Manager',

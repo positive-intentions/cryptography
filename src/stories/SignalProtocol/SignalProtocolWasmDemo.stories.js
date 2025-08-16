@@ -8,7 +8,7 @@ import MemoryIcon from '@mui/icons-material/Memory';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import WebAssemblyIcon from '@mui/icons-material/Memory'; // Using Memory icon as WebAssembly icon
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 // Mock WASM implementation for demo purposes
 const mockWasmImplementation = {

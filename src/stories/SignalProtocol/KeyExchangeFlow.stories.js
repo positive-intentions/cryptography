@@ -14,7 +14,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import MessageIcon from '@mui/icons-material/Message';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
+import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
 const KeyExchangeFlowDemo = () => {
   const crypto = useCryptography();

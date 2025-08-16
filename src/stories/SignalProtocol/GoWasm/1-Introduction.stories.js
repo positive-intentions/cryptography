@@ -1,15 +1,15 @@
 import React from 'react';
 import { 
     Box, Typography, Paper, Alert, Card, CardContent, List, ListItem, ListItemText, 
-    Divider, Chip
-} from '@mui/material';
-import SecurityIcon from '@mui/icons-material/Security';
+    Divider, Chip,
+    SecurityIcon as Security,
+    CryptoDemo, CodeDisplay
+} from 'ui';
 import { CryptographyProvider } from '../../components/Cryptography';
-import { CryptoDemo, CodeDisplay } from '../../components/shared';
 
 const IntroductionStory = () => {
     return (
-        <CryptoDemo title="Signal Protocol: Introduction" icon={<SecurityIcon />}>
+        <CryptoDemo title="Signal Protocol: Introduction" icon={<Security />}>
             <Box sx={{ mb: 3 }}>
                 <Alert severity="info" sx={{ mb: 3 }}>
                     <Typography variant="body1">

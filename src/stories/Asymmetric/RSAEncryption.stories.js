@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  TextField, 
-  Box, 
+import {
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus,
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Card,
@@ -17,16 +19,14 @@ import {
   Stepper,
   Grid,
   Paper,
-  Chip
-} from '@mui/material';
-import { 
-  VpnKey, 
-  Lock, 
-  LockOpen, 
+  Chip,
+  VpnKey,
+  Lock,
+  LockOpen,
   Person,
   Share,
-  Security
-} from '@mui/icons-material';
+  SecurityIcon as Security
+} from 'ui';
 
 export default {
   title: 'Cryptography/Asymmetric/RSA Encryption',

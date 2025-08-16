@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  TextField, 
-  Box, 
+import {
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus,
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Tab,
@@ -16,16 +18,14 @@ import {
   Alert,
   Grid,
   Card,
-  CardContent
-} from '@mui/material';
-import { 
-  Tag, 
-  Upload, 
+  CardContent,
+  Tag,
+  Upload,
   Clear,
   Speed,
   CheckCircle,
   Cancel
-} from '@mui/icons-material';
+} from 'ui';
 
 export default {
   title: 'Cryptography/Hashing/Hash Calculator',

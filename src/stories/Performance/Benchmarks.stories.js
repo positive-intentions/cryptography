@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from '../components/shared';
-import { 
-  Button, 
-  Box, 
+import {
+  CryptoDemo,
+  CodeDisplay,
+  OperationStatus,
+  Button,
+  Box,
   Typography,
   Stack,
   Card,
@@ -20,15 +22,13 @@ import {
   TableRow,
   LinearProgress,
   Alert,
-  Slider
-} from '@mui/material';
-import { 
-  Speed, 
+  Slider,
+  Speed,
   Timer,
-  Compare,
+  SwapHoriz as Compare,
   Assessment,
   TrendingUp
-} from '@mui/icons-material';
+} from 'ui';
 
 export default {
   title: 'Cryptography/Performance/Benchmarks',
