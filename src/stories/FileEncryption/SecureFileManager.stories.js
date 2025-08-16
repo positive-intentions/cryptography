@@ -29,7 +29,7 @@ import {
   DialogContent,
   DialogActions,
   LinearProgress,
-  Lock,
+  LockIcon as Lock,
   LockOpen,
   Upload,
   Download,
