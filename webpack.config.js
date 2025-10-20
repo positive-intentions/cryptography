@@ -87,6 +87,9 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'],
+    fallback: {
+      "crypto": false, // Use browser's window.crypto instead of Node.js crypto
+    },
   },
   devServer: {
     static: {
@@ -94,7 +97,7 @@ module.exports = {
     },
     hot: true,
     liveReload: true,
-    port: 8080,
+    port: 8083,
     open: true,
     historyApiFallback: true,
     client: {

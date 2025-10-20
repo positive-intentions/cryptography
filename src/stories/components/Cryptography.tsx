@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { sha3_512 } from "js-sha3";
 import Chance from "chance";
+import { MLSManager } from "../../crypto/MLS/MLSManager.tsx";
+import { SFrameManager } from "../../crypto/SFrame/SFrameManager.tsx";
 
 // Create Context
 const CryptographyContext = createContext<unknown>(null);
@@ -1897,6 +1899,10 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         serializeDoubleRatchetState,
         demonstrateDoubleRatchet,
         cleanupSkippedMessageKeys,
+        // MLS (Message Layer Security) - RFC 9420
+        MLSManager,
+        // SFrame (Secure Frame) - Real-time media encryption
+        SFrameManager,
         // Add more methods as needed
         chance,
     };
@@ -1912,5 +1918,9 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 export const useCryptography = () => {
     return useContext(CryptographyContext);
 };
+
+// Direct exports for standalone use (without Provider)
+export { MLSManager } from "../../crypto/MLS/MLSManager.tsx";
+export { SFrameManager } from "../../crypto/SFrame/SFrameManager.tsx";
 
 export default CryptographyProvider;

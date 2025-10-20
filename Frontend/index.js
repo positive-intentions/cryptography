@@ -81,7 +81,7 @@ eval("{\n\nif (false) // removed by dead control flow\n{} else {\n  module.expor
   \**********************/
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://chat/./src/index.ts?\n}");
+eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js-node_modules_ts-mls_di-f6be0b\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://chat/./src/index.ts?\n}");
 
 /***/ })
 
@@ -135,6 +135,36 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 				() => (module);
 /******/ 			__webpack_require__.d(getter, { a: getter });
 /******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/create fake namespace object */
+/******/ 	(() => {
+/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 		var leafPrototypes;
+/******/ 		// create a fake namespace object
+/******/ 		// mode & 1: value is a module id, require it
+/******/ 		// mode & 2: merge all properties of value into the ns
+/******/ 		// mode & 4: return value when already ns object
+/******/ 		// mode & 16: return value when it's Promise-like
+/******/ 		// mode & 8|1: behave like require
+/******/ 		__webpack_require__.t = function(value, mode) {
+/******/ 			if(mode & 1) value = this(value);
+/******/ 			if(mode & 8) return value;
+/******/ 			if(typeof value === 'object' && value) {
+/******/ 				if((mode & 4) && value.__esModule) return value;
+/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 			}
+/******/ 			var ns = Object.create(null);
+/******/ 			__webpack_require__.r(ns);
+/******/ 			var def = {};
+/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 			for(var current = mode & 2 && value; (typeof current == 'object' || typeof current == 'function') && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 			}
+/******/ 			def['default'] = () => (value);
+/******/ 			__webpack_require__.d(ns, def);
+/******/ 			return ns;
 /******/ 		};
 /******/ 	})();
 /******/ 	
