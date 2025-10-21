@@ -9,6 +9,8 @@ module.exports = {
     },
     moduleNameMapper: {
       '\\.(css|less|scss)$': 'identity-obj-proxy',
+      // MLS mock used because ts-mls is an ES module incompatible with Jest
+      // Real implementation is tested in Storybook (browser environment)
       '^.*/crypto/MLS/MLSManager\\.tsx$': '<rootDir>/src/__mocks__/crypto/MLS/MLSManager.tsx',
       '^.*/crypto/SFrame/SFrameManager\\.tsx$': '<rootDir>/src/__mocks__/crypto/SFrame/SFrameManager.tsx'
       // WASM files should not be mocked - they are a key output of this repo

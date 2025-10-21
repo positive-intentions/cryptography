@@ -101,6 +101,7 @@
     "@hpke/ml-kem": "^0.2.1",
     "@mui/icons-material": "^5.17.1",
     "@mui/material": "^5.15.6",
+    "@noble/ciphers": "^2.0.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@noble/post-quantum": "^0.5.2",
