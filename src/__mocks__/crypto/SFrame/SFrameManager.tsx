@@ -152,11 +152,13 @@ export class SFrameManager {
 
   /**
    * Rotate encryption keys
+   * RFC 9605: Frame counter should be reset on key rotation
    */
   async rotateKey(): Promise<number> {
     const newKeyId = this.currentKeyId + 1;
     await this.generateKey(newKeyId);
     this.setActiveKey(newKeyId);
+    this.resetFrameCounter(); // RFC 9605: Reset counter on rotation
     return newKeyId;
   }
 

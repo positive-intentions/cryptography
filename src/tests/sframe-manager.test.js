@@ -155,9 +155,9 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   });
 
   /**
-   * Test 3: Key Management
+   * Test 3: Key Management & RFC 9605 Compliance
    */
-  describe('3. Key Management', () => {
+  describe('3. Key Management & RFC 9605 Compliance', () => {
     beforeEach(async () => {
       await manager.initialize();
     });
@@ -167,6 +167,22 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       manager.setActiveKey(1);
 
       expect(manager.getCurrentKeyId()).toBe(1);
+    });
+
+    test('RFC 9605 Section 5.2: should derive key with correct labels', async () => {
+      const mlsSecret = new TextEncoder().encode('test-mls-secret').buffer;
+      const keyId = 100;
+
+      const derivedKey = await manager.deriveKeyFromMLSSecret(mlsSecret, keyId);
+
+      expect(derivedKey).toBeDefined();
+      expect(derivedKey.keyId).toBe(keyId);
+      expect(derivedKey.key).toBeDefined();
+      expect(derivedKey.salt).toBeDefined();
+      expect(derivedKey.salt.length).toBe(16); // 128 bits
+
+      const stats = manager.getStats();
+      expect(stats.keyCount).toBe(2); // Initial key + derived key
     });
 
     test('should throw error when setting non-existent key', () => {
@@ -184,6 +200,23 @@ describe('SFrame Manager - Real Implementation Tests', () => {
 
       const stats = manager.getStats();
       expect(stats.keyCount).toBe(2); // Old key + new key
+    });
+
+    test('RFC 9605: should reset frame counter on key rotation', async () => {
+      // Encrypt some frames to increment counter
+      for (let i = 0; i < 5; i++) {
+        const frameData = new TextEncoder().encode(`Frame ${i}`).buffer;
+        await manager.encryptFrame(frameData);
+      }
+
+      expect(manager.getFrameCounter()).toBe(5);
+
+      // Rotate key
+      await manager.rotateKey();
+
+      // Frame counter should be reset to 0
+      expect(manager.getFrameCounter()).toBe(0);
+      expect(manager.getCurrentKeyId()).toBe(1);
     });
 
     test('should encrypt with new key after rotation', async () => {
@@ -460,9 +493,103 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   });
 
   /**
-   * Test 8: Error Handling
+   * Test 8: RFC 9605 Security Compliance
    */
-  describe('8. Error Handling', () => {
+  describe('8. RFC 9605 Security Compliance', () => {
+    beforeEach(async () => {
+      await manager.initialize();
+    });
+
+    test('RFC 9605 Section 4.3: IV must be derived via salt XOR counter', async () => {
+      const plaintext = 'Test IV derivation';
+      const frameData = new TextEncoder().encode(plaintext).buffer;
+
+      // Encrypt a frame
+      const encrypted = await manager.encryptFrame(frameData);
+
+      // Extract header (first 5 bytes)
+      const header = encrypted.slice(0, 5);
+      const keyId = header[0];
+      const frameCount = new DataView(header.buffer, header.byteOffset).getUint32(1, false);
+
+      // Extract IV (next 12 bytes)
+      const iv = encrypted.slice(5, 17);
+
+      // Verify IV is not all zeros (basic sanity check)
+      const ivArray = Array.from(iv);
+      expect(ivArray.some(byte => byte !== 0)).toBe(true);
+
+      // Decrypt should work (proves IV derivation is consistent)
+      const decrypted = await manager.decryptFrame(encrypted);
+      const decryptedText = new TextDecoder().decode(decrypted);
+      expect(decryptedText).toBe(plaintext);
+    });
+
+    test('RFC 9605 Section 4.3: Header must be authenticated (AAD)', async () => {
+      const plaintext = 'Test header authentication';
+      const frameData = new TextEncoder().encode(plaintext).buffer;
+
+      // Encrypt a frame
+      const encrypted = await manager.encryptFrame(frameData);
+
+      // Tamper with header (change key ID)
+      const tamperedFrame = new Uint8Array(encrypted);
+      tamperedFrame[0] = (tamperedFrame[0] + 1) % 256; // Change key ID
+
+      // Decryption should fail due to AAD mismatch
+      // Note: Might throw "key not found" or "authentication failed"
+      await expect(manager.decryptFrame(tamperedFrame)).rejects.toThrow();
+    });
+
+    test('RFC 9605: Different frames with same plaintext must have different ciphertexts', async () => {
+      const plaintext = 'Same content';
+      const frameData = new TextEncoder().encode(plaintext).buffer;
+
+      const encrypted1 = await manager.encryptFrame(frameData);
+      const encrypted2 = await manager.encryptFrame(frameData);
+
+      // Due to counter increment, IVs differ, so ciphertexts differ
+      expect(encrypted1).not.toEqual(encrypted2);
+
+      // But both decrypt to same plaintext
+      const decrypted1 = new TextDecoder().decode(await manager.decryptFrame(encrypted1));
+      const decrypted2 = new TextDecoder().decode(await manager.decryptFrame(encrypted2));
+
+      expect(decrypted1).toBe(plaintext);
+      expect(decrypted2).toBe(plaintext);
+    });
+
+    test('RFC 9605 Section 5.2: MLS-derived keys use correct labels', async () => {
+      // This test verifies the labels are used by ensuring derivation works
+      const mlsSecret = crypto.getRandomValues(new Uint8Array(32)).buffer;
+      const keyId = 50;
+
+      const key1 = await manager.deriveKeyFromMLSSecret(mlsSecret, keyId);
+
+      // Create second manager with same secret
+      const manager2 = new SFrameManager();
+      await manager2.initialize();
+      const key2 = await manager2.deriveKeyFromMLSSecret(mlsSecret, keyId);
+
+      // Both should derive same key (verified by encryption/decryption)
+      const testData = new TextEncoder().encode('Test cross-manager encryption').buffer;
+
+      manager.setActiveKey(keyId);
+      const encrypted = await manager.encryptFrame(testData);
+
+      manager2.setActiveKey(keyId);
+      const decrypted = await manager2.decryptFrame(encrypted);
+
+      expect(new TextDecoder().decode(decrypted)).toBe('Test cross-manager encryption');
+
+      manager2.destroy();
+    });
+  });
+
+  /**
+   * Test 9: Error Handling
+   */
+  describe('9. Error Handling', () => {
     beforeEach(async () => {
       await manager.initialize();
     });

@@ -226,8 +226,18 @@ export class MLSManager {
       console.log('commit.privateMessage:', commitResult.commit?.privateMessage);
       console.groupEnd();
 
-      // Return welcome and ratchet tree
-      // NOTE: Commit distribution to existing members might not be needed/supported
+      // RFC 9420 Section 11.2: Commit Distribution
+      // ⚠️ IMPORTANT: The returned commit MUST be sent to all existing group members
+      // so they can process it with processCommit() to stay synchronized.
+      //
+      // Distribution flow:
+      // 1. Alice adds Bob: addMembers() returns { welcome, commit }
+      // 2. Alice sends welcome to Bob (new member)
+      // 3. Alice sends commit to existing members (Charlie, David, etc.)
+      // 4. All existing members call processCommit(commit) to update their state
+      //
+      // Without distributing the commit, existing members will remain at old epoch
+      // and won't be able to decrypt messages from the updated group.
       return {
         welcome: commitResult.welcome,
         ratchetTree: commitResult.newState.ratchetTree,
@@ -421,7 +431,11 @@ export class MLSManager {
   /**
    * Process a commit message (key rotation, member changes)
    *
-   * IMPORTANT: Commits from createCommit() are PrivateMessages, not PublicMessages!
+   * RFC 9420 Section 12.1.8:
+   * - Update commits (key rotation) → PrivateMessage
+   * - Add/Remove commits → PublicMessage (for existing group members)
+   *
+   * This implementation handles both types based on wireformat.
    */
   async processCommit(groupId: string, commit: any): Promise<void> {
     this.ensureInitialized();
@@ -435,20 +449,34 @@ export class MLSManager {
         throw new Error(`Group ${groupId} not found`);
       }
 
-      // Extract the privateMessage from the commit wrapper
-      // Commit structure: { version, wireformat, privateMessage }
-      const privateMessage = commit.privateMessage || commit;
+      let result;
 
-      console.log('🔍 [MLS Debug] Processing as PRIVATE message...');
+      // RFC 9420: Route based on message type
+      if (commit.wireformat === 'mls_public_message') {
+        // Public messages (add/remove member commits)
+        console.log('🔍 [MLS Debug] Processing as PUBLIC message (add/remove)...');
+        const publicMessage = commit.publicMessage || commit;
 
-      // processPrivateMessage requires 4 parameters:
-      // 1. groupState, 2. privateMessage, 3. pskIndex, 4. cipherSuite
-      const result = await processPrivateMessage(
-        groupState,
-        privateMessage,
-        emptyPskIndex,
-        this.cipherSuite!
-      );
+        result = await processPublicMessage(
+          groupState,
+          publicMessage,
+          emptyPskIndex,
+          this.cipherSuite!
+        );
+      } else if (commit.wireformat === 'mls_private_message') {
+        // Private messages (update/key rotation commits)
+        console.log('🔍 [MLS Debug] Processing as PRIVATE message (update)...');
+        const privateMessage = commit.privateMessage || commit;
+
+        result = await processPrivateMessage(
+          groupState,
+          privateMessage,
+          emptyPskIndex,
+          this.cipherSuite!
+        );
+      } else {
+        throw new Error(`Unknown commit wireformat: ${commit.wireformat}`);
+      }
 
       // Update group state
       this.groups.set(groupId, result.newState);
