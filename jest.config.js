@@ -32,6 +32,10 @@ module.exports = {
         '!src/setupTests.js',
         '!src/index.ts',
         '!src/tests/wasm-test-loader.js',
+        // Note: MLS/SFrame real implementations are excluded from Jest coverage
+        // because they use Web Crypto API and ES modules incompatible with Jest.
+        // Real implementations are tested in Storybook (browser environment).
+        // Jest tests use mocks from src/__mocks__/ which verify API contracts.
         '!src/crypto/MLS/**',
         '!src/crypto/SFrame/**'
     ],
