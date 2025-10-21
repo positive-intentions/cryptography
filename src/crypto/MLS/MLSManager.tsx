@@ -435,12 +435,18 @@ export class MLSManager {
         throw new Error(`Group ${groupId} not found`);
       }
 
-      // The commit is a PrivateMessage, so use processPrivateMessage!
+      // Extract the privateMessage from the commit wrapper
+      // Commit structure: { version, wireformat, privateMessage }
+      const privateMessage = commit.privateMessage || commit;
+
       console.log('🔍 [MLS Debug] Processing as PRIVATE message...');
 
+      // processPrivateMessage requires 4 parameters:
+      // 1. groupState, 2. privateMessage, 3. pskIndex, 4. cipherSuite
       const result = await processPrivateMessage(
         groupState,
-        commit,
+        privateMessage,
+        emptyPskIndex,
         this.cipherSuite!
       );
 
