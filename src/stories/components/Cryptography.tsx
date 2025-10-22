@@ -1922,5 +1922,16 @@ export const useCryptography = () => {
 // Direct exports for standalone use (without Provider)
 export { MLSManager } from "../../crypto/MLS/MLSManager.tsx";
 export { SFrameManager } from "../../crypto/SFrame/SFrameManager.tsx";
+// MLS message encoding/decoding utilities (ts-mls doesn't export these from main index)
+export {
+  encodeKeyPackage,
+  decodeKeyPackage,
+  encodeWelcome,
+  decodeWelcome,
+  encodeCommit,
+  decodeCommit,
+  encodeRatchetTree,
+  decodeRatchetTree
+} from "../../crypto/MLS/mlsCodec";
 
 export default CryptographyProvider;

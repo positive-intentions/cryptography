@@ -1,0 +1,2 @@
+const __vite__fileDeps=["assets/bootstrap-Dj0pzfBe.js","assets/__federation_expose_Cryptography-CRvZl1ny.js","assets/__federation_fn_import-tYT7TO-C.js","assets/__federation_shared_react-BgcHUtBK.js","assets/preload-helper-BiBI96sQ.js","assets/__federation_expose_MlsCodec-CItyAqae.js","assets/__federation_shared_react-dom-BnJCcwr2.js"],__vite__mapDeps=i=>i.map(i=>__vite__fileDeps[i]);
+import{_}from"./preload-helper-BiBI96sQ.js";_(()=>import("./bootstrap-Dj0pzfBe.js"),__vite__mapDeps([0,1,2,3,4,5,6]));

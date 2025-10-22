@@ -163,6 +163,7 @@ module.exports = {
       filename: 'remoteEntry.js',
       exposes: {
         './Cryptography': './src/stories/components/Cryptography.tsx',
+        './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
       },
       remotes: {
         "dim": moduleRedundency({

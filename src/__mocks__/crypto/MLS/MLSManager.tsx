@@ -122,6 +122,26 @@ export class MLSManager {
     // Update tree hash
     group.treeHash = new Uint8Array(32).fill(Math.random() * 255);
 
+    // Create mock ratchet tree with nulls to simulate MLS binary tree structure
+    // For a 2-member group, we have: [leaf0, parent (null), leaf1, ...]
+    // Binary tree pre-allocates space, so it's larger than just the members
+    const memberCount = group.members.length;
+    const treeSize = Math.pow(2, Math.ceil(Math.log2(memberCount + 1))) * 2 - 1;
+    const mockRatchetTree = new Array(treeSize).fill(null);
+
+    // Place leaf nodes at even indices (0, 2, 4, ...)
+    for (let i = 0; i < memberCount; i++) {
+      mockRatchetTree[i * 2] = {
+        nodeType: 'leaf',
+        leaf: {
+          credential: {
+            identity: new TextEncoder().encode(group.members[i])
+          },
+          publicKey: new Uint8Array(32).fill(i)
+        }
+      };
+    }
+
     // Return mock welcome and commit
     // Store group ID in welcome for processWelcome to use
     const welcome = {
@@ -152,7 +172,7 @@ export class MLSManager {
     return {
       welcome,
       commit,
-      ratchetTree: group.treeHash
+      ratchetTree: mockRatchetTree
     };
   }
 

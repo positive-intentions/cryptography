@@ -238,9 +238,13 @@ export class MLSManager {
       //
       // Without distributing the commit, existing members will remain at old epoch
       // and won't be able to decrypt messages from the updated group.
+
+      // Convert ratchetTree to a real array (it's Uint8Array-like with numeric indices)
+      const ratchetTreeArray = Array.from(commitResult.newState.ratchetTree);
+
       return {
         welcome: commitResult.welcome,
-        ratchetTree: commitResult.newState.ratchetTree,
+        ratchetTree: ratchetTreeArray,
         commit: commitResult.commit,
       };
     } catch (error) {
@@ -265,14 +269,22 @@ export class MLSManager {
         throw new Error('No key package available');
       }
 
-      // Join group using ts-mls
+      // Join group with ratchet tree (if provided)
+      // Don't filter nulls - they maintain binary tree structure
+      // MLS trees use array indices as node positions: [leaf0, parent, leaf1]
+      // Sender already trimmed trailing nulls per RFC 9420
+      if (ratchetTree && Array.isArray(ratchetTree)) {
+        const nullCount = ratchetTree.filter(n => n === null).length;
+        console.log(`🔍 [MLS] Ratchet tree provided: ${ratchetTree.length} nodes (${nullCount} nulls preserved for structure)`);
+      }
+
       const groupState = await joinGroup(
         welcome,
         this.keyPackage.publicPackage,
         this.keyPackage.privatePackage,
         emptyPskIndex,
         this.cipherSuite!,
-        ratchetTree
+        ratchetTree  // Pass as-is - nulls are required for tree structure
       );
 
       const groupId = new TextDecoder().decode(groupState.groupContext.groupId);

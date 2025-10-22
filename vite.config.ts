@@ -12,6 +12,7 @@ export default defineConfig(async () => ({
       // Modules to expose
       exposes: {
         './Cryptography': './src/stories/components/Cryptography.tsx',
+        './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
       },
       shared: ['react', 'react-dom']
   })

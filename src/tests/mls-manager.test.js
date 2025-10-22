@@ -198,6 +198,56 @@ describe('MLS Manager - Real Implementation Tests', () => {
       expect(bobGroupInfo.members.length).toBe(3);
       expect(charlieGroupInfo.members.length).toBe(3);
     });
+
+    test('should handle ratchet tree with null nodes in 2-member group', async () => {
+      // This test reproduces the exact issue from the logs where:
+      // - Tree has internal nulls that maintain binary tree structure
+      // - Filtering nulls would break tree validation
+      // - Solution: Don't filter internal nulls - they maintain tree structure
+
+      const testGroupId = 'test-null-parent';
+      await aliceManager.initialize();
+      await bobManager.initialize();
+
+      await aliceManager.createGroup(testGroupId);
+      const bobKeyPackage = bobManager.getKeyPackage();
+
+      // When Alice adds Bob to create 2-member group, tree has internal nulls
+      const result = await aliceManager.addMembers(testGroupId, [bobKeyPackage]);
+
+      // Verify ratchet tree is provided
+      expect(result).toBeDefined();
+      expect(result.welcome).toBeDefined();
+      expect(result.ratchetTree).toBeDefined();
+
+      const { welcome, ratchetTree } = result;
+
+      // Verify tree structure
+      expect(Array.isArray(ratchetTree)).toBe(true);
+      expect(ratchetTree.length).toBeGreaterThan(0);
+
+      // Count nulls in the tree - there should be internal nulls that maintain structure
+      const nullCount = ratchetTree.filter(n => n === null).length;
+      const nonNullCount = ratchetTree.filter(n => n !== null).length;
+
+      // Key assertion: Tree should have internal nulls (not just all non-null or all null)
+      expect(nullCount).toBeGreaterThan(0);
+      expect(nonNullCount).toBeGreaterThan(0);
+
+      // Bob should be able to process Welcome with this tree structure
+      // (nulls preserved - not filtered)
+      const bobGroupInfo = await bobManager.processWelcome(welcome, ratchetTree);
+
+      expect(bobGroupInfo.members).toContain('alice@example.com');
+      expect(bobGroupInfo.members).toContain('bob@example.com');
+      expect(bobGroupInfo.members.length).toBe(2);
+
+      // Verify both can exchange messages
+      const aliceMsg = 'Test with null parent node';
+      const envelope = await aliceManager.encryptMessage(testGroupId, aliceMsg);
+      const decrypted = await bobManager.decryptMessage(envelope);
+      expect(decrypted).toBe(aliceMsg);
+    });
   });
 
   /**
