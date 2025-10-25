@@ -6,6 +6,15 @@
  * This mock avoids ES module import issues with ts-mls during Jest testing
  */
 
+// Helper to strip trailing null nodes per RFC 9420
+function stripTrailingNulls(tree: any[]): any[] {
+  let lastNonNull = tree.length - 1;
+  while (lastNonNull >= 0 && tree[lastNonNull] === null) {
+    lastNonNull--;
+  }
+  return tree.slice(0, lastNonNull + 1);
+}
+
 export class MLSManager {
   private userId: string;
   private initialized: boolean = false;
@@ -169,10 +178,13 @@ export class MLSManager {
       }
     };
 
+    // RFC 9420: Strip trailing null nodes before transmission
+    const strippedTree = stripTrailingNulls(mockRatchetTree);
+
     return {
       welcome,
       commit,
-      ratchetTree: mockRatchetTree
+      ratchetTree: strippedTree
     };
   }
 

@@ -29,6 +29,15 @@ import {
   type CiphersuiteImpl,
 } from 'ts-mls';
 
+// Helper to strip trailing null nodes per RFC 9420
+function stripTrailingNulls(tree: any[]): any[] {
+  let lastNonNull = tree.length - 1;
+  while (lastNonNull >= 0 && tree[lastNonNull] === null) {
+    lastNonNull--;
+  }
+  return tree.slice(0, lastNonNull + 1);
+}
+
 export interface MLSGroupInfo {
   groupId: Uint8Array;
   members: string[];
@@ -241,10 +250,14 @@ export class MLSManager {
 
       // Convert ratchetTree to a real array (it's Uint8Array-like with numeric indices)
       const ratchetTreeArray = Array.from(commitResult.newState.ratchetTree);
+      // RFC 9420: Strip trailing null nodes before transmission
+      const strippedTree = stripTrailingNulls(ratchetTreeArray);
+
+      console.log(`🔍 [MLS] Ratchet tree stripped: ${ratchetTreeArray.length} -> ${strippedTree.length} nodes`);
 
       return {
         welcome: commitResult.welcome,
-        ratchetTree: ratchetTreeArray,
+        ratchetTree: strippedTree,
         commit: commitResult.commit,
       };
     } catch (error) {
@@ -254,7 +267,16 @@ export class MLSManager {
   }
 
   /**
-   * Process a welcome message to join a group
+   * Process a Welcome message to join an MLS group
+   *
+   * RFC 9420 Compliance:
+   * - Interior null nodes represent blank parent nodes (unmerged positions)
+   * - These nulls are REQUIRED for proper binary tree structure
+   * - Trailing nulls are stripped by sender (per RFC 9420 requirement)
+   * - ratchetTree parameter is optional; ts-mls can extract from Welcome extension
+   *
+   * @param welcome - The Welcome message from group creator
+   * @param ratchetTree - Optional ratchet tree (normally provided out-of-band)
    */
   async processWelcome(
     welcome: Welcome,
@@ -269,13 +291,30 @@ export class MLSManager {
         throw new Error('No key package available');
       }
 
-      // Join group with ratchet tree (if provided)
-      // Don't filter nulls - they maintain binary tree structure
-      // MLS trees use array indices as node positions: [leaf0, parent, leaf1]
-      // Sender already trimmed trailing nulls per RFC 9420
+      // RFC 9420: Interior null nodes are valid (represent blank parent nodes)
+      // Trailing nulls are stripped by sender per RFC requirement
+      // Simply pass the tree as-is to ts-mls joinGroup()
+
       if (ratchetTree && Array.isArray(ratchetTree)) {
         const nullCount = ratchetTree.filter(n => n === null).length;
-        console.log(`🔍 [MLS] Ratchet tree provided: ${ratchetTree.length} nodes (${nullCount} nulls preserved for structure)`);
+        console.log(`🔍 [MLS] Ratchet tree received: ${ratchetTree.length} nodes (${nullCount} interior nulls)`);
+
+        // DEBUG: Log structure of each node
+        console.group('🔍 [MLS Debug] Ratchet Tree Structure');
+        ratchetTree.forEach((node, i) => {
+          if (node === null) {
+            console.log(`  Node ${i}: NULL`);
+          } else {
+            console.log(`  Node ${i}:`, {
+              type: typeof node,
+              isObject: typeof node === 'object',
+              hasNodeType: node && 'nodeType' in node,
+              nodeType: node?.nodeType,
+              keys: node && typeof node === 'object' ? Object.keys(node).slice(0, 5) : 'n/a'
+            });
+          }
+        });
+        console.groupEnd();
       }
 
       const groupState = await joinGroup(
@@ -284,7 +323,7 @@ export class MLSManager {
         this.keyPackage.privatePackage,
         emptyPskIndex,
         this.cipherSuite!,
-        ratchetTree  // Pass as-is - nulls are required for tree structure
+        ratchetTree  // Pass as-is - nulls are valid
       );
 
       const groupId = new TextDecoder().decode(groupState.groupContext.groupId);
@@ -456,6 +495,29 @@ export class MLSManager {
       console.log(`⚙️ [MLS] Processing commit for group: ${groupId}`);
       console.log(`🔍 [MLS Debug] Commit wireformat: ${commit.wireformat}`);
 
+      // DETAILED DEBUG LOGGING
+      console.group('🔍 [MLS Debug] Full Commit Structure');
+      console.log('commit keys:', Object.keys(commit));
+      console.log('commit.wireformat:', commit.wireformat);
+      console.log('commit.publicMessage:', commit.publicMessage);
+      console.log('commit.privateMessage:', commit.privateMessage);
+
+      // Log proposals if present
+      if (commit.publicMessage?.content) {
+        console.log('publicMessage.content:', commit.publicMessage.content);
+        console.log('publicMessage.content.proposals:', commit.publicMessage.content.proposals);
+        if (commit.publicMessage.content.proposals) {
+          commit.publicMessage.content.proposals.forEach((prop: any, i: number) => {
+            console.log(`  Proposal ${i}:`, {
+              proposalType: prop.proposalType,
+              keys: Object.keys(prop),
+              full: prop
+            });
+          });
+        }
+      }
+      console.groupEnd();
+
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -497,6 +559,7 @@ export class MLSManager {
     } catch (error) {
       console.error('❌ [MLS] Failed to process commit:', error);
       console.error('❌ [MLS Debug] Error details:', error.stack);
+      console.error('❌ [MLS Debug] Error message:', error.message);
       throw new Error(`Commit processing failed: ${error.message}`);
     }
   }

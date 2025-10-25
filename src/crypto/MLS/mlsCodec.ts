@@ -39,9 +39,10 @@ function uint8ArrayToArray(obj: any): any {
  * Convert regular arrays back to Uint8Array and strings back to BigInt recursively
  */
 function arrayToUint8Array(obj: any): any {
-  // Handle null explicitly (important for MLS ratchet trees)
+  // Handle null: Convert to undefined for MLS compatibility
+  // ts-mls expects RatchetTree = (Node | undefined)[], not (Node | null)[]
   if (obj === null) {
-    return null;
+    return undefined;
   }
 
   // Check for marked Uint8Array
