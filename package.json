@@ -28,7 +28,7 @@
     "test:all:complete": "npm test && npm run test:rust && npm run test:wasm",
     "coverage:100": "npm run test:coverage:complete && echo 'Running comprehensive coverage analysis...' && echo 'Native Rust: ' && npm run test:rust:coverage && echo 'WASM Tests: ' && npm run test:wasm:node && echo 'JavaScript: ' && npm test",
     "test:complete:all-platforms": "echo '🧪 Running comprehensive tests across all platforms...' && npm run test:rust && npm run test:wasm:node && npm test && echo '✅ All platform tests completed!'",
-    "build": "npm run build:reset && npm run build:wasm && npm run build:storybook && npm run build:frontend",
+    "build": "npm run build:reset && npm run build:wasm && npm run build:frontend && npm run build:storybook",
     "build:reset": "rm -rf ./Frontend && mkdir ./Frontend",
     "build:wasm": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target web --out-dir ./pkg && cp -r ./pkg ./Frontend/pkg && rm ./Frontend/pkg/.gitignore",
     "build:wasm:dev": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --dev --target web --out-dir pkg",
