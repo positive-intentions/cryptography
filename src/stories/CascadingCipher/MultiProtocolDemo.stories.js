@@ -40,6 +40,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from 'ui';
+import { FormGroup, FormControlLabel, Checkbox } from '@mui/material';
 
 export default {
   title: 'Cascading Cipher/Multi-Protocol Demo',
@@ -50,9 +51,15 @@ export default {
 
 const MultiProtocolDemo = () => {
   // State
-  const [message, setMessage] = useState('Secret message with MLS + Signal + AES!');
+  const [message, setMessage] = useState('Secret message with MLS + Signal + DH + AES!');
   const [rounds, setRounds] = useState(2);
   const [aesPassword, setAesPassword] = useState('secure-password-123');
+
+  // Layer toggles
+  const [enableMLS, setEnableMLS] = useState(true);
+  const [enableSignal, setEnableSignal] = useState(true);
+  const [enableDH, setEnableDH] = useState(true);
+  const [enableAES, setEnableAES] = useState(true);
 
   // MLS state
   const [aliceMLSManager, setAliceMLSManager] = useState(null);
@@ -259,8 +266,20 @@ const MultiProtocolDemo = () => {
 
   // Encrypt with cascading cipher
   const handleEncrypt = async () => {
-    if (!mlsInitialized || !signalInitialized || !dhInitialized) {
-      setError('Please initialize all protocols first');
+    // Check that enabled protocols are initialized
+    const missingInitializations = [];
+    if (enableMLS && !mlsInitialized) missingInitializations.push('MLS');
+    if (enableSignal && !signalInitialized) missingInitializations.push('Signal');
+    if (enableDH && !dhInitialized) missingInitializations.push('DH');
+
+    if (missingInitializations.length > 0) {
+      setError(`Please initialize ${missingInitializations.join(', ')} first`);
+      return;
+    }
+
+    const layersPerRound = [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length;
+    if (layersPerRound === 0) {
+      setError('Please select at least one encryption layer');
       return;
     }
 
@@ -269,71 +288,93 @@ const MultiProtocolDemo = () => {
     setLogs([]);
 
     try {
+      const layerNames = [];
+      if (enableMLS) layerNames.push('MLS');
+      if (enableSignal) layerNames.push('Signal');
+      if (enableDH) layerNames.push('DH');
+      if (enableAES) layerNames.push('AES');
+
       addLog(`🔒 Starting ${rounds}-round cascading encryption...`, 'info');
-      addLog(`📊 Layers per round: MLS → Signal → DH → AES`, 'info');
+      addLog(`📊 Layers per round: ${layerNames.join(' → ')}`, 'info');
 
       const manager = new CascadingCipherManager();
 
-      // Build layer stack with rounds
+      // Build layer stack with rounds (only enabled layers)
       const layerStack = [];
       for (let round = 0; round < rounds; round++) {
         addLog(`➕ Adding round ${round + 1} layers...`, 'info');
 
         // MLS Layer
-        const mlsLayer = new MLSCipherLayer(aliceMLSManager, groupId);
-        Object.defineProperty(mlsLayer, 'name', {
-          value: `MLS-Round${round + 1}`
-        });
-        manager.addLayer(mlsLayer);
-        layerStack.push(`MLS-Round${round + 1}`);
+        if (enableMLS) {
+          const mlsLayer = new MLSCipherLayer(aliceMLSManager, groupId);
+          Object.defineProperty(mlsLayer, 'name', {
+            value: `MLS-Round${round + 1}`
+          });
+          manager.addLayer(mlsLayer);
+          layerStack.push(`MLS-Round${round + 1}`);
+        }
 
         // Signal Layer (using WASM Double Ratchet)
         // Note: For demo purposes, we'll use a simplified approach
         // In production, you'd properly implement SignalCipherLayer with state management
-        const aesLayerSignal = new AESCipherLayer();
-        Object.defineProperty(aesLayerSignal, 'name', {
-          value: `Signal-Round${round + 1}`
-        });
-        manager.addLayer(aesLayerSignal);
-        layerStack.push(`Signal-Round${round + 1}`);
+        if (enableSignal) {
+          const aesLayerSignal = new AESCipherLayer();
+          Object.defineProperty(aesLayerSignal, 'name', {
+            value: `Signal-Round${round + 1}`
+          });
+          manager.addLayer(aesLayerSignal);
+          layerStack.push(`Signal-Round${round + 1}`);
+        }
 
         // DH Layer
-        const dhLayer = new DHCipherLayer();
-        Object.defineProperty(dhLayer, 'name', {
-          value: `DH-Round${round + 1}`
-        });
-        manager.addLayer(dhLayer);
-        layerStack.push(`DH-Round${round + 1}`);
+        if (enableDH) {
+          const dhLayer = new DHCipherLayer();
+          Object.defineProperty(dhLayer, 'name', {
+            value: `DH-Round${round + 1}`
+          });
+          manager.addLayer(dhLayer);
+          layerStack.push(`DH-Round${round + 1}`);
+        }
 
         // AES Layer
-        const aesLayer = new AESCipherLayer();
-        Object.defineProperty(aesLayer, 'name', {
-          value: `AES-Round${round + 1}`
-        });
-        manager.addLayer(aesLayer);
-        layerStack.push(`AES-Round${round + 1}`);
+        if (enableAES) {
+          const aesLayer = new AESCipherLayer();
+          Object.defineProperty(aesLayer, 'name', {
+            value: `AES-Round${round + 1}`
+          });
+          manager.addLayer(aesLayer);
+          layerStack.push(`AES-Round${round + 1}`);
+        }
       }
 
       addLog(`✅ Total layers: ${manager.layerCount}`, 'success');
       addLog(`📋 Layer order: ${layerStack.join(' → ')}`, 'info');
 
-      // Prepare keys
+      // Prepare keys (only for enabled layers)
       const keys = {};
       for (let round = 0; round < rounds; round++) {
-        keys[`MLS-Round${round + 1}`] = {
-          mlsManager: aliceMLSManager,
-          groupId,
-        };
-        keys[`Signal-Round${round + 1}`] = {
-          password: `signal-round-${round + 1}-${aesPassword}`,
-        };
-        keys[`DH-Round${round + 1}`] = {
-          privateKey: aliceDHKeyPair.privateKey,
-          publicKey: bobDHKeyPair.publicKey,
-        };
-        keys[`AES-Round${round + 1}`] = {
-          password: `aes-round-${round + 1}-${aesPassword}`,
-        };
+        if (enableMLS) {
+          keys[`MLS-Round${round + 1}`] = {
+            mlsManager: aliceMLSManager,
+            groupId,
+          };
+        }
+        if (enableSignal) {
+          keys[`Signal-Round${round + 1}`] = {
+            password: `signal-round-${round + 1}-${aesPassword}`,
+          };
+        }
+        if (enableDH) {
+          keys[`DH-Round${round + 1}`] = {
+            privateKey: aliceDHKeyPair.privateKey,
+            publicKey: bobDHKeyPair.publicKey,
+          };
+        }
+        if (enableAES) {
+          keys[`AES-Round${round + 1}`] = {
+            password: `aes-round-${round + 1}-${aesPassword}`,
+          };
+        }
       }
 
       // Encrypt
@@ -346,14 +387,17 @@ const MultiProtocolDemo = () => {
       addLog(`📈 Size increase: ${((result.finalSize / result.originalSize - 1) * 100).toFixed(1)}%`, 'info');
       addLog(`⏱️ Total encryption time: ${result.totalProcessingTime.toFixed(2)}ms`, 'info');
 
-      // Show breakdown by round (4 layers per round: MLS, Signal, DH, AES)
+      // Show breakdown by round
+      const layersPerRound = [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length;
       for (let round = 0; round < rounds; round++) {
-        const roundLayers = result.layers.slice(round * 4, (round + 1) * 4);
-        const roundTime = roundLayers.reduce((sum, l) => sum + l.processingTime, 0);
-        addLog(
-          `  Round ${round + 1}: ${roundLayers[0].inputSize}B → ${roundLayers[3].outputSize}B (${roundTime.toFixed(2)}ms)`,
-          'info'
-        );
+        const roundLayers = result.layers.slice(round * layersPerRound, (round + 1) * layersPerRound);
+        if (roundLayers.length > 0) {
+          const roundTime = roundLayers.reduce((sum, l) => sum + l.processingTime, 0);
+          addLog(
+            `  Round ${round + 1}: ${roundLayers[0].inputSize}B → ${roundLayers[roundLayers.length - 1].outputSize}B (${roundTime.toFixed(2)}ms)`,
+            'info'
+          );
+        }
       }
 
       setEncrypted(result);
@@ -383,50 +427,66 @@ const MultiProtocolDemo = () => {
 
       const manager = new CascadingCipherManager();
 
-      // Rebuild same layer stack
+      // Rebuild same layer stack (only enabled layers)
       for (let round = 0; round < rounds; round++) {
-        const mlsLayer = new MLSCipherLayer(bobMLSManager, groupId);
-        Object.defineProperty(mlsLayer, 'name', {
-          value: `MLS-Round${round + 1}`
-        });
-        manager.addLayer(mlsLayer);
+        if (enableMLS) {
+          const mlsLayer = new MLSCipherLayer(bobMLSManager, groupId);
+          Object.defineProperty(mlsLayer, 'name', {
+            value: `MLS-Round${round + 1}`
+          });
+          manager.addLayer(mlsLayer);
+        }
 
-        const aesLayerSignal = new AESCipherLayer();
-        Object.defineProperty(aesLayerSignal, 'name', {
-          value: `Signal-Round${round + 1}`
-        });
-        manager.addLayer(aesLayerSignal);
+        if (enableSignal) {
+          const aesLayerSignal = new AESCipherLayer();
+          Object.defineProperty(aesLayerSignal, 'name', {
+            value: `Signal-Round${round + 1}`
+          });
+          manager.addLayer(aesLayerSignal);
+        }
 
-        const dhLayer = new DHCipherLayer();
-        Object.defineProperty(dhLayer, 'name', {
-          value: `DH-Round${round + 1}`
-        });
-        manager.addLayer(dhLayer);
+        if (enableDH) {
+          const dhLayer = new DHCipherLayer();
+          Object.defineProperty(dhLayer, 'name', {
+            value: `DH-Round${round + 1}`
+          });
+          manager.addLayer(dhLayer);
+        }
 
-        const aesLayer = new AESCipherLayer();
-        Object.defineProperty(aesLayer, 'name', {
-          value: `AES-Round${round + 1}`
-        });
-        manager.addLayer(aesLayer);
+        if (enableAES) {
+          const aesLayer = new AESCipherLayer();
+          Object.defineProperty(aesLayer, 'name', {
+            value: `AES-Round${round + 1}`
+          });
+          manager.addLayer(aesLayer);
+        }
       }
 
-      // Prepare keys (Bob uses his MLS manager and DH key pair)
+      // Prepare keys (Bob uses his MLS manager and DH key pair, only for enabled layers)
       const keys = {};
       for (let round = 0; round < rounds; round++) {
-        keys[`MLS-Round${round + 1}`] = {
-          mlsManager: bobMLSManager,
-          groupId,
-        };
-        keys[`Signal-Round${round + 1}`] = {
-          password: `signal-round-${round + 1}-${aesPassword}`,
-        };
-        keys[`DH-Round${round + 1}`] = {
-          privateKey: bobDHKeyPair.privateKey,
-          publicKey: aliceDHKeyPair.publicKey,
-        };
-        keys[`AES-Round${round + 1}`] = {
-          password: `aes-round-${round + 1}-${aesPassword}`,
-        };
+        if (enableMLS) {
+          keys[`MLS-Round${round + 1}`] = {
+            mlsManager: bobMLSManager,
+            groupId,
+          };
+        }
+        if (enableSignal) {
+          keys[`Signal-Round${round + 1}`] = {
+            password: `signal-round-${round + 1}-${aesPassword}`,
+          };
+        }
+        if (enableDH) {
+          keys[`DH-Round${round + 1}`] = {
+            privateKey: bobDHKeyPair.privateKey,
+            publicKey: aliceDHKeyPair.publicKey,
+          };
+        }
+        if (enableAES) {
+          keys[`AES-Round${round + 1}`] = {
+            password: `aes-round-${round + 1}-${aesPassword}`,
+          };
+        }
       }
 
       // Decrypt (layers reversed automatically)
@@ -464,8 +524,8 @@ const MultiProtocolDemo = () => {
         🔐 Multi-Protocol Cascading Cipher
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Demonstrates MLS + Signal + AES cascading encryption with round-robin support.
-        Apply the same layer sequence multiple times for enhanced security.
+        Demonstrates customizable cascading encryption with MLS, Signal, DH, and AES layers.
+        Toggle individual layers on/off and apply them multiple rounds for enhanced security.
       </Typography>
 
       <Stack spacing={3}>
@@ -476,7 +536,7 @@ const MultiProtocolDemo = () => {
               Step 1: Initialize Protocols
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Initialize MLS group messaging and Signal Protocol Double Ratchet
+              Initialize MLS group messaging, Signal Protocol Double Ratchet, and Diffie-Hellman key exchange
             </Typography>
 
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -488,12 +548,16 @@ const MultiProtocolDemo = () => {
                 label={signalInitialized ? '✅ Signal Ready' : '⏳ Signal Not Initialized'}
                 color={signalInitialized ? 'success' : 'default'}
               />
+              <Chip
+                label={dhInitialized ? '✅ DH Ready' : '⏳ DH Not Initialized'}
+                color={dhInitialized ? 'success' : 'default'}
+              />
             </Stack>
 
             <Button
               variant="contained"
               onClick={initializeAll}
-              disabled={processing || (mlsInitialized && signalInitialized)}
+              disabled={processing || (mlsInitialized && signalInitialized && dhInitialized)}
             >
               {processing ? <CircularProgress size={24} /> : 'Initialize All Protocols'}
             </Button>
@@ -501,7 +565,7 @@ const MultiProtocolDemo = () => {
         </Card>
 
         {/* Configuration */}
-        {mlsInitialized && signalInitialized && (
+        {(mlsInitialized || signalInitialized || dhInitialized) && (
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -520,10 +584,63 @@ const MultiProtocolDemo = () => {
 
               <Box sx={{ mt: 3, mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
+                  Select Encryption Layers:
+                </Typography>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={enableMLS}
+                        onChange={(e) => setEnableMLS(e.target.checked)}
+                        disabled={processing}
+                      />
+                    }
+                    label="MLS (Message Layer Security)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={enableSignal}
+                        onChange={(e) => setEnableSignal(e.target.checked)}
+                        disabled={processing}
+                      />
+                    }
+                    label="Signal (Double Ratchet)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={enableDH}
+                        onChange={(e) => setEnableDH(e.target.checked)}
+                        disabled={processing}
+                      />
+                    }
+                    label="DH (Diffie-Hellman Key Exchange)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={enableAES}
+                        onChange={(e) => setEnableAES(e.target.checked)}
+                        disabled={processing}
+                      />
+                    }
+                    label="AES (Password-Based Encryption)"
+                  />
+                </FormGroup>
+                {[enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length === 0 && (
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    ⚠️ Please select at least one encryption layer
+                  </Alert>
+                )}
+              </Box>
+
+              <Box sx={{ mt: 3, mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
                   Cascade Rounds: {rounds}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                  Number of times to apply the MLS → Signal → AES sequence
+                  Number of times to apply the selected layer sequence
                 </Typography>
                 <Slider
                   value={rounds}
@@ -535,7 +652,11 @@ const MultiProtocolDemo = () => {
                   disabled={processing}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  Total layers: {rounds * 3} (MLS × {rounds} + Signal × {rounds} + AES × {rounds})
+                  Total layers: {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length}
+                  {enableMLS && ` (MLS × ${rounds})`}
+                  {enableSignal && ` (Signal × ${rounds})`}
+                  {enableDH && ` (DH × ${rounds})`}
+                  {enableAES && ` (AES × ${rounds})`}
                 </Typography>
               </Box>
 
@@ -553,13 +674,21 @@ const MultiProtocolDemo = () => {
                 <Typography variant="caption" display="block">
                   <strong>Encryption Flow ({rounds} rounds):</strong>
                 </Typography>
-                {Array.from({ length: rounds }).map((_, i) => (
-                  <Typography key={i} variant="caption" display="block" sx={{ ml: 2 }}>
-                    Round {i + 1}: Plaintext → MLS → Signal → AES → Intermediate Ciphertext
-                  </Typography>
-                ))}
+                {Array.from({ length: rounds }).map((_, i) => {
+                  const flowSteps = ['Plaintext'];
+                  if (enableMLS) flowSteps.push('MLS');
+                  if (enableSignal) flowSteps.push('Signal');
+                  if (enableDH) flowSteps.push('DH');
+                  if (enableAES) flowSteps.push('AES');
+                  flowSteps.push('Intermediate Ciphertext');
+                  return (
+                    <Typography key={i} variant="caption" display="block" sx={{ ml: 2 }}>
+                      Round {i + 1}: {flowSteps.join(' → ')}
+                    </Typography>
+                  );
+                })}
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                  Decryption reverses all {rounds * 3} layers automatically
+                  Decryption reverses all {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} layers automatically
                 </Typography>
               </Box>
             </CardContent>
@@ -567,16 +696,16 @@ const MultiProtocolDemo = () => {
         )}
 
         {/* Actions */}
-        {mlsInitialized && signalInitialized && (
+        {(mlsInitialized || signalInitialized || dhInitialized) && (
           <Paper sx={{ p: 2 }}>
             <Stack direction="row" spacing={2}>
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleEncrypt}
-                disabled={processing || !message}
+                disabled={processing || !message || [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length === 0}
               >
-                🔒 Encrypt with {rounds * 3} Layers
+                🔒 Encrypt with {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} Layers
               </Button>
               <Button
                 variant="contained"
@@ -684,7 +813,7 @@ const MultiProtocolDemo = () => {
             </Typography>
             {decrypted === message && (
               <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                ✅ Perfect match! All {rounds * 3} layers successfully reversed.
+                ✅ Perfect match! All {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} layers successfully reversed.
               </Typography>
             )}
           </Alert>
