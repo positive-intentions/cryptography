@@ -15,11 +15,18 @@ web-sys = { version = "0.3", features = ["console"] }
 getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = "0.1"
 
-# Use simpler, compatible crypto dependencies
-sha2 = "0.9"
-hkdf = "0.10"
-aes-gcm = "0.8"
+# Real cryptography for production use
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+curve25519-dalek = "4.0"
+sha2 = "0.10"
+hkdf = "0.12"
+aes-gcm = "0.10"
 rand = "0.8"
+rand_core = "0.6"
+
+# Constant-time operations for security
+subtle = "2.5"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -27,7 +34,7 @@ serde = { version = "1.0", features = ["derive"] }
 # Error handling
 thiserror = "1.0"
 
-# Hex encoding for debugging
+# Hex encoding (for non-sensitive data only)
 hex = "0.4"
 
 # Development dependencies for testing and coverage

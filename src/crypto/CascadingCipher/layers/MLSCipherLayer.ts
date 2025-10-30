@@ -206,12 +206,12 @@ export class MLSCipherLayer implements CipherLayer {
 
   /**
    * Clean up MLS resources
+   * Note: We don't destroy the MLS manager itself because it's provided from outside
+   * and may still be in use. The owner of the manager is responsible for its lifecycle.
    */
   async destroy(): Promise<void> {
-    if (this.mlsManager) {
-      await this.mlsManager.destroy();
-      this.mlsManager = null;
-    }
+    // Just clear our references, don't destroy the shared manager
+    this.mlsManager = null;
     this.groupId = null;
   }
 }

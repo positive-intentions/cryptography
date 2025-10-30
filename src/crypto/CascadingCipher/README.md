@@ -30,7 +30,7 @@ import {
   CascadingCipherManager,
   AESCipherLayer,
   DHCipherLayer,
-} from 'cryptography/CascadingCipher';
+} from "cryptography/CascadingCipher";
 
 // Create manager
 const manager = new CascadingCipherManager();
@@ -40,14 +40,14 @@ manager.addLayer(new DHCipherLayer());
 manager.addLayer(new AESCipherLayer());
 
 // Prepare plaintext and keys
-const plaintext = new TextEncoder().encode('Secret message');
+const plaintext = new TextEncoder().encode("Secret message");
 const keys = {
-  'DH-AES-GCM': {
+  "DH-AES-GCM": {
     privateKey: dhPrivateKey,
     publicKey: dhPublicKey,
   },
-  'AES-GCM-256': {
-    password: 'my-secure-password',
+  "AES-GCM-256": {
+    password: "my-secure-password",
   },
 };
 
@@ -67,7 +67,7 @@ import {
   SignalCipherLayer,
   DHCipherLayer,
   AESCipherLayer,
-} from 'cryptography/CascadingCipher';
+} from "cryptography/CascadingCipher";
 
 const manager = new CascadingCipherManager();
 
@@ -78,10 +78,10 @@ manager.addLayer(new DHCipherLayer());
 manager.addLayer(new AESCipherLayer());
 
 const keys = {
-  'MLS': { mlsManager, groupId },
-  'Signal-DoubleRatchet': { doubleRatchetState },
-  'DH-AES-GCM': { privateKey, publicKey },
-  'AES-GCM-256': { password: 'password' },
+  MLS: { mlsManager, groupId },
+  "X3DH-DoubleRatchet": { doubleRatchetState },
+  "DH-AES-GCM": { privateKey, publicKey },
+  "AES-GCM-256": { password: "password" },
 };
 
 const encrypted = await manager.encrypt(plaintext, keys);
@@ -99,10 +99,11 @@ Password-based AES-GCM-256 encryption with PBKDF2 key derivation.
 
 ```typescript
 const aesLayer = new AESCipherLayer();
-const keys = { password: 'secure-password' };
+const keys = { password: "secure-password" };
 ```
 
 **Features:**
+
 - AES-GCM-256 authenticated encryption
 - PBKDF2 key derivation (100,000 iterations)
 - Random salt and IV per encryption
@@ -117,8 +118,8 @@ const dhLayer = new DHCipherLayer();
 
 // Option 1: Provide DH keys
 const keys = {
-  privateKey: dhPrivateKey,  // CryptoKey or Uint8Array
-  publicKey: dhPublicKey,     // CryptoKey or Uint8Array
+  privateKey: dhPrivateKey, // CryptoKey or Uint8Array
+  publicKey: dhPublicKey, // CryptoKey or Uint8Array
 };
 
 // Option 2: Provide pre-derived shared secret
@@ -128,6 +129,7 @@ const keys = {
 ```
 
 **Features:**
+
 - ECDH-P256 key exchange
 - HKDF-SHA256 key derivation
 - AES-GCM-256 encryption
@@ -138,17 +140,18 @@ const keys = {
 RFC 9420 compliant MLS (Message Layer Security) group encryption.
 
 ```typescript
-import { MLSManager } from '../../crypto/MLS/MLSManager';
+import { MLSManager } from "../../crypto/MLS/MLSManager";
 
-const mlsManager = new MLSManager('user@example.com');
+const mlsManager = new MLSManager("user@example.com");
 await mlsManager.initialize();
-await mlsManager.createGroup('my-group');
+await mlsManager.createGroup("my-group");
 
-const mlsLayer = new MLSCipherLayer(mlsManager, 'my-group');
-const keys = { mlsManager, groupId: 'my-group' };
+const mlsLayer = new MLSCipherLayer(mlsManager, "my-group");
+const keys = { mlsManager, groupId: "my-group" };
 ```
 
 **Features:**
+
 - End-to-end encrypted group messaging
 - Forward secrecy
 - MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -159,7 +162,7 @@ const keys = { mlsManager, groupId: 'my-group' };
 Signal Protocol with Double Ratchet algorithm via WASM.
 
 ```typescript
-import signalWasm from '../../../pkg/signal_protocol_wasm.js';
+import signalWasm from "../../../pkg/signal_protocol_wasm.js";
 await signalWasm.default(); // Initialize WASM
 
 const signalLayer = new SignalCipherLayer(signalWasm, doubleRatchetState);
@@ -167,6 +170,7 @@ const keys = { doubleRatchetState };
 ```
 
 **Features:**
+
 - Double Ratchet algorithm
 - Forward secrecy
 - Post-compromise security
@@ -177,11 +181,11 @@ const keys = { doubleRatchetState };
 Implement the `CipherLayer` interface:
 
 ```typescript
-import { CipherLayer, EncryptedPayload, CipherLayerError } from './types';
+import { CipherLayer, EncryptedPayload, CipherLayerError } from "./types";
 
 class MyCustomCipherLayer implements CipherLayer {
-  readonly name = 'MyCustomCipher';
-  readonly version = '1.0.0';
+  readonly name = "MyCustomCipher";
+  readonly version = "1.0.0";
 
   validateKeys(keys: any): boolean {
     // Validate required keys
@@ -276,7 +280,7 @@ module.exports = {
   plugins: [
     new ModuleFederationPlugin({
       remotes: {
-        cryptography: 'cryptography@http://localhost:8083/remoteEntry.js',
+        cryptography: "cryptography@http://localhost:8083/remoteEntry.js",
       },
     }),
   ],
@@ -287,11 +291,9 @@ In your app:
 
 ```typescript
 // Dynamically import
-const {
-  CascadingCipherManager,
-  AESCipherLayer,
-  DHCipherLayer,
-} = await import('cryptography/CascadingCipher');
+const { CascadingCipherManager, AESCipherLayer, DHCipherLayer } = await import(
+  "cryptography/CascadingCipher"
+);
 
 // Use as normal
 const manager = new CascadingCipherManager();
@@ -323,6 +325,7 @@ npm start
 ```
 
 The demo includes:
+
 - Live encryption/decryption
 - Multiple layer configuration
 - DH key generation
@@ -332,11 +335,13 @@ The demo includes:
 ## Performance Considerations
 
 Each layer adds:
+
 - **Processing time**: ~5-50ms per layer (depends on algorithm)
 - **Size overhead**: Varies by algorithm (AES-GCM: +28 bytes, DH: +32 bytes, etc.)
 - **Memory**: Temporary buffers for intermediate results
 
 For optimal performance:
+
 - Use fewer layers when possible
 - Consider layer order (faster layers first)
 - Reuse key derivation when encrypting multiple messages
@@ -376,23 +381,27 @@ For optimal performance:
 ## Files Created
 
 ### Core
+
 - `src/crypto/CascadingCipher/types.ts` - Type definitions
 - `src/crypto/CascadingCipher/CascadingCipherManager.ts` - Main manager
 - `src/crypto/CascadingCipher/index.ts` - Exports
 
 ### Layers
+
 - `src/crypto/CascadingCipher/layers/AESCipherLayer.ts`
 - `src/crypto/CascadingCipher/layers/DHCipherLayer.ts`
 - `src/crypto/CascadingCipher/layers/MLSCipherLayer.ts`
 - `src/crypto/CascadingCipher/layers/SignalCipherLayer.ts`
 
 ### Tests
+
 - `src/tests/cascading-cipher/cipher-layer-interface.test.js` - ✅ 25/25 passing
 - `src/tests/cascading-cipher/cascading-cipher-manager.test.js` - ✅ 25/25 passing
 - `src/tests/cascading-cipher/aes-cipher-layer.test.js` - ⚠️ 10/21 passing (integration refinement needed)
 - `src/tests/cascading-cipher/integration.test.js` - Full integration tests
 
 ### Demo
+
 - `src/stories/CascadingCipher/CascadingCipherDemo.stories.js` - Interactive Storybook demo
 
 ## Contributing

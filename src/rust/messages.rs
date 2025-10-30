@@ -10,7 +10,7 @@ use js_sys::Uint8Array;
 use web_sys::console;
 use sha2::Sha256;
 use hkdf::Hkdf;
-use aes_gcm::{Aes256Gcm, aead::{Aead, NewAead}};
+use aes_gcm::{Aes256Gcm, aead::Aead, KeyInit};
 use aes_gcm::aead::generic_array::GenericArray;
 use rand::{RngCore, rngs::OsRng};
 use crate::rust::crypto::uint8_array_to_vec;
@@ -177,19 +177,18 @@ pub fn decrypt_message(
     // The nonce was prepended during encryption and is needed for decryption
     let nonce_ga = GenericArray::from_slice(&ciphertext_bytes[..12]);
     let encrypted_data = &ciphertext_bytes[12..];
-    
-    log(&format!("Nonce: {}, Encrypted data size: {} bytes", 
-        hex::encode(&ciphertext_bytes[..12]), encrypted_data.len()));
-    
+
+    // SECURITY: Avoid logging sizes to prevent traffic analysis attacks
+
     // Decrypt using AES-256-GCM with the provided message key
     // The authentication tag is verified automatically during decryption
     let key = GenericArray::from_slice(&message_key_bytes);
     let cipher = Aes256Gcm::new(key);
-    
+
     let plaintext = cipher.decrypt(nonce_ga, encrypted_data)
         .map_err(|e| JsValue::from_str(&format!("AES-GCM decryption failed: {}", e)))?;
-    
-    log(&format!("Message decrypted successfully, plaintext size: {} bytes", plaintext.len()));
+
+    log("Message decrypted successfully");
     
     Ok(Uint8Array::from(&plaintext[..]))
 }
