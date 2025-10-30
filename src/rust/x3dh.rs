@@ -80,22 +80,20 @@ pub fn x3dh_initiate(
     let bob_signed_prekey_public_bytes = uint8_array_to_vec(bob_signed_prekey_public);
     
     // Perform the three mandatory DH operations (X3DH protocol standard order)
-    
+
     // DH1: Alice_Identity_Private × Bob_SignedPrekey_Public
     // This proves Alice knows her identity key and authenticates Bob's signed prekey
     let dh1 = simple_ecdh(&alice_identity_private_bytes, &bob_signed_prekey_public_bytes);
-    
+
     // DH2: Alice_Ephemeral_Private × Bob_Identity_Public
     // This provides forward secrecy through Alice's ephemeral key
     let dh2 = simple_ecdh(&alice_ephemeral_private_bytes, &bob_identity_public_bytes);
-    
+
     // DH3: Alice_Ephemeral_Private × Bob_SignedPrekey_Public
     // This combines ephemeral forward secrecy with Bob's medium-term key
     let dh3 = simple_ecdh(&alice_ephemeral_private_bytes, &bob_signed_prekey_public_bytes);
-    
-    log(&format!("Alice DH1: {:?}", hex::encode(&dh1)));
-    log(&format!("Alice DH2: {:?}", hex::encode(&dh2)));
-    log(&format!("Alice DH3: {:?}", hex::encode(&dh3)));
+
+    // SECURITY: Never log DH results - they are cryptographic secrets
     
     // Concatenate the DH results in the standard order
     let mut dh_concat = Vec::new();
@@ -106,13 +104,13 @@ pub fn x3dh_initiate(
     // Optional fourth DH with one-time prekey for additional forward secrecy
     if let Some(bob_one_time_prekey) = bob_one_time_prekey_public {
         let bob_one_time_prekey_bytes = uint8_array_to_vec(&bob_one_time_prekey);
-        
+
         // DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public
         // This provides perfect forward secrecy as the one-time key is used only once
         let dh4 = simple_ecdh(&alice_ephemeral_private_bytes, &bob_one_time_prekey_bytes);
         dh_concat.extend_from_slice(&dh4);
-        
-        log(&format!("Alice DH4: {:?}", hex::encode(&dh4)));
+
+        // SECURITY: Never log DH4 result - it's a cryptographic secret
     }
     
     // Derive the final shared secret using HKDF (HMAC-based Key Derivation Function)
@@ -123,8 +121,9 @@ pub fn x3dh_initiate(
     let mut shared_secret = [0u8; 32];
     hkdf.expand(info, &mut shared_secret)
         .map_err(|e| JsValue::from_str(&format!("HKDF expand failed: {}", e)))?;
-    
-    log(&format!("Alice final shared secret: {}", hex::encode(&shared_secret)));
+
+    // SECURITY: Never log the shared secret - it's the most critical secret in X3DH
+    log("X3DH initiation completed successfully");
     
     // Create associated data for additional protocol context
     // This can be used for protocol versioning or additional authentication
@@ -192,19 +191,17 @@ pub fn x3dh_respond(
     let alice_ephemeral_public_bytes = uint8_array_to_vec(alice_ephemeral_public);
     
     // Perform the same DH operations as Alice (must be equivalent due to ECDH commutativity)
-    
+
     // DH1: Alice_Identity_Private × Bob_SignedPrekey_Public = Bob_SignedPrekey_Private × Alice_Identity_Public
     let dh1 = simple_ecdh(&bob_signed_prekey_private_bytes, &alice_identity_public_bytes);
-    
-    // DH2: Alice_Ephemeral_Private × Bob_Identity_Public = Bob_Identity_Private × Alice_Ephemeral_Public  
+
+    // DH2: Alice_Ephemeral_Private × Bob_Identity_Public = Bob_Identity_Private × Alice_Ephemeral_Public
     let dh2 = simple_ecdh(&bob_identity_private_bytes, &alice_ephemeral_public_bytes);
-    
+
     // DH3: Alice_Ephemeral_Private × Bob_SignedPrekey_Public = Bob_SignedPrekey_Private × Alice_Ephemeral_Public
     let dh3 = simple_ecdh(&bob_signed_prekey_private_bytes, &alice_ephemeral_public_bytes);
-    
-    log(&format!("Bob DH1: {:?}", hex::encode(&dh1)));
-    log(&format!("Bob DH2: {:?}", hex::encode(&dh2)));
-    log(&format!("Bob DH3: {:?}", hex::encode(&dh3)));
+
+    // SECURITY: Never log DH results - they are cryptographic secrets
     
     // Concatenate the DH results in the same order as Alice
     let mut dh_concat = Vec::new();
@@ -212,17 +209,17 @@ pub fn x3dh_respond(
     dh_concat.extend_from_slice(&dh2);
     dh_concat.extend_from_slice(&dh3);
     
-    // Optional fourth DH with one-time prekey  
+    // Optional fourth DH with one-time prekey
     if let Some(bob_one_time_prekey_private) = bob_one_time_prekey_private {
         let bob_one_time_prekey_private_bytes = uint8_array_to_vec(&bob_one_time_prekey_private);
-        
+
         // DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public = Bob_OneTimePrekey_Private × Alice_Ephemeral_Public
         let dh4 = simple_ecdh(&bob_one_time_prekey_private_bytes, &alice_ephemeral_public_bytes);
         dh_concat.extend_from_slice(&dh4);
-        
-        log(&format!("Bob DH4: {:?}", hex::encode(&dh4)));
+
+        // SECURITY: Never log DH4 result - it's a cryptographic secret
     }
-    
+
     // Derive the same shared secret using HKDF with identical parameters
     let salt = b"Signal_X3DH_Salt";
     let info = b"Signal_X3DH_Key_Derivation";
@@ -230,8 +227,9 @@ pub fn x3dh_respond(
     let mut shared_secret = [0u8; 32];
     hkdf.expand(info, &mut shared_secret)
         .map_err(|e| JsValue::from_str(&format!("HKDF expand failed: {}", e)))?;
-    
-    log(&format!("Bob final shared secret: {}", hex::encode(&shared_secret)));
+
+    // SECURITY: Never log the shared secret - it's the most critical secret in X3DH
+    log("X3DH response completed successfully");
     
     // Create the same associated data as Alice
     let associated_data = b"X3DH_Key_Exchange";

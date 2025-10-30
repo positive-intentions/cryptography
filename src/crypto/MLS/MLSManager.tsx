@@ -80,6 +80,8 @@ export class MLSManager {
    * Initialize the MLS client with a ciphersuite
    */
   async initialize(): Promise<void> {
+    console.log(`🔐 [MLS DEBUG] initialize() called - this.initialized BEFORE check: ${this.initialized}`);
+
     if (this.initialized) {
       console.warn('MLS Manager already initialized');
       return;
@@ -97,11 +99,14 @@ export class MLSManager {
       console.log(`✅ [MLS] Using ciphersuite: ${cipherSuiteName}`);
 
       // Mark as initialized before generating key package
+      console.log(`🔐 [MLS DEBUG] Setting this.initialized = true`);
       this.initialized = true;
+      console.log(`🔐 [MLS DEBUG] this.initialized is now: ${this.initialized}`);
 
       // Generate initial key package for this user
       await this.generateKeyPackage();
 
+      console.log(`🔐 [MLS DEBUG] After generateKeyPackage - this.initialized: ${this.initialized}`);
       console.log('✅ [MLS] Initialized successfully');
     } catch (error) {
       console.error('❌ [MLS] Failed to initialize:', error);
@@ -113,7 +118,9 @@ export class MLSManager {
    * Generate a new key package for joining groups
    */
   async generateKeyPackage(): Promise<MLSKeyPackageBundle> {
+    console.log(`🔑 [MLS DEBUG] generateKeyPackage() called - this.initialized: ${this.initialized}`);
     this.ensureInitialized();
+    console.log(`🔑 [MLS DEBUG] ensureInitialized() passed - this.initialized: ${this.initialized}`);
 
     try {
       console.log('🔑 [MLS] Generating key package');
@@ -690,9 +697,11 @@ export class MLSManager {
    * Clean up resources
    */
   async destroy(): Promise<void> {
+    console.log(`🧹 [MLS DEBUG] destroy() called - this.initialized WAS: ${this.initialized}`);
     this.groups.clear();
     this.keyPackage = null;
     this.initialized = false;
+    console.log(`🧹 [MLS DEBUG] destroy() - this.initialized is NOW: ${this.initialized}`);
     console.log('✅ [MLS] Manager destroyed');
   }
 
@@ -732,9 +741,18 @@ export class MLSManager {
    * Ensure the manager is initialized
    */
   private ensureInitialized(): void {
+    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized: ${this.initialized}`);
+    console.log(`🔐 [MLS DEBUG] ensureInitialized() - typeof this.initialized: ${typeof this.initialized}`);
+    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized === true: ${this.initialized === true}`);
+    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized === false: ${this.initialized === false}`);
+    console.log(`🔐 [MLS DEBUG] ensureInitialized() - !this.initialized: ${!this.initialized}`);
+
     if (!this.initialized) {
+      console.error(`❌ [MLS DEBUG] THROWING ERROR - this.initialized is: ${this.initialized}`);
       throw new Error('MLS Manager not initialized. Call initialize() first.');
     }
+
+    console.log(`✅ [MLS DEBUG] ensureInitialized() passed!`);
   }
 }
 

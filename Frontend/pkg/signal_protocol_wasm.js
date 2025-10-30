@@ -179,13 +179,23 @@ function takeFromExternrefTable0(idx) {
  * They are used in the X3DH key exchange protocol and for signing
  * other keys to establish authenticity.
  *
+ * ## Implementation
+ * Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+ * This provides 128-bit security level with efficient constant-time operations.
+ *
+ * ## Security Properties
+ * - Uses OS-level entropy source (OsRng)
+ * - Generates proper Curve25519 scalar/point pair
+ * - Public key is valid curve point derived via scalar multiplication
+ * - Constant-time operations prevent timing attacks
+ *
  * ## Usage
  * Each user/device should generate one identity key pair and use it
  * consistently across all communication sessions. The public key
  * can be distributed through a key server or other trusted mechanism.
  *
  * ## Returns
- * A `KeyPair` containing the identity public and private keys
+ * A `KeyPair` containing the identity public and private keys (32 bytes each)
  * @returns {KeyPair}
  */
 export function generate_identity_keypair() {
@@ -203,13 +213,21 @@ export function generate_identity_keypair() {
  * by the identity key to prove authenticity. They are used in the X3DH
  * protocol to establish initial communication.
  *
+ * ## Implementation
+ * Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+ *
  * ## Purpose
  * - Provides forward secrecy by rotating regularly
  * - Enables asynchronous key exchange when recipient is offline
  * - Signed by identity key for authenticity verification
  *
+ * ## Security Properties
+ * - Real elliptic curve cryptography (X25519)
+ * - Constant-time operations
+ * - Proper scalar/point derivation
+ *
  * ## Returns
- * A `KeyPair` containing the signed prekey public and private keys
+ * A `KeyPair` containing the signed prekey public and private keys (32 bytes each)
  * @returns {KeyPair}
  */
 export function generate_signed_prekey() {
@@ -227,13 +245,17 @@ export function generate_signed_prekey() {
  * They are consumed during the X3DH key exchange and then discarded,
  * ensuring that compromise of long-term keys doesn't affect past communications.
  *
+ * ## Implementation
+ * Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+ *
  * ## Security Benefits
  * - Perfect forward secrecy (used only once)
  * - Prevents replay attacks on key exchanges
  * - Protects against compromise of identity/signed prekeys
+ * - Real elliptic curve cryptography
  *
  * ## Returns
- * A `KeyPair` containing the one-time prekey public and private keys
+ * A `KeyPair` containing the one-time prekey public and private keys (32 bytes each)
  * @returns {KeyPair}
  */
 export function generate_one_time_prekey() {
@@ -251,13 +273,21 @@ export function generate_one_time_prekey() {
  * and provide additional forward secrecy. They are never stored
  * long-term and are discarded after the key exchange completes.
  *
+ * ## Implementation
+ * Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+ *
  * ## Use Cases
  * - X3DH key exchange initiation
  * - Session-specific entropy
  * - Enhanced forward secrecy guarantees
  *
+ * ## Security Properties
+ * - Real elliptic curve cryptography (X25519)
+ * - Constant-time operations
+ * - Fresh randomness for each generation
+ *
  * ## Returns
- * A `KeyPair` containing the ephemeral public and private keys
+ * A `KeyPair` containing the ephemeral public and private keys (32 bytes each)
  * @returns {KeyPair}
  */
 export function generate_ephemeral_keypair() {
@@ -269,11 +299,18 @@ export function generate_ephemeral_keypair() {
 }
 
 /**
- * Sign data with a private key
+ * Sign data using Ed25519 digital signature algorithm
  *
- * Creates a digital signature that proves the data was signed by the holder
- * of the corresponding private key. The signature can be verified by anyone
- * who has the public key.
+ * Creates a cryptographically secure digital signature that proves the data
+ * was signed by the holder of the corresponding Ed25519 private key.
+ * The signature can be verified by anyone who has the public key.
+ *
+ * ## Implementation
+ * Uses Ed25519 (Edwards-curve Digital Signature Algorithm) which provides:
+ * - 128-bit security level
+ * - Deterministic signatures (same input = same signature)
+ * - Small signature size (64 bytes)
+ * - Fast verification
  *
  * ## Usage Example
  * ```javascript
@@ -282,14 +319,15 @@ export function generate_ephemeral_keypair() {
  * ```
  *
  * ## Parameters
- * - `private_key`: The signer's private key as Uint8Array (must be 32 bytes)
+ * - `private_key`: The signer's Ed25519 private key as Uint8Array (must be 32 bytes)
  * - `data`: The data to sign as Uint8Array
  *
  * ## Returns
- * A Uint8Array containing the 32-byte signature
+ * A Uint8Array containing the 64-byte Ed25519 signature
  *
  * ## Errors
  * - Returns error if private key is not exactly 32 bytes
+ * - Returns error if signing operation fails
  * @param {Uint8Array} private_key
  * @param {Uint8Array} data
  * @returns {Uint8Array}
@@ -303,11 +341,17 @@ export function sign_data(private_key, data) {
 }
 
 /**
- * Verify a digital signature
+ * Verify an Ed25519 digital signature
  *
  * Verifies that a signature was created by the holder of the private key
- * corresponding to the given public key. This ensures message authenticity
- * and integrity.
+ * corresponding to the given Ed25519 public key. This ensures message
+ * authenticity and integrity through elliptic curve cryptography.
+ *
+ * ## Security Properties
+ * - **Unforgeability**: Cannot create valid signatures without private key
+ * - **Non-repudiation**: Signer cannot deny creating the signature
+ * - **Integrity**: Any modification to data invalidates the signature
+ * - **Constant-time**: Verification takes same time regardless of validity
  *
  * ## Usage Example
  * ```javascript
@@ -318,8 +362,8 @@ export function sign_data(private_key, data) {
  * ```
  *
  * ## Parameters
- * - `public_key`: The signer's public key as Uint8Array (must be 32 bytes)
- * - `signature`: The signature to verify as Uint8Array (must be 32 bytes)
+ * - `public_key`: The signer's Ed25519 public key as Uint8Array (must be 32 bytes)
+ * - `signature`: The Ed25519 signature to verify as Uint8Array (must be 64 bytes)
  * - `data`: The original signed data as Uint8Array
  *
  * ## Returns
@@ -327,7 +371,8 @@ export function sign_data(private_key, data) {
  *
  * ## Errors
  * - Returns error if public key is not exactly 32 bytes
- * - Returns error if signature is not exactly 32 bytes
+ * - Returns error if signature is not exactly 64 bytes
+ * - Returns error if key format is invalid
  * @param {Uint8Array} public_key
  * @param {Uint8Array} signature
  * @param {Uint8Array} data

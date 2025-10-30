@@ -3,163 +3,185 @@
 //! This module handles the generation of various types of cryptographic keys
 //! used in the Signal Protocol. All key generation uses secure random number
 //! generation and follows Signal Protocol specifications.
+//!
+//! **PRODUCTION IMPLEMENTATION**: Uses real X25519 and Ed25519 cryptography
 
 use wasm_bindgen::prelude::*;
 use web_sys::console;
-use sha2::{Sha256, Digest};
+use x25519_dalek::{StaticSecret as X25519StaticSecret, PublicKey as X25519PublicKey};
 use rand::{RngCore, rngs::OsRng};
 use crate::rust::types::KeyPair;
 
 /// Log messages to the browser console for debugging
-/// 
+///
 /// This helper function makes it easy to trace key generation operations
 /// during development and testing.
+///
+/// **SECURITY NOTE**: Only logs non-sensitive operational information
 fn log(s: &str) {
     console::log_1(&JsValue::from_str(s));
 }
 
-/// Generate a cryptographically secure random 32-byte key
-/// 
-/// Uses the operating system's secure random number generator to create
-/// high-entropy key material. This is the foundation for all key generation
-/// in the Signal Protocol implementation.
-/// 
-/// ## Security Properties
-/// - Uses OS-level entropy source (OsRng)
-/// - Generates 256 bits of entropy
-/// - Suitable for cryptographic key material
-fn generate_random_key() -> Vec<u8> {
-    let mut key = vec![0u8; 32];
-    OsRng.fill_bytes(&mut key);
-    key
-}
-
 /// Generate an identity key pair for long-term user identification
-/// 
+///
 /// Identity keys are long-lived keys that identify a user or device.
 /// They are used in the X3DH key exchange protocol and for signing
 /// other keys to establish authenticity.
-/// 
+///
+/// ## Implementation
+/// Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+/// This provides 128-bit security level with efficient constant-time operations.
+///
+/// ## Security Properties
+/// - Uses OS-level entropy source (OsRng)
+/// - Generates proper Curve25519 scalar/point pair
+/// - Public key is valid curve point derived via scalar multiplication
+/// - Constant-time operations prevent timing attacks
+///
 /// ## Usage
 /// Each user/device should generate one identity key pair and use it
 /// consistently across all communication sessions. The public key
 /// can be distributed through a key server or other trusted mechanism.
-/// 
+///
 /// ## Returns
-/// A `KeyPair` containing the identity public and private keys
+/// A `KeyPair` containing the identity public and private keys (32 bytes each)
 #[wasm_bindgen]
 pub fn generate_identity_keypair() -> Result<KeyPair, JsValue> {
-    log("Generating identity keypair using simplified crypto");
-    
-    let private_key = generate_random_key();
-    
-    // In a simplified implementation, we derive the public key from the private key
-    // using SHA-256. In a real implementation, this would use proper elliptic curve operations
-    let public_key = {
-        let mut hasher = Sha256::new();
-        hasher.update(&private_key);
-        hasher.finalize().to_vec()
-    };
-    
+    log("Generating identity keypair using X25519");
+
+    // Generate a random scalar (private key) using cryptographically secure RNG
+    let mut private_key_bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut private_key_bytes);
+
+    // Create X25519 static secret from random bytes
+    let static_secret = X25519StaticSecret::from(private_key_bytes);
+
+    // Derive the public key via scalar multiplication on the curve base point
+    // This is real elliptic curve cryptography, not a hash function
+    let public_key = X25519PublicKey::from(&static_secret);
+
     Ok(KeyPair {
-        public_key,
-        private_key,
+        public_key: public_key.as_bytes().to_vec(),
+        private_key: static_secret.to_bytes().to_vec(),
     })
 }
 
 /// Generate a signed prekey for medium-term use in key exchanges
-/// 
+///
 /// Signed prekeys are generated periodically (e.g., weekly) and signed
 /// by the identity key to prove authenticity. They are used in the X3DH
 /// protocol to establish initial communication.
-/// 
+///
+/// ## Implementation
+/// Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+///
 /// ## Purpose
 /// - Provides forward secrecy by rotating regularly
 /// - Enables asynchronous key exchange when recipient is offline
 /// - Signed by identity key for authenticity verification
-/// 
+///
+/// ## Security Properties
+/// - Real elliptic curve cryptography (X25519)
+/// - Constant-time operations
+/// - Proper scalar/point derivation
+///
 /// ## Returns
-/// A `KeyPair` containing the signed prekey public and private keys
+/// A `KeyPair` containing the signed prekey public and private keys (32 bytes each)
 #[wasm_bindgen]
 pub fn generate_signed_prekey() -> Result<KeyPair, JsValue> {
-    log("Generating signed prekey using simplified crypto");
-    
-    let private_key = generate_random_key();
-    
-    // Derive public key from private key using SHA-256
-    let public_key = {
-        let mut hasher = Sha256::new();
-        hasher.update(&private_key);
-        hasher.finalize().to_vec()
-    };
-    
+    log("Generating signed prekey using X25519");
+
+    // Generate a random scalar (private key)
+    let mut private_key_bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut private_key_bytes);
+
+    // Create X25519 static secret
+    let static_secret = X25519StaticSecret::from(private_key_bytes);
+
+    // Derive public key via scalar multiplication
+    let public_key = X25519PublicKey::from(&static_secret);
+
     Ok(KeyPair {
-        public_key,
-        private_key,
+        public_key: public_key.as_bytes().to_vec(),
+        private_key: static_secret.to_bytes().to_vec(),
     })
 }
 
 /// Generate a one-time prekey for single-use in key exchanges
-/// 
+///
 /// One-time prekeys provide additional forward secrecy by being used only once.
 /// They are consumed during the X3DH key exchange and then discarded,
 /// ensuring that compromise of long-term keys doesn't affect past communications.
-/// 
+///
+/// ## Implementation
+/// Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+///
 /// ## Security Benefits
 /// - Perfect forward secrecy (used only once)
 /// - Prevents replay attacks on key exchanges
 /// - Protects against compromise of identity/signed prekeys
-/// 
+/// - Real elliptic curve cryptography
+///
 /// ## Returns
-/// A `KeyPair` containing the one-time prekey public and private keys
+/// A `KeyPair` containing the one-time prekey public and private keys (32 bytes each)
 #[wasm_bindgen]
 pub fn generate_one_time_prekey() -> Result<KeyPair, JsValue> {
-    log("Generating one-time prekey using simplified crypto");
-    
-    let private_key = generate_random_key();
-    
-    // Derive public key from private key using SHA-256
-    let public_key = {
-        let mut hasher = Sha256::new();
-        hasher.update(&private_key);
-        hasher.finalize().to_vec()
-    };
-    
+    log("Generating one-time prekey using X25519");
+
+    // Generate a random scalar (private key)
+    let mut private_key_bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut private_key_bytes);
+
+    // Create X25519 static secret
+    let static_secret = X25519StaticSecret::from(private_key_bytes);
+
+    // Derive public key via scalar multiplication
+    let public_key = X25519PublicKey::from(&static_secret);
+
     Ok(KeyPair {
-        public_key,
-        private_key,
+        public_key: public_key.as_bytes().to_vec(),
+        private_key: static_secret.to_bytes().to_vec(),
     })
 }
 
 /// Generate an ephemeral key pair for temporary use in key exchanges
-/// 
+///
 /// Ephemeral keys are generated fresh for each key exchange session
 /// and provide additional forward secrecy. They are never stored
 /// long-term and are discarded after the key exchange completes.
-/// 
+///
+/// ## Implementation
+/// Uses X25519 (Curve25519 Diffie-Hellman) for key agreement operations.
+///
 /// ## Use Cases
 /// - X3DH key exchange initiation
 /// - Session-specific entropy
 /// - Enhanced forward secrecy guarantees
-/// 
+///
+/// ## Security Properties
+/// - Real elliptic curve cryptography (X25519)
+/// - Constant-time operations
+/// - Fresh randomness for each generation
+///
 /// ## Returns
-/// A `KeyPair` containing the ephemeral public and private keys
+/// A `KeyPair` containing the ephemeral public and private keys (32 bytes each)
 #[wasm_bindgen]
 pub fn generate_ephemeral_keypair() -> Result<KeyPair, JsValue> {
-    log("Generating ephemeral keypair using simplified crypto");
-    
-    let private_key = generate_random_key();
-    
-    // Derive public key from private key using SHA-256
-    let public_key = {
-        let mut hasher = Sha256::new();
-        hasher.update(&private_key);
-        hasher.finalize().to_vec()
-    };
-    
+    log("Generating ephemeral keypair using X25519");
+
+    // Generate a random scalar (private key)
+    let mut private_key_bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut private_key_bytes);
+
+    // Create X25519 static secret
+    let static_secret = X25519StaticSecret::from(private_key_bytes);
+
+    // Derive public key via scalar multiplication
+    let public_key = X25519PublicKey::from(&static_secret);
+
     Ok(KeyPair {
-        public_key,
-        private_key,
+        public_key: public_key.as_bytes().to_vec(),
+        private_key: static_secret.to_bytes().to_vec(),
     })
 }
 
@@ -168,23 +190,28 @@ mod tests {
     use super::*;
     use wasm_bindgen_test::*;
 
-    /// Test that identity keypairs are generated successfully
+    /// Test that identity keypairs are generated successfully with real X25519
     #[wasm_bindgen_test]
     fn test_generate_identity_keypair() {
         let keypair = generate_identity_keypair().unwrap();
-        
-        // Check that keys are the correct length (32 bytes each)
+
+        // Check that keys are the correct length (32 bytes each for X25519)
         assert_eq!(keypair.public_key().length(), 32);
         assert_eq!(keypair.private_key().length(), 32);
-        
-        // Verify that public key is derived consistently from private key
-        let private_bytes = keypair.private_key().to_vec();
-        let mut hasher = Sha256::new();
-        hasher.update(&private_bytes);
-        let expected_public = hasher.finalize().to_vec();
-        let actual_public = keypair.public_key().to_vec();
-        
-        assert_eq!(expected_public, actual_public);
+
+        // Verify that the keypair is valid by using it in an ECDH operation
+        let keypair2 = generate_identity_keypair().unwrap();
+
+        // Use the keypair in crypto operations to verify it works
+        use crate::rust::crypto::x25519_ecdh;
+        let shared_secret = x25519_ecdh(
+            &keypair.private_key().to_vec(),
+            &keypair2.public_key().to_vec()
+        );
+
+        // Should succeed and produce a 32-byte shared secret
+        assert!(shared_secret.is_ok());
+        assert_eq!(shared_secret.unwrap().len(), 32);
     }
 
     /// Test that multiple keypair generations produce different results

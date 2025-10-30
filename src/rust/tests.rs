@@ -93,33 +93,36 @@ mod wasm_tests {
 
     #[wasm_bindgen_test]
     fn test_signature_operations_basic() {
-        // Generate a key pair for testing
-        let keypair = generate_identity_keypair().unwrap();
-        
+        // For Ed25519 signatures, we need to generate a proper Ed25519 key pair
+        // NOTE: generate_identity_keypair() creates X25519 keys for ECDH, NOT for signing
+        use ed25519_dalek::SigningKey;
+        use rand::RngCore;
+
+        // Generate Ed25519 signing key
+        let mut seed = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut seed);
+        let signing_key = SigningKey::from_bytes(&seed);
+        let verifying_key = signing_key.verifying_key();
+
+        let private_key = Uint8Array::from(&seed[..]);
+        let public_key = Uint8Array::from(&verifying_key.as_bytes()[..]);
+
         // Test data to sign
         let test_data = vec![1u8, 2u8, 3u8, 4u8, 5u8];
         let data_array = vec_to_uint8array(test_data);
-        
-        // Note: The current implementation might use X25519 keys which aren't for signing
-        // This test verifies the function interface rather than cryptographic correctness
-        let sign_result = sign_data(&keypair.private_key(), &data_array);
-        
-        // The function should either succeed or fail gracefully
-        match sign_result {
-            Ok(signature) => {
-                // If signing succeeds, signature should have expected length
-                let sig_vec = uint8array_to_vec(&signature);
-                assert!(sig_vec.len() > 0);
-                
-                // Test verification
-                let verify_result = verify_signature(&keypair.public_key(), &signature, &data_array);
-                assert!(verify_result.is_ok());
-            }
-            Err(_) => {
-                // If signing fails (e.g., wrong key type), that's also acceptable for this test
-                // The important thing is that the function doesn't panic
-            }
-        }
+
+        // Sign with Ed25519
+        let sign_result = sign_data(&private_key, &data_array);
+        assert!(sign_result.is_ok(), "Ed25519 signing should succeed");
+
+        let signature = sign_result.unwrap();
+        let sig_vec = uint8array_to_vec(&signature);
+        assert_eq!(sig_vec.len(), 64, "Ed25519 signatures are 64 bytes");
+
+        // Verify signature
+        let verify_result = verify_signature(&public_key, &signature, &data_array);
+        assert!(verify_result.is_ok(), "Verification should not error");
+        assert_eq!(verify_result.unwrap(), true, "Valid signature must verify");
     }
 
     #[wasm_bindgen_test]
@@ -195,18 +198,16 @@ mod wasm_tests {
 #[cfg(test)]
 mod native_tests {
     use super::super::{
-        crypto::{simple_ecdh, simple_sign, simple_verify},
         types::*,
         error::*,
         double_ratchet::*,
-        utils::{log, serialize_public_key_internal, deserialize_public_key_internal, hkdf_derive_key_internal},
-        keys::*,
+        utils::{serialize_public_key_internal, deserialize_public_key_internal, hkdf_derive_key_internal},
     };
     use std::collections::HashMap;
     use sha2::{Sha256, Digest};
     use rand::{RngCore, rngs::OsRng};
     use hkdf::Hkdf;
-    use aes_gcm::{Aes256Gcm, aead::{Aead, NewAead}};
+    use aes_gcm::{Aes256Gcm, aead::Aead, KeyInit};
     use aes_gcm::aead::generic_array::GenericArray;
 
     // Test all SignalError variants and traits
@@ -238,106 +239,144 @@ mod native_tests {
         }
     }
 
-    // Test simple signature functions
+    // Test real Ed25519 signature functions
     #[test]
-    fn test_simple_sign_and_verify() {
-        let private_key = vec![42u8; 32];
-        let public_key = vec![42u8; 32]; // In this simplified demo, public key = private key for verification to work
-        let data = b"Hello, cryptographic signature!";
-        
-        // Sign the data
-        let signature = simple_sign(&private_key, data);
-        assert_eq!(signature.len(), 32);
-        
-        // For this simplified implementation, verification uses the public key directly
-        let is_valid = simple_verify(&public_key, &signature, data);
-        assert!(is_valid);
-        
+    fn test_ed25519_sign_and_verify() {
+        use ed25519_dalek::{SigningKey, Signer, Verifier};
+
+        // Generate a real Ed25519 key pair
+        let mut private_key_bytes = [42u8; 32];
+        OsRng.fill_bytes(&mut private_key_bytes);
+
+        let signing_key = SigningKey::from_bytes(&private_key_bytes);
+        let verifying_key = signing_key.verifying_key();
+        let public_key_bytes = verifying_key.to_bytes();
+
+        let data = b"Hello, real Ed25519 signature!";
+
+        // Sign the data with real Ed25519
+        let signature = signing_key.sign(data);
+        assert_eq!(signature.to_bytes().len(), 64, "Ed25519 signatures are 64 bytes");
+
+        // Verify with correct public key
+        let is_valid = verifying_key.verify(data, &signature).is_ok();
+        assert!(is_valid, "Valid signature must verify");
+
         // Test with wrong data
         let wrong_data = b"Different data";
-        let is_invalid = simple_verify(&public_key, &signature, wrong_data);
-        assert!(!is_invalid);
-        
+        let is_invalid = verifying_key.verify(wrong_data, &signature).is_ok();
+        assert!(!is_invalid, "Signature with wrong data must fail");
+
         // Test with wrong signature
-        let wrong_signature = vec![0u8; 32];
-        let is_invalid2 = simple_verify(&public_key, &wrong_signature, data);
-        assert!(!is_invalid2);
-        
-        // Test with wrong public key
-        let wrong_public_key = vec![99u8; 32];
-        let is_invalid3 = simple_verify(&wrong_public_key, &signature, data);
-        assert!(!is_invalid3);
+        let wrong_signature_bytes = [0u8; 64];
+        let wrong_signature = ed25519_dalek::Signature::from_bytes(&wrong_signature_bytes);
+        let is_invalid2 = verifying_key.verify(data, &wrong_signature).is_ok();
+        assert!(!is_invalid2, "Wrong signature must fail");
+
+        // Test with different public key (unforgeability)
+        let mut other_key_bytes = [99u8; 32];
+        OsRng.fill_bytes(&mut other_key_bytes);
+        let other_signing_key = SigningKey::from_bytes(&other_key_bytes);
+        let other_verifying_key = other_signing_key.verifying_key();
+        let is_invalid3 = other_verifying_key.verify(data, &signature).is_ok();
+        assert!(!is_invalid3, "Signature must not verify with wrong public key");
     }
 
     #[test]
-    fn test_simple_sign_deterministic() {
-        let private_key = vec![123u8; 32];
+    fn test_ed25519_sign_deterministic() {
+        use ed25519_dalek::{SigningKey, Signer};
+
+        let private_key_bytes = [123u8; 32];
+        let signing_key = SigningKey::from_bytes(&private_key_bytes);
         let data = b"Same data every time";
-        
-        let signature1 = simple_sign(&private_key, data);
-        let signature2 = simple_sign(&private_key, data);
-        
-        // Same inputs should produce same signature
-        assert_eq!(signature1, signature2);
-        assert_eq!(signature1.len(), 32);
-        
+
+        // Sign twice with same key and data
+        let signature1 = signing_key.sign(data);
+        let signature2 = signing_key.sign(data);
+
+        // Ed25519 signatures are deterministic
+        assert_eq!(signature1.to_bytes(), signature2.to_bytes());
+        assert_eq!(signature1.to_bytes().len(), 64);
+
         // Different private key should produce different signature
-        let different_key = vec![124u8; 32];
-        let signature3 = simple_sign(&different_key, data);
-        assert_ne!(signature1, signature3);
+        let different_key_bytes = [124u8; 32];
+        let different_signing_key = SigningKey::from_bytes(&different_key_bytes);
+        let signature3 = different_signing_key.sign(data);
+        assert_ne!(signature1.to_bytes(), signature3.to_bytes());
     }
 
     #[test]
-    fn test_simple_verify_edge_cases() {
-        let public_key = vec![1u8; 32];
-        let signature = vec![2u8; 32];
-        
+    fn test_ed25519_verify_edge_cases() {
+        use ed25519_dalek::{SigningKey, Signer, Verifier};
+
+        let private_key_bytes = [1u8; 32];
+        let signing_key = SigningKey::from_bytes(&private_key_bytes);
+        let verifying_key = signing_key.verifying_key();
+
         // Test with empty data
         let empty_data = b"";
-        let result = simple_verify(&public_key, &signature, empty_data);
-        assert!(!result); // Should be false since signature won't match
-        
+        let signature = signing_key.sign(empty_data);
+        let result = verifying_key.verify(empty_data, &signature).is_ok();
+        assert!(result, "Should verify empty data");
+
         // Test with very long data
         let long_data = vec![42u8; 10000];
-        let result2 = simple_verify(&public_key, &signature, &long_data);
-        assert!(!result2); // Should be false since signature won't match
+        let signature2 = signing_key.sign(&long_data);
+        let result2 = verifying_key.verify(&long_data, &signature2).is_ok();
+        assert!(result2, "Should verify long data");
     }
 
-    // Test core crypto functions
+    // Test real X25519 ECDH functions
     #[test]
-    fn test_simple_ecdh_commutativity() {
-        let key_a = vec![1u8; 32];
-        let key_b = vec![2u8; 32];
-        
-        // For true commutativity test, we need to test with the same keys
-        // in different positions, not derived public keys
-        let result1 = simple_ecdh(&key_a, &key_b);
-        let result2 = simple_ecdh(&key_b, &key_a);
-        
-        assert_eq!(result1, result2);
-        assert_eq!(result1.len(), 32);
-        
-        // Also test that same inputs give same outputs
-        let result3 = simple_ecdh(&key_a, &key_b);
-        assert_eq!(result1, result3);
+    fn test_x25519_ecdh_commutativity() {
+        use x25519_dalek::{StaticSecret, PublicKey};
+
+        // Generate two real X25519 key pairs
+        let mut secret_a_bytes = [1u8; 32];
+        let mut secret_b_bytes = [2u8; 32];
+        OsRng.fill_bytes(&mut secret_a_bytes);
+        OsRng.fill_bytes(&mut secret_b_bytes);
+
+        let secret_a = StaticSecret::from(secret_a_bytes);
+        let secret_b = StaticSecret::from(secret_b_bytes);
+
+        let public_a = PublicKey::from(&secret_a);
+        let public_b = PublicKey::from(&secret_b);
+
+        // Test commutativity: A(secret_a, public_b) == B(secret_b, public_a)
+        let shared_ab = secret_a.diffie_hellman(&public_b);
+        let shared_ba = secret_b.diffie_hellman(&public_a);
+
+        assert_eq!(shared_ab.as_bytes(), shared_ba.as_bytes(), "ECDH must be commutative");
+        assert_eq!(shared_ab.as_bytes().len(), 32);
+
+        // Also test that same inputs give same outputs (deterministic)
+        let shared_ab2 = StaticSecret::from(secret_a_bytes).diffie_hellman(&public_b);
+        assert_eq!(shared_ab.as_bytes(), shared_ab2.as_bytes());
     }
 
     #[test]
-    fn test_simple_ecdh_deterministic() {
-        let key_a = vec![42u8; 32];
-        let key_b = vec![84u8; 32];
-        
-        let result1 = simple_ecdh(&key_a, &key_b);
-        let result2 = simple_ecdh(&key_a, &key_b);
-        
-        // Same inputs should give same outputs
-        assert_eq!(result1, result2);
-        assert_eq!(result1.len(), 32);
-        
+    fn test_x25519_ecdh_deterministic() {
+        use x25519_dalek::{StaticSecret, PublicKey};
+
+        let secret_a_bytes = [42u8; 32];
+        let secret_b_bytes = [84u8; 32];
+
+        let secret_a = StaticSecret::from(secret_a_bytes);
+        let public_b = PublicKey::from(&StaticSecret::from(secret_b_bytes));
+
+        // Same inputs should give same outputs (deterministic)
+        let result1 = secret_a.diffie_hellman(&public_b);
+        let result2 = StaticSecret::from(secret_a_bytes).diffie_hellman(&public_b);
+
+        assert_eq!(result1.as_bytes(), result2.as_bytes());
+        assert_eq!(result1.as_bytes().len(), 32);
+
         // Different keys should give different results
-        let key_c = vec![126u8; 32];
-        let result3 = simple_ecdh(&key_a, &key_c);
-        assert_ne!(result1, result3);
+        let secret_c_bytes = [126u8; 32];
+        let public_c = PublicKey::from(&StaticSecret::from(secret_c_bytes));
+        let result3 = secret_a.diffie_hellman(&public_c);
+        assert_ne!(result1.as_bytes(), result3.as_bytes());
     }
 
     // Test error types

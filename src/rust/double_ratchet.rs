@@ -25,7 +25,7 @@ use js_sys::Uint8Array;
 use web_sys::console;
 use sha2::Sha256;
 use hkdf::Hkdf;
-use aes_gcm::{Aes256Gcm, aead::{Aead, NewAead}};
+use aes_gcm::{Aes256Gcm, aead::Aead, KeyInit};
 use aes_gcm::aead::generic_array::GenericArray;
 use rand::{RngCore, rngs::OsRng};
 use std::collections::HashMap;
@@ -443,16 +443,16 @@ fn skip_message_keys(
             while state.receiving_message_number < until_message_number {
                 // Derive message key for this message number
                 let message_key = derive_message_key(&current_chain_key)?;
-                
+
                 // Store the skipped key
                 let key_id = format!("{}:{}", dh_public_key_hex, state.receiving_message_number);
                 state.skipped_message_keys.insert(key_id.clone(), message_key);
-                
+
                 // Advance to next chain key
                 current_chain_key = derive_next_chain_key(&current_chain_key)?;
                 state.receiving_message_number += 1;
-                
-                log(&format!("Stored skipped message key: {}", key_id));
+
+                // SECURITY: Avoid logging key identifiers to prevent timing analysis
             }
             
             *receiving_chain_key = current_chain_key;
@@ -600,9 +600,9 @@ pub fn double_ratchet_decrypt(
     // Try to find skipped message key first
     let dh_key_hex = hex::encode(message_dh_key);
     let key_id = format!("{}:{}", dh_key_hex, message_number);
-    
+
     let message_key = if let Some(skipped_key) = state.skipped_message_keys.remove(&key_id) {
-        log(&format!("Using skipped message key for: {}", key_id));
+        // SECURITY: Avoid logging key identifiers to prevent timing analysis
         skipped_key
     } else {
         // Skip intermediate message keys if needed

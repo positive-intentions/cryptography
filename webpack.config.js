@@ -90,11 +90,27 @@ module.exports = {
     fallback: {
       "crypto": false, // Use browser's window.crypto instead of Node.js crypto
     },
-  },
-  devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
+    // Handle missing WASM module gracefully
+    alias: {
+      // Optional: Add alias if pkg directory doesn't exist
     },
+  },
+  // Ignore missing optional dependencies (like WASM)
+  ignoreWarnings: [
+    {
+      module: /pkg\/signal_protocol_wasm/,
+    },
+  ],
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname, 'dist'),
+      },
+      {
+        directory: path.join(__dirname, 'pkg'),
+        publicPath: '/pkg',
+      },
+    ],
     hot: true,
     liveReload: true,
     port: 8083,
@@ -104,6 +120,11 @@ module.exports = {
       overlay: false,
     },
     watchFiles: ['src/**/*'],
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
+    },
   },
   module: {
     rules: [
@@ -164,6 +185,8 @@ module.exports = {
       exposes: {
         './Cryptography': './src/stories/components/Cryptography.tsx',
         './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
+        './CascadingCipher': './src/crypto/CascadingCipher/index.ts',
+        './pkg/signal_protocol_wasm': './pkg/signal_protocol_wasm.js',
       },
       remotes: {
         "dim": moduleRedundency({
