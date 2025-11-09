@@ -154,11 +154,9 @@ const SignalProtocolWasmDemo = () => {
     const initializeWasm = async () => {
         setWasmInitializing(true);
         try {
-            // Try to load the real WASM module from public directory
-            // Note: Commenting out real WASM loading as it's not available
-            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
-            // throw new Error('WASM module not available - using mock implementation');
-            await wasmModule.default(); // Initialize the WASM module
+            // Load WASM bindings from federated signal_protocol module
+            const wasmBindings = await import('signal_protocol/WasmBindings');
+            const wasmModule = await wasmBindings.loadWasmModule();
             
             // Create a wrapper that matches our expected interface
             const wasmWrapper = {
@@ -1072,9 +1070,9 @@ const PerformanceFocusDemo = () => {
 
     const initializeWasm = async () => {
         try {
-            // Try to load the real WASM module
-            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
-            await wasmModule.default();
+            // Load WASM bindings from federated signal_protocol module
+            const wasmBindings = await import('signal_protocol/WasmBindings');
+            const wasmModule = await wasmBindings.loadWasmModule();
             
             const wasmWrapper = {
                 async generateIdentityKeyPair() {

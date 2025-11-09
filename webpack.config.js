@@ -95,20 +95,12 @@ module.exports = {
       // Optional: Add alias if pkg directory doesn't exist
     },
   },
-  // Ignore missing optional dependencies (like WASM)
-  ignoreWarnings: [
-    {
-      module: /pkg\/signal_protocol_wasm/,
-    },
-  ],
+  // Ignore missing optional dependencies
+  ignoreWarnings: [],
   devServer: {
     static: [
       {
         directory: path.join(__dirname, 'dist'),
-      },
-      {
-        directory: path.join(__dirname, 'pkg'),
-        publicPath: '/pkg',
       },
     ],
     hot: true,
@@ -186,7 +178,6 @@ module.exports = {
         './Cryptography': './src/stories/components/Cryptography.tsx',
         './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
         './CascadingCipher': './src/crypto/CascadingCipher/index.ts',
-        './pkg/signal_protocol_wasm': './pkg/signal_protocol_wasm.js',
       },
       remotes: {
         "dim": moduleRedundency({
@@ -211,6 +202,14 @@ module.exports = {
             'http://localhost:8083/remoteEntry.js', // local for testing
             'https://positive-intentions.github.io/glitr-chat/remoteEntry.js',
             'https://glitr.positive-intentions.com/remoteEntry.js'
+          ]
+        }),
+        "signal_protocol": moduleRedundency({
+          moduleName: 'signal_protocol',
+          urls: [
+            'http://localhost:8084/remoteEntry.js', // local for testing
+            'https://positive-intentions.github.io/signal-protocol/remoteEntry.js',
+            'https://signal.positive-intentions.com/remoteEntry.js'
           ]
         }),
       },

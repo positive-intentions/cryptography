@@ -112,6 +112,14 @@ const moduleFederationConfig = new ModuleFederationPlugin({
         'https://ui.positive-intentions.com/remoteEntry.js'
       ]
     }),
+    "signal_protocol": moduleRedundency({
+      moduleName: 'signal_protocol',
+      urls: [
+        'http://localhost:8084/remoteEntry.js', // local for testing
+        'https://positive-intentions.github.io/signal-protocol/remoteEntry.js',
+        'https://signal.positive-intentions.com/remoteEntry.js'
+      ]
+    }),
   },
   shared: {
     react: {
@@ -133,14 +141,14 @@ const config = {
 
   webpackFinal: async (config) => {
     config.plugins.push(moduleFederationConfig);
-    
+
     // Resolve emotion duplication
     config.resolve.alias = {
       ...config.resolve.alias,
       '@emotion/react': require.resolve('@emotion/react'),
       '@emotion/styled': require.resolve('@emotion/styled'),
     };
-    
+
     // Add WASM file watching for hot reload
     if (config.watchOptions) {
       config.watchOptions.ignored = config.watchOptions.ignored || [];
@@ -151,13 +159,13 @@ const config = {
         );
       }
     }
-    
+
     // Ensure WASM files are treated as assets
     config.module.rules.push({
       test: /\.wasm$/,
       type: 'asset/resource',
     });
-    
+
     return config;
   },
 

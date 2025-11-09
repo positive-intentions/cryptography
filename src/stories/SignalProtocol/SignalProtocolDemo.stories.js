@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Box, Typography, Button, Card, CardContent, TextField, Stepper, Step, StepLabel, 
-         Alert, Accordion, AccordionSummary, AccordionDetails, Chip, Grid, Paper } from '@mui/material';
+         Alert, Accordion, AccordionSummary, AccordionDetails, Chip, Grid, Paper, CircularProgress } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SecurityIcon from '@mui/icons-material/Security';
 import KeyIcon from '@mui/icons-material/VpnKey';
@@ -8,8 +8,11 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { CryptographyProvider, useCryptography } from '../components/Cryptography';
 import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
 
-// Define the component first
-const SignalProtocolDemo = () => {
+// Import SignalProtocolDemo from federated module
+const FederatedSignalProtocolDemo = React.lazy(() => import('signal_protocol/SignalProtocol'));
+
+// Local comprehensive demo component (kept for advanced functionality)
+const SignalProtocolFullDemo = () => {
   const crypto = useCryptography();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -557,10 +560,17 @@ other secure messaging apps.
   }
 };
 
-// Default story
+// Default story - uses federated component
 export const Default = () => (
+  <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+    <FederatedSignalProtocolDemo />
+  </Suspense>
+);
+
+// Full demo story - uses local comprehensive component with CryptographyProvider
+export const FullDemo = () => (
   <CryptographyProvider>
-    <SignalProtocolDemo />
+    <SignalProtocolFullDemo />
   </CryptographyProvider>
 );
 

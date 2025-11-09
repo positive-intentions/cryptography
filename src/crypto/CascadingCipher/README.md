@@ -159,15 +159,18 @@ const keys = { mlsManager, groupId: "my-group" };
 
 ### 4. SignalCipherLayer
 
-Signal Protocol with Double Ratchet algorithm via WASM.
+Signal Protocol with Double Ratchet algorithm via WASM from federated module.
 
 ```typescript
-import signalWasm from "../../../pkg/signal_protocol_wasm.js";
-await signalWasm.default(); // Initialize WASM
+// Load WASM bindings from federated signal_protocol module
+const wasmBindings = await import('signal_protocol/WasmBindings');
+const signalWasm = await wasmBindings.loadWasmModule();
 
 const signalLayer = new SignalCipherLayer(signalWasm, doubleRatchetState);
 const keys = { doubleRatchetState };
 ```
+
+**Note:** The Signal Protocol WASM module is now provided via module federation from the `signal_protocol` remote module. The `SignalCipherLayer` will automatically load it if not provided.
 
 **Features:**
 

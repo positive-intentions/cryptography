@@ -76,20 +76,26 @@ export class SignalCipherLayer implements CipherLayer {
         this.useWasm = true;
       }
 
-      // Try to load WASM module dynamically (optional)
+      // Try to load WASM module dynamically from federated module (optional)
       if (!this.wasmModule && config?.preferWasm !== false) {
         try {
-          // Use dynamic import with a variable to prevent webpack from resolving at build time
-          const wasmPath = '../../../pkg/signal_protocol_wasm.js';
-          const signalWasm = await import(/* webpackIgnore: true */ wasmPath).catch(() => null);
+          // Load WASM bindings from federated signal_protocol module
+          const wasmBindings = await import('signal_protocol/WasmBindings').catch(() => null);
 
-          if (signalWasm) {
-            await signalWasm.default(); // Initialize WASM
-            this.wasmModule = signalWasm;
-            this.useWasm = true;
-            console.log('✅ Signal Protocol: Using WASM implementation');
+          if (wasmBindings) {
+            // Load the WASM module using the federated bindings
+            const wasmModule = await wasmBindings.loadWasmModule().catch(() => null);
+            
+            if (wasmModule) {
+              this.wasmModule = wasmModule;
+              this.useWasm = true;
+              console.log('✅ Signal Protocol: Using WASM implementation from federated module');
+            } else {
+              console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
+              this.useWasm = false;
+            }
           } else {
-            console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
+            console.log('ℹ️ Signal Protocol: Federated module not available, using Web Crypto API implementation');
             this.useWasm = false;
           }
         } catch (wasmError) {

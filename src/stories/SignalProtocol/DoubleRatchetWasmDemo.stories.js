@@ -102,9 +102,9 @@ const DoubleRatchetWasmDemo = () => {
     const initializeWasm = async () => {
         setWasmInitializing(true);
         try {
-            // Try to load the real WASM module from pkg directory
-            const wasmModule = await import('/pkg/signal_protocol_wasm.js');
-            await wasmModule.default(); // Initialize the WASM module
+            // Load WASM bindings from federated signal_protocol module
+            const wasmBindings = await import('signal_protocol/WasmBindings');
+            const wasmModule = await wasmBindings.loadWasmModule();
             
             // Create a wrapper that matches our expected Double Ratchet interface
             const wasmWrapper = {

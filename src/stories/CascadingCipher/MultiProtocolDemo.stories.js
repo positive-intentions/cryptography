@@ -134,10 +134,10 @@ const MultiProtocolDemo = () => {
     try {
       addLog('🔐 Initializing Signal Protocol...', 'info');
 
-      // Load WASM module
-      const wasmModule = await import('../../../pkg/signal_protocol_wasm.js');
-      await wasmModule.default();
-      addLog('✅ Signal WASM loaded', 'success');
+      // Load WASM module from federated signal_protocol module
+      const wasmBindings = await import('signal_protocol/WasmBindings');
+      const wasmModule = await wasmBindings.loadWasmModule();
+      addLog('✅ Signal WASM loaded from federated module', 'success');
 
       // Generate identity keys for Alice and Bob
       const aliceIdentityKeyPair = wasmModule.generate_identity_keypair();
