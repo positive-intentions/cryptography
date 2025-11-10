@@ -94,6 +94,7 @@ const moduleFederationConfig = new ModuleFederationPlugin({
   exposes: {
     './Cryptography': './src/stories/components/Cryptography.tsx',
     './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
+    './CascadingCipher': './src/crypto/CascadingCipher/index.ts',
   },
   remotes: {
     "dim": moduleRedundency({

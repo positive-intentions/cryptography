@@ -43,7 +43,7 @@
     "test:suite:full": "echo '\n🧪 Full Test Suite\n' && npm run test:rust:all && npm run test:wasm:node && npm test && echo '\n✅ All tests passed!'",
     "test:ci": "npm run test:rust:quick && npm test",
     "build": "npm run build:reset && npm run build:frontend && npm run build:storybook",
-    "build:reset": "rm -rf ./Frontend && mkdir ./Frontend",
+    "build:reset": "rm -rf ./Frontend && mkdir ./Frontend && rm -rf ./storybook-static && mkdir ./storybook-static",
     "build:wasm": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target web --out-dir ./pkg && cp -r ./pkg ./Frontend/pkg && rm ./Frontend/pkg/.gitignore",
     "build:wasm:quick": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --target web --out-dir pkg && echo '✅ WASM built to pkg/'",
     "build:wasm:production": "export PATH=\"$HOME/.cargo/bin:$PATH\" && wasm-pack build --release --target web --out-dir pkg && echo '✅ Production WASM built'",
