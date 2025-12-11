@@ -29,7 +29,7 @@ export class AESCipherLayer implements CipherLayer {
   readonly name = 'AES-GCM-256';
   readonly version = '1.0.0';
 
-  private readonly PBKDF2_ITERATIONS = 100000;
+  private readonly PBKDF2_ITERATIONS = 1000000;
   private readonly SALT_LENGTH = 16;
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;

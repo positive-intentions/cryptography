@@ -352,7 +352,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             {
                 name: "PBKDF2",
                 salt: actualSalt,
-                iterations: 100000, // Strong iteration count
+                iterations: 1000000, // Strong iteration count
                 hash: "SHA-256",
             },
             passwordKey,
