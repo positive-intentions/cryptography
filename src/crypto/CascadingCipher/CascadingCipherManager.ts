@@ -33,6 +33,31 @@ export class CascadingCipherManager {
   private layerMap: Map<string, CipherLayer> = new Map();
 
   /**
+   * Convert Uint8Array to base64 string for consistent format between layers
+   */
+  private arrayBufferToBase64(buffer: Uint8Array): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Convert base64 string to Uint8Array
+   */
+  private base64ToArrayBuffer(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  /**
    * Add a cipher layer to the chain
    *
    * @param layer - The cipher layer to add
@@ -127,7 +152,21 @@ export class CascadingCipherManager {
         }
 
         try {
-          const encrypted = await layer.encrypt(currentData, layerKeys);
+          // Convert currentData from base64 string to Uint8Array if needed (for layers after the first)
+          let inputData: Uint8Array;
+          if (i === 0) {
+            // First layer receives plaintext as Uint8Array
+            inputData = currentData;
+          } else {
+            // Subsequent layers receive base64 string from previous layer
+            if (typeof currentData === 'string') {
+              inputData = this.base64ToArrayBuffer(currentData);
+            } else {
+              inputData = currentData;
+            }
+          }
+
+          const encrypted = await layer.encrypt(inputData, layerKeys);
 
           layerMetadataList.push(encrypted.layerMetadata);
           layerParametersList.push(encrypted.parameters);
@@ -142,7 +181,9 @@ export class CascadingCipherManager {
             });
           }
 
-          currentData = encrypted.ciphertext;
+          // Convert ciphertext to base64 string for consistent format between layers
+          // This ensures all layers receive data in the same format
+          currentData = this.arrayBufferToBase64(encrypted.ciphertext);
         } catch (error) {
           throw new CascadingCipherError(
             `Encryption failed at layer ${i} (${layer.name}): ${error.message}`,
@@ -165,13 +206,19 @@ export class CascadingCipherManager {
         });
       }
 
+      // Store final ciphertext as Uint8Array (convert from base64 string if needed)
+      // currentData is base64 string after last layer, convert back to Uint8Array for storage
+      const finalCiphertextBytes = typeof currentData === 'string' 
+        ? this.base64ToArrayBuffer(currentData)
+        : currentData;
+
       return {
-        finalCiphertext: currentData,
+        finalCiphertext: finalCiphertextBytes,
         layers: layerMetadataList,
         layerParameters: layerParametersList,
         totalProcessingTime,
         originalSize,
-        finalSize: currentData.length,
+        finalSize: finalCiphertextBytes.length,
         timestamp: Date.now(),
       };
     } catch (error) {
@@ -213,7 +260,9 @@ export class CascadingCipherManager {
       );
     }
 
-    let currentData = cascadedPayload.finalCiphertext;
+    // Convert finalCiphertext to base64 string for consistent format
+    // All data between layers is stored as base64 strings
+    let currentData: string | Uint8Array = this.arrayBufferToBase64(cascadedPayload.finalCiphertext);
 
     try {
       // Decrypt in reverse order (last layer first)
@@ -250,8 +299,19 @@ export class CascadingCipherManager {
         }
 
         try {
+          // Convert currentData from base64 string to Uint8Array for the layer
+          let ciphertextBytes: Uint8Array;
+          if (typeof currentData === 'string') {
+            ciphertextBytes = this.base64ToArrayBuffer(currentData);
+          } else if (currentData instanceof Uint8Array) {
+            ciphertextBytes = currentData;
+          } else {
+            // Fallback: try to convert to Uint8Array
+            ciphertextBytes = new Uint8Array(currentData as any);
+          }
+
           const payload = {
-            ciphertext: currentData,
+            ciphertext: ciphertextBytes,
             layerMetadata,
             parameters: layerParameters,
           };
@@ -268,7 +328,17 @@ export class CascadingCipherManager {
             });
           }
 
-          currentData = await layer.decrypt(payload, layerKeys);
+          const decrypted = await layer.decrypt(payload, layerKeys);
+
+          // Convert decrypted data to base64 string for next layer
+          // For the last layer (i === 0), we'll return Uint8Array directly
+          if (i > 0) {
+            // Convert to base64 for next layer
+            currentData = this.arrayBufferToBase64(decrypted);
+          } else {
+            // Last layer - return Uint8Array directly
+            currentData = decrypted;
+          }
 
           // Debug: Log data format after decrypt
           if (process.env.DEBUG_CASCADE) {
@@ -288,7 +358,9 @@ export class CascadingCipherManager {
         }
       }
 
-      return currentData;
+      // Return the decrypted plaintext as Uint8Array
+      // After the last layer (i === 0), currentData is already Uint8Array
+      return currentData as Uint8Array;
     } catch (error) {
       if (error instanceof CascadingCipherError) {
         throw error;

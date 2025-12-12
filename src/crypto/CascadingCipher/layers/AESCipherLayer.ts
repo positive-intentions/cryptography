@@ -393,8 +393,10 @@ export class AESCipherLayer implements CipherLayer {
         key,
         payload.ciphertext
       );
+      
+      const plaintext = new Uint8Array(plaintextBuffer);
 
-      return new Uint8Array(plaintextBuffer);
+      return plaintext;
     } catch (error) {
       // Zeroize sensitive data before throwing
       Zeroization.zeroizeAll(passwordBuffer);

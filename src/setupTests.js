@@ -164,18 +164,29 @@ const mockSubtle = {
     return Promise.resolve({ type: 'imported' });
   }),
   deriveKey: jest.fn(() => Promise.resolve({ type: 'derived' })),
-  encrypt: jest.fn(() => Promise.resolve(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer)),
+  encrypt: jest.fn((algorithm, key, data) => {
+    // For AES-GCM, preserve the input data and add a 16-byte authentication tag
+    // This simulates real AES-GCM behavior where output = input + 16-byte tag
+    const inputArray = new Uint8Array(data);
+    const output = new Uint8Array(inputArray.length + 16);
+    output.set(inputArray, 0);
+    // Add mock tag (zeros for simplicity, but correct length)
+    output.set(new Uint8Array(16), inputArray.length);
+    return Promise.resolve(output.buffer);
+  }),
   decrypt: jest.fn((algorithm, key, data) => {
-    // Return different responses based on call count or other factors
-    const call = mockSubtle.decrypt.mock.calls.length;
-    const messages = [
-      'Hello Bob from Alice!',
-      'Bob reply after establishing chains', 
-      'Hello Alice from Bob!',
-      'Final message'
-    ];
-    const message = messages[call - 1] || 'mock-decrypted';
-    return Promise.resolve(new TextEncoder().encode(message).buffer);
+    // For AES-GCM, remove the 16-byte authentication tag and return the original data
+    // This preserves the data format through encryption/decryption
+    const inputArray = new Uint8Array(data);
+    // Handle backward compatibility: if data is less than 16 bytes, it's likely old test data
+    // Return it as-is (old mock behavior for very short data)
+    if (inputArray.length < 16) {
+      return Promise.resolve(inputArray.buffer);
+    }
+    // For data with tag (new format), remove the last 16 bytes (authentication tag)
+    const output = new Uint8Array(inputArray.length - 16);
+    output.set(inputArray.subarray(0, inputArray.length - 16), 0);
+    return Promise.resolve(output.buffer);
   }),
   sign: jest.fn(() => Promise.resolve(new ArrayBuffer(64))),
   verify: jest.fn(() => Promise.resolve(true)),
