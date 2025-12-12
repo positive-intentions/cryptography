@@ -3,6 +3,7 @@ import { sha3_512 } from "js-sha3";
 import Chance from "chance";
 import { MLSManager } from "../../crypto/MLS/MLSManager.tsx";
 import { SFrameManager } from "../../crypto/SFrame/SFrameManager.tsx";
+import { Zeroization } from "../../crypto/utils/zeroization.ts";
 
 // Create Context
 const CryptographyContext = createContext<unknown>(null);
@@ -329,42 +330,100 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     // Password-based File Encryption Functions
+    // Scrypt parameters (matching AESCipherLayer for consistency)
+    const SCRYPT_N = 32768; // CPU/memory cost parameter
+    const SCRYPT_R = 8;     // Block size parameter
+    const SCRYPT_P = 1;     // Parallelization parameter
+
+    // Cache scrypt function to avoid repeated imports
+    let scryptCache = null;
+    let scryptCachePromise = null;
+
+    /**
+     * Lazy-load scrypt function (handles ES module import)
+     * Uses caching to avoid repeated imports
+     */
+    const getScryptFunction = async () => {
+        // Return cached function if available
+        if (scryptCache) {
+            return scryptCache;
+        }
+
+        // Wait for ongoing import if in progress
+        if (scryptCachePromise) {
+            return await scryptCachePromise;
+        }
+
+        // Start new import
+        scryptCachePromise = (async () => {
+            try {
+                // Dynamic import for ES module - works in browsers and Node.js
+                // @noble/hashes/scrypt.js is browser-compatible pure JavaScript
+                const scryptModule = await import('@noble/hashes/scrypt.js');
+                const scryptFn = scryptModule.scrypt || scryptModule.default;
+                scryptCache = scryptFn;
+                scryptCachePromise = null;
+                return scryptFn;
+            } catch (error) {
+                scryptCachePromise = null;
+                // Re-throw with better error message
+                throw new Error(`Failed to load scrypt module: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        })();
+
+        return await scryptCachePromise;
+    };
+
     const deriveKeyFromPassword = async (password, salt = null) => {
         const encoder = new TextEncoder();
-        
-        // Generate or use provided salt
-        const actualSalt = salt || await crypto.subtle.digest(
-            "SHA-256",
-            encoder.encode(password)
-        );
-        
-        // Import password as key material
-        const passwordKey = await crypto.subtle.importKey(
-            "raw",
-            encoder.encode(password),
-            "PBKDF2",
-            false,
-            ["deriveKey"]
-        );
-        
-        // Derive AES-GCM key using PBKDF2
-        const derivedKey = await crypto.subtle.deriveKey(
-            {
-                name: "PBKDF2",
-                salt: actualSalt,
-                iterations: 1000000, // Strong iteration count
-                hash: "SHA-256",
-            },
-            passwordKey,
-            {
-                name: "AES-GCM",
-                length: 256,
-            },
-            false, // Not extractable for security
-            ["encrypt", "decrypt"]
-        );
-        
-        return { key: derivedKey, salt: actualSalt };
+        let passwordBytes = null;
+        let actualSalt = null;
+
+        try {
+            // Generate or use provided salt
+            if (salt instanceof Uint8Array || salt instanceof ArrayBuffer) {
+                actualSalt = salt instanceof ArrayBuffer ? new Uint8Array(salt) : salt;
+            } else {
+                // Generate random salt if not provided
+                actualSalt = crypto.getRandomValues(new Uint8Array(16));
+            }
+
+            // Encode password for zeroization
+            passwordBytes = encoder.encode(password);
+
+            // Use Scrypt for key derivation (GPU/ASIC resistant)
+            const scrypt = await getScryptFunction();
+            const keyMaterial = scrypt(passwordBytes, actualSalt, {
+                N: SCRYPT_N,
+                r: SCRYPT_R,
+                p: SCRYPT_P,
+                dkLen: 32, // 32 bytes = 256 bits for AES-256
+            });
+
+            // Import the derived key material as a CryptoKey
+            const derivedKey = await crypto.subtle.importKey(
+                'raw',
+                keyMaterial,
+                {
+                    name: 'AES-GCM',
+                },
+                false,
+                ['encrypt', 'decrypt']
+            );
+
+            return { key: derivedKey, salt: actualSalt };
+        } catch (error) {
+            // Zeroize password buffer before throwing
+            if (passwordBytes) {
+                Zeroization.zeroize(passwordBytes);
+            }
+            throw error;
+        } finally {
+            // Always zeroize password buffer
+            if (passwordBytes) {
+                Zeroization.zeroize(passwordBytes);
+            }
+        }
     };
 
     const encryptFile = async (fileContent, password, fileName = '') => {

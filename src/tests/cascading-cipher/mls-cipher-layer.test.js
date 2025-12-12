@@ -166,7 +166,10 @@ describe('MLSCipherLayer', () => {
       const result = await layer.encrypt(plaintext, { mlsManager: manager, groupId });
 
       expect(result).toBeDefined();
-      expect(result.ciphertext).toBeInstanceOf(Uint8Array);
+      // Check if ciphertext is a Uint8Array (Jest instanceof can be unreliable)
+      expect(result.ciphertext).toBeDefined();
+      expect(ArrayBuffer.isView(result.ciphertext)).toBe(true);
+      expect(result.ciphertext.constructor.name).toBe('Uint8Array');
       expect(result.ciphertext.length).toBeGreaterThan(0);
       expect(result.layerMetadata).toBeDefined();
       expect(result.parameters).toBeDefined();
@@ -217,7 +220,10 @@ describe('MLSCipherLayer', () => {
       const result = await layer.encrypt(plaintext, {});
 
       expect(result).toBeDefined();
-      expect(result.ciphertext).toBeInstanceOf(Uint8Array);
+      // Check if ciphertext is a Uint8Array (Jest instanceof can be unreliable)
+      expect(result.ciphertext).toBeDefined();
+      expect(ArrayBuffer.isView(result.ciphertext)).toBe(true);
+      expect(result.ciphertext.constructor.name).toBe('Uint8Array');
     });
 
     test('should prefer provided keys over constructor values', async () => {

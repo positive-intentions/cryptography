@@ -10,6 +10,8 @@ import {
   EncryptedPayload,
   CipherLayerError,
 } from '../types';
+import { Zeroization } from '../../utils/zeroization';
+import { KeyAuthentication } from '../../utils/keyAuthentication';
 
 /**
  * Keys for DH encryption
@@ -23,6 +25,8 @@ export interface DHKeys {
 
   /** Pre-derived shared secret (if already performed DH) */
   sharedSecret?: Uint8Array;
+  /** Optional: Expected public key fingerprint for MITM protection */
+  expectedPublicKeyFingerprint?: string;
 }
 
 /**
@@ -34,7 +38,7 @@ export interface DHKeys {
  */
 export class DHCipherLayer implements CipherLayer {
   readonly name = 'DH-AES-GCM';
-  readonly version = '1.0.0';
+  readonly version = '2.0.0';
 
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;
@@ -53,37 +57,117 @@ export class DHCipherLayer implements CipherLayer {
   }
 
   /**
+   * Validate ECDH key format and curve
+   */
+  private async validateECDHKey(
+    key: CryptoKey | Uint8Array,
+    expectedType: 'private' | 'public'
+  ): Promise<CryptoKey> {
+    // Check if it's a CryptoKey by checking for Web Crypto API key properties
+    if (key && typeof key === 'object' && 'type' in key && 'algorithm' in key) {
+      // Validate CryptoKey format
+      const cryptoKey = key as CryptoKey;
+      if (cryptoKey.algorithm.name !== 'ECDH') {
+        throw new CipherLayerError(
+          `Invalid key algorithm: expected ECDH, got ${(cryptoKey.algorithm as any).name || 'unknown'}`,
+          this.name,
+          'encrypt'
+        );
+      }
+
+      const ecdhKey = cryptoKey.algorithm as EcKeyAlgorithm;
+      if (ecdhKey.namedCurve !== 'P-256') {
+        throw new CipherLayerError(
+          `Invalid curve: expected P-256, got ${ecdhKey.namedCurve}`,
+          this.name,
+          'encrypt'
+        );
+      }
+
+      if (cryptoKey.type !== expectedType) {
+        throw new CipherLayerError(
+          `Invalid key type: expected ${expectedType}, got ${cryptoKey.type}`,
+          this.name,
+          'encrypt'
+        );
+      }
+
+      return cryptoKey;
+    }
+
+    // Validate Uint8Array format
+    if (!(key instanceof Uint8Array)) {
+      throw new CipherLayerError(
+        `Invalid key format: expected CryptoKey or Uint8Array, got ${typeof key}`,
+        this.name,
+        'encrypt'
+      );
+    }
+
+    if (expectedType === 'private') {
+      // P-256 private key should be 32 bytes
+      if (key.length !== 32) {
+        throw new CipherLayerError(
+          `Invalid private key length: expected 32 bytes, got ${key.length}`,
+          this.name,
+          'encrypt'
+        );
+      }
+    } else {
+      // P-256 public key can be 65 bytes (uncompressed) or 33 bytes (compressed)
+      if (key.length !== 65 && key.length !== 33) {
+        throw new CipherLayerError(
+          `Invalid public key length: expected 65 or 33 bytes, got ${key.length}`,
+          this.name,
+          'encrypt'
+        );
+      }
+
+      // Validate public key format
+      if (key.length === 65) {
+        // Uncompressed key should start with 0x04
+        if (key[0] !== 0x04) {
+          throw new CipherLayerError(
+            'Invalid public key format: uncompressed key must start with 0x04',
+            this.name,
+            'encrypt'
+          );
+        }
+      } else if (key.length === 33) {
+        // Compressed key should start with 0x02 or 0x03
+        if (key[0] !== 0x02 && key[0] !== 0x03) {
+          throw new CipherLayerError(
+            'Invalid public key format: compressed key must start with 0x02 or 0x03',
+            this.name,
+            'encrypt'
+          );
+        }
+      }
+    }
+
+    // Import and return CryptoKey
+    return await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'ECDH', namedCurve: 'P-256' },
+      false,
+      expectedType === 'private' ? ['deriveKey', 'deriveBits'] : []
+    );
+  }
+
+  /**
    * Derive shared secret using ECDH
    */
   private async deriveSharedSecret(
     privateKey: CryptoKey | Uint8Array,
     publicKey: CryptoKey | Uint8Array
   ): Promise<Uint8Array> {
+    let sharedSecret: Uint8Array | null = null;
+
     try {
-      // If keys are already CryptoKey objects, use them directly
-      let privKey = privateKey as CryptoKey;
-      let pubKey = publicKey as CryptoKey;
-
-      // If they're Uint8Arrays, import them as CryptoKeys
-      if (privateKey instanceof Uint8Array) {
-        privKey = await crypto.subtle.importKey(
-          'raw',
-          privateKey,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          ['deriveKey', 'deriveBits']
-        );
-      }
-
-      if (publicKey instanceof Uint8Array) {
-        pubKey = await crypto.subtle.importKey(
-          'raw',
-          publicKey,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          []
-        );
-      }
+      // Validate keys before use
+      const privKey = await this.validateECDHKey(privateKey, 'private');
+      const pubKey = await this.validateECDHKey(publicKey, 'public');
 
       // Derive bits using ECDH
       const sharedSecretBits = await crypto.subtle.deriveBits(
@@ -95,10 +179,16 @@ export class DHCipherLayer implements CipherLayer {
         256 // 256 bits for AES-256
       );
 
-      return new Uint8Array(sharedSecretBits);
+      sharedSecret = new Uint8Array(sharedSecretBits);
+      return sharedSecret;
     } catch (error) {
+      // Zeroize any partial shared secret
+      if (sharedSecret) {
+        Zeroization.zeroize(sharedSecret);
+      }
+
       throw new CipherLayerError(
-        `Diffie-Hellman key derivation failed: ${error.message}`,
+        `Diffie-Hellman key derivation failed: ${error instanceof Error ? error.message : String(error)}`,
         this.name,
         'encrypt',
         error as Error
@@ -108,33 +198,69 @@ export class DHCipherLayer implements CipherLayer {
 
   /**
    * Derive AES key from shared secret using HKDF
+   * Includes randomized info parameter for domain separation
    */
-  private async deriveAESKey(sharedSecret: Uint8Array, salt: Uint8Array): Promise<CryptoKey> {
-    // Import shared secret as key material
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      sharedSecret,
-      'HKDF',
-      false,
-      ['deriveKey']
-    );
+  private async deriveAESKey(
+    sharedSecret: Uint8Array,
+    salt: Uint8Array,
+    contextId?: Uint8Array,
+    timestamp?: number
+  ): Promise<CryptoKey> {
+    let keyMaterial: CryptoKey | null = null;
 
-    // Derive AES-GCM key using HKDF
-    return crypto.subtle.deriveKey(
-      {
-        name: 'HKDF',
-        salt,
-        info: new TextEncoder().encode('DH-AES-GCM-Cascading-Cipher'),
-        hash: 'SHA-256',
-      },
-      keyMaterial,
-      {
-        name: 'AES-GCM',
-        length: this.KEY_LENGTH,
-      },
-      false,
-      ['encrypt', 'decrypt']
-    );
+    try {
+      // Import shared secret as key material
+      keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        sharedSecret,
+        'HKDF',
+        false,
+        ['deriveKey']
+      );
+
+      // Generate random context ID if not provided
+      const actualContextId = contextId || crypto.getRandomValues(new Uint8Array(16));
+      const contextIdHex = Array.from(actualContextId)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      // Use provided timestamp or current time
+      const actualTimestamp = timestamp !== undefined ? timestamp : Date.now();
+
+      // Include protocol version, context ID, and timestamp in HKDF info
+      const infoParts = [
+        'DH-AES-GCM-Cascading-Cipher',
+        `v${this.version}`,
+        contextIdHex,
+        actualTimestamp.toString(),
+      ];
+      const info = new TextEncoder().encode(infoParts.join('|'));
+
+      // Derive AES-GCM key using HKDF with randomized info
+      return await crypto.subtle.deriveKey(
+        {
+          name: 'HKDF',
+          salt,
+          info,
+          hash: 'SHA-256',
+        },
+        keyMaterial,
+        {
+          name: 'AES-GCM',
+          length: this.KEY_LENGTH,
+        },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    } catch (error) {
+      keyMaterial = null;
+      throw new CipherLayerError(
+        `HKDF key derivation failed: ${error instanceof Error ? error.message : String(error)}`,
+        this.name,
+        'encrypt',
+        error as Error
+      );
+    }
   }
 
   /**
@@ -142,6 +268,11 @@ export class DHCipherLayer implements CipherLayer {
    */
   async encrypt(data: Uint8Array, keys: DHKeys): Promise<EncryptedPayload> {
     const startTime = performance.now();
+    let sharedSecret: Uint8Array | null = null;
+    let salt: Uint8Array | null = null;
+    let iv: Uint8Array | null = null;
+    let aesKey: CryptoKey | null = null;
+    let contextId: Uint8Array | null = null;
 
     try {
       if (!this.validateKeys(keys)) {
@@ -152,26 +283,63 @@ export class DHCipherLayer implements CipherLayer {
         );
       }
 
-      // Get or derive shared secret
-      let sharedSecret: Uint8Array;
-      if (keys.sharedSecret) {
-        sharedSecret = keys.sharedSecret;
-      } else {
-        sharedSecret = await this.deriveSharedSecret(keys.privateKey!, keys.publicKey!);
+      // Validate public key fingerprint if provided (MITM protection)
+      if (keys.publicKey && keys.expectedPublicKeyFingerprint) {
+        const fingerprint = await KeyAuthentication.generateFingerprint(keys.publicKey);
+        if (fingerprint !== keys.expectedPublicKeyFingerprint) {
+          throw new CipherLayerError(
+            'Public key fingerprint mismatch - possible MITM attack',
+            this.name,
+            'encrypt'
+          );
+        }
       }
 
-      // Generate random salt and IV
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+      // Get or derive shared secret
+      // Create a copy to avoid zeroizing the original if it's from keys
+      if (keys.sharedSecret) {
+        sharedSecret = new Uint8Array(keys.sharedSecret);
+      } else {
+        if (!keys.privateKey || !keys.publicKey) {
+          throw new CipherLayerError(
+            'Invalid keys: need sharedSecret OR (privateKey + publicKey)',
+            this.name,
+            'encrypt'
+          );
+        }
+        sharedSecret = await this.deriveSharedSecret(keys.privateKey, keys.publicKey);
+      }
 
-      // Derive AES key from shared secret
-      const aesKey = await this.deriveAESKey(sharedSecret, salt);
+      // Generate random salt, IV, and context ID
+      salt = crypto.getRandomValues(new Uint8Array(16));
+      iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+      contextId = crypto.getRandomValues(new Uint8Array(16));
 
-      // Encrypt with AES-GCM
+      // Get timestamp once for both HKDF and AAD
+      const timestamp = Date.now();
+
+      // Derive AES key from shared secret with randomized HKDF info
+      aesKey = await this.deriveAESKey(sharedSecret, salt, contextId, timestamp);
+
+      // Create AAD with protocol version and context (using same timestamp)
+      const protocolVersion = `${this.name}-v${this.version}`;
+      const context = 'cascading-cipher-encrypt';
+      const aadData = {
+        protocol: protocolVersion,
+        context,
+        timestamp,
+        encoding: 'binary',
+      };
+      const encoder = new TextEncoder();
+      const aad = encoder.encode(JSON.stringify(aadData));
+
+      // Encrypt with AES-GCM and AAD
       const ciphertextBuffer = await crypto.subtle.encrypt(
         {
           name: 'AES-GCM',
           iv,
+          additionalData: aad,
+          tagLength: 128,
         },
         aesKey,
         data
@@ -180,12 +348,16 @@ export class DHCipherLayer implements CipherLayer {
       const ciphertext = new Uint8Array(ciphertextBuffer);
       const endTime = performance.now();
 
+      // Create copies for return (before zeroization)
+      const ivCopy = new Uint8Array(iv);
+      const saltCopy = new Uint8Array(salt);
+
       return {
         ciphertext,
         layerMetadata: {
           algorithm: this.name,
           version: this.version,
-          timestamp: Date.now(),
+          timestamp,
           inputSize: data.length,
           outputSize: ciphertext.length,
           processingTime: endTime - startTime,
@@ -196,18 +368,28 @@ export class DHCipherLayer implements CipherLayer {
           },
         },
         parameters: {
-          iv,
-          salt,
+          iv: ivCopy,
+          salt: saltCopy,
           usedPreSharedSecret: !!keys.sharedSecret,
+          contextId: Array.from(contextId), // Store context ID for decryption
         },
       };
     } catch (error) {
+      // Zeroize sensitive data before throwing
+      Zeroization.zeroizeAll(sharedSecret, salt, iv, contextId);
+      aesKey = null;
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new CipherLayerError(
-        `DH-AES encryption failed: ${error.message}`,
+        `DH-AES encryption failed: ${errorMessage}`,
         this.name,
         'encrypt',
         error as Error
       );
+    } finally {
+      // Always zeroize sensitive data
+      Zeroization.zeroizeAll(sharedSecret, salt, iv, contextId);
+      aesKey = null;
     }
   }
 
@@ -215,6 +397,10 @@ export class DHCipherLayer implements CipherLayer {
    * Decrypt data using DH + AES-GCM
    */
   async decrypt(payload: EncryptedPayload, keys: DHKeys): Promise<Uint8Array> {
+    let sharedSecret: Uint8Array | null = null;
+    let aesKey: CryptoKey | null = null;
+    let contextId: Uint8Array | null = null;
+
     try {
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError(
@@ -224,32 +410,120 @@ export class DHCipherLayer implements CipherLayer {
         );
       }
 
-      // Get or derive shared secret
-      let sharedSecret: Uint8Array;
-      if (keys.sharedSecret) {
-        sharedSecret = keys.sharedSecret;
-      } else {
-        sharedSecret = await this.deriveSharedSecret(keys.privateKey!, keys.publicKey!);
+      // Validate public key fingerprint if provided
+      if (keys.publicKey && keys.expectedPublicKeyFingerprint) {
+        const fingerprint = await KeyAuthentication.generateFingerprint(keys.publicKey);
+        if (fingerprint !== keys.expectedPublicKeyFingerprint) {
+          throw new CipherLayerError(
+            'Public key fingerprint mismatch - possible MITM attack',
+            this.name,
+            'decrypt'
+          );
+        }
       }
 
-      // Extract IV and salt
-      const { iv, salt } = payload.parameters;
-      if (!iv || !salt) {
+      // Get or derive shared secret
+      // Create a copy to avoid zeroizing the original if it's from keys
+      if (keys.sharedSecret) {
+        sharedSecret = new Uint8Array(keys.sharedSecret);
+      } else {
+        if (!keys.privateKey || !keys.publicKey) {
+          throw new CipherLayerError(
+            'Invalid keys: need sharedSecret OR (privateKey + publicKey)',
+            this.name,
+            'decrypt'
+          );
+        }
+        sharedSecret = await this.deriveSharedSecret(keys.privateKey, keys.publicKey);
+      }
+
+      // Extract IV, salt, and context ID
+      // Convert to Uint8Array if they're arrays (from JSON serialization)
+      let iv: Uint8Array;
+      let salt: Uint8Array;
+      const storedContextId = payload.parameters.contextId;
+
+      if (payload.parameters.iv instanceof Uint8Array) {
+        iv = payload.parameters.iv;
+      } else if (Array.isArray(payload.parameters.iv)) {
+        iv = new Uint8Array(payload.parameters.iv);
+      } else {
         throw new CipherLayerError(
-          'Missing decryption parameters (IV or salt)',
+          'Missing or invalid IV in decryption parameters',
           this.name,
           'decrypt'
         );
       }
 
-      // Derive AES key from shared secret
-      const aesKey = await this.deriveAESKey(sharedSecret, salt);
+      if (payload.parameters.salt instanceof Uint8Array) {
+        salt = payload.parameters.salt;
+      } else if (Array.isArray(payload.parameters.salt)) {
+        salt = new Uint8Array(payload.parameters.salt);
+      } else {
+        throw new CipherLayerError(
+          'Missing or invalid salt in decryption parameters',
+          this.name,
+          'decrypt'
+        );
+      }
 
-      // Decrypt with AES-GCM
+      // Use stored context ID if available
+      // Handle both array and Uint8Array formats
+      if (storedContextId) {
+        if (Array.isArray(storedContextId)) {
+          contextId = new Uint8Array(storedContextId);
+        } else if (storedContextId instanceof Uint8Array) {
+          contextId = storedContextId;
+        } else {
+          throw new CipherLayerError(
+            `Invalid context ID format: expected array or Uint8Array, got ${typeof storedContextId}`,
+            this.name,
+            'decrypt'
+          );
+        }
+      } else {
+        // If contextId is not stored (backward compatibility), we can't decrypt
+        // This means the payload was encrypted with an older version
+        throw new CipherLayerError(
+          'Missing context ID in payload - cannot decrypt (payload may be from older version)',
+          this.name,
+          'decrypt'
+        );
+      }
+
+      // Get timestamp from metadata (must match encryption timestamp)
+      const timestamp = payload.layerMetadata.timestamp;
+      if (!timestamp || timestamp <= 0) {
+        throw new CipherLayerError(
+          'Missing or invalid timestamp in payload metadata',
+          this.name,
+          'decrypt'
+        );
+      }
+
+      // Derive AES key from shared secret with same HKDF info
+      // Must use exact same contextId and timestamp as encryption
+      aesKey = await this.deriveAESKey(sharedSecret, salt, contextId, timestamp);
+
+      // Reconstruct AAD (must match encryption)
+      const protocolVersion = `${this.name}-v${this.version}`;
+      const context = 'cascading-cipher-encrypt';
+      const aadData = {
+        protocol: protocolVersion,
+        context,
+        timestamp,
+        encoding: 'binary',
+      };
+      const encoder = new TextEncoder();
+      const aad = encoder.encode(JSON.stringify(aadData));
+
+      // Decrypt with AES-GCM and AAD validation
       const plaintextBuffer = await crypto.subtle.decrypt(
         {
           name: 'AES-GCM',
           iv,
+          additionalData: aad,
+          tagLength: 128,
         },
         aesKey,
         payload.ciphertext
@@ -257,7 +531,12 @@ export class DHCipherLayer implements CipherLayer {
 
       return new Uint8Array(plaintextBuffer);
     } catch (error) {
-      if (error.message?.includes('decryption failed')) {
+      // Zeroize sensitive data before throwing
+      Zeroization.zeroizeAll(sharedSecret, contextId);
+      aesKey = null;
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('decryption failed') || errorMessage.includes('OperationError')) {
         throw new CipherLayerError(
           'DH-AES decryption failed: wrong keys or corrupted data',
           this.name,
@@ -267,11 +546,15 @@ export class DHCipherLayer implements CipherLayer {
       }
 
       throw new CipherLayerError(
-        `DH-AES decryption failed: ${error.message}`,
+        `DH-AES decryption failed: ${errorMessage}`,
         this.name,
         'decrypt',
         error as Error
       );
+    } finally {
+      // Always zeroize sensitive data
+      Zeroization.zeroizeAll(sharedSecret, contextId);
+      aesKey = null;
     }
   }
 }

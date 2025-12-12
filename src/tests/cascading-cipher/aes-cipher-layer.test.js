@@ -61,7 +61,7 @@ describe('AESCipherLayer', () => {
 
       const layer = new AESCipherLayer();
       expect(layer.name).toBe('AES-GCM-256');
-      expect(layer.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(layer.version).toBe('2.0.0'); // Updated version with Scrypt
     });
   });
 
@@ -182,10 +182,17 @@ describe('AESCipherLayer', () => {
       const result = await layer.encrypt(plaintext, keys);
 
       expect(result.layerMetadata.algorithm).toBe('AES-GCM-256');
+      expect(result.layerMetadata.version).toBe('2.0.0');
       expect(result.layerMetadata.inputSize).toBe(plaintext.length);
       expect(result.layerMetadata.outputSize).toBe(result.ciphertext.length);
       expect(result.layerMetadata.processingTime).toBeGreaterThanOrEqual(0);
       expect(result.layerMetadata.timestamp).toBeGreaterThan(0);
+      // Check for Scrypt metadata
+      expect(result.layerMetadata.metadata).toBeDefined();
+      expect(result.layerMetadata.metadata.keyDerivation).toBe('Scrypt');
+      expect(result.layerMetadata.metadata.scryptN).toBeDefined();
+      expect(result.layerMetadata.metadata.scryptR).toBeDefined();
+      expect(result.layerMetadata.metadata.scryptP).toBeDefined();
     });
   });
 

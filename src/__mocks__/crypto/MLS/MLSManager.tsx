@@ -270,12 +270,24 @@ export class MLSManager {
     }
 
     // Mock decryption - decode base64 and extract plaintext
-    const ciphertextStr = new TextDecoder().decode(envelope.ciphertext);
-    const decoded = Buffer.from(ciphertextStr, 'base64').toString('utf-8');
+    let ciphertextStr: string;
+    try {
+      ciphertextStr = new TextDecoder().decode(envelope.ciphertext);
+    } catch (e) {
+      throw new Error(`Invalid ciphertext format: failed to decode Uint8Array to string: ${e.message}`);
+    }
+
+    let decoded: string;
+    try {
+      decoded = Buffer.from(ciphertextStr, 'base64').toString('utf-8');
+    } catch (e) {
+      throw new Error(`Invalid ciphertext format: failed to decode base64 string: ${e.message}. Ciphertext length: ${ciphertextStr.length}`);
+    }
+
     const parts = decoded.split(':');
 
     if (parts[0] !== 'encrypted') {
-      throw new Error('Invalid ciphertext format');
+      throw new Error(`Invalid ciphertext format: expected to start with "encrypted:", got "${decoded.substring(0, Math.min(50, decoded.length))}..."`);
     }
 
     return parts[1]; // Return the plaintext part
