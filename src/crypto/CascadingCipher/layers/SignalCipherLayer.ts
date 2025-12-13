@@ -297,8 +297,28 @@ export class SignalCipherLayer implements CipherLayer {
     } catch (error) {
       // Zeroize sensitive data before throwing
       Zeroization.zeroizeAll(messageKey, nonce, aad);
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (sessionId, state info) in error message
+      const sessionId = keys.sessionId;
+      const hasSensitiveData = 
+        (sessionId && errorMessage.includes(sessionId)) ||
+        errorMessage.includes('sessionId') ||
+        errorMessage.includes('state') ||
+        errorMessage.includes('ratchet');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'Signal encryption failed',
+          this.name,
+          'encrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `Signal encryption failed: ${error.message}`,
+        `Signal encryption failed: ${errorMessage}`,
         this.name,
         'encrypt',
         error as Error
@@ -384,8 +404,28 @@ export class SignalCipherLayer implements CipherLayer {
     } catch (error) {
       // Zeroize sensitive data before throwing
       Zeroization.zeroizeAll(messageKey, nonce, aad, encryptedData);
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (sessionId, state info) in error message
+      const sessionId = keys.sessionId;
+      const hasSensitiveData = 
+        (sessionId && errorMessage.includes(sessionId)) ||
+        errorMessage.includes('sessionId') ||
+        errorMessage.includes('state') ||
+        errorMessage.includes('ratchet');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'Signal decryption failed',
+          this.name,
+          'decrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `Signal decryption failed: ${error.message}`,
+        `Signal decryption failed: ${errorMessage}`,
         this.name,
         'decrypt',
         error as Error

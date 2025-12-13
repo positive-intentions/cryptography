@@ -140,8 +140,27 @@ export class MLSCipherLayer implements CipherLayer {
     } catch (error) {
       // Zeroize base64Data if it exists (though strings are immutable in JS)
       base64Data = null;
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (groupId, manager info) in error message
+      const groupId = keys.groupId || this.groupId;
+      const hasSensitiveData = 
+        (groupId && errorMessage.includes(groupId)) ||
+        errorMessage.includes('groupId') ||
+        errorMessage.includes('manager');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'MLS encryption failed',
+          this.name,
+          'encrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `MLS encryption failed: ${error.message}`,
+        `MLS encryption failed: ${errorMessage}`,
         this.name,
         'encrypt',
         error as Error
@@ -265,8 +284,27 @@ export class MLSCipherLayer implements CipherLayer {
         Zeroization.zeroize(result);
       }
       base64Data = null;
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (groupId, manager info) in error message
+      const groupId = keys.groupId || this.groupId;
+      const hasSensitiveData = 
+        (groupId && errorMessage.includes(groupId)) ||
+        errorMessage.includes('groupId') ||
+        errorMessage.includes('manager');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'MLS decryption failed',
+          this.name,
+          'decrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `MLS decryption failed: ${error.message}`,
+        `MLS decryption failed: ${errorMessage}`,
         this.name,
         'decrypt',
         error as Error

@@ -46,7 +46,17 @@ export class AESCipherLayer implements CipherLayer {
 
   // Track used IVs per key derivation (keyed by salt+password hash)
   private usedIVs: Map<string, Set<string>> = new Map();
-  private readonly MAX_IV_TRACKING = 10000; // Limit memory usage
+  // Per-key limit: Maximum IVs to track per password+salt combination
+  // This prevents IV reuse while limiting memory per key
+  // 10000 is chosen as a balance between security (preventing reuse) and memory usage
+  private readonly MAX_IV_TRACKING = 10000;
+  // Global limit: Maximum number of password+salt combinations to track
+  // This prevents unbounded Map growth in long-running applications with many users
+  // 5000 is chosen to limit memory while still supporting many concurrent users
+  private readonly MAX_GLOBAL_IV_TRACKING = 5000;
+  // Maximum attempts to generate a unique IV before giving up
+  // Prevents infinite loops if IV space is exhausted
+  // 100 attempts is sufficient given 96-bit IV space (2^96 possible IVs)
   private readonly MAX_IV_GENERATION_ATTEMPTS = 100;
 
   // Cache scrypt function to avoid repeated imports
@@ -88,6 +98,13 @@ export class AESCipherLayer implements CipherLayer {
    * Mark IV as used
    */
   private markIVUsed(ivKey: string, iv: Uint8Array): void {
+    // Enforce global limit using LRU eviction (Map maintains insertion order)
+    if (this.usedIVs.size >= this.MAX_GLOBAL_IV_TRACKING && !this.usedIVs.has(ivKey)) {
+      // Remove oldest entry (first in Map) to make room for new entry
+      const firstKey = this.usedIVs.keys().next().value;
+      this.usedIVs.delete(firstKey);
+    }
+
     let ivSet = this.usedIVs.get(ivKey);
     if (!ivSet) {
       ivSet = new Set();
@@ -97,7 +114,8 @@ export class AESCipherLayer implements CipherLayer {
     const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
     ivSet.add(ivHex);
 
-    // Limit memory usage - remove oldest entries if over limit
+    // Limit memory usage per key - remove oldest entries if over limit
+    // This maintains per-key limit while global limit is handled above
     if (ivSet.size > this.MAX_IV_TRACKING) {
       const entries = Array.from(ivSet);
       const toRemove = entries.length - this.MAX_IV_TRACKING;

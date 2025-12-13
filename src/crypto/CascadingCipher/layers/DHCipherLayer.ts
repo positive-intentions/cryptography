@@ -198,7 +198,24 @@ export class DHCipherLayer implements CipherLayer {
 
   /**
    * Derive AES key from shared secret using HKDF
-   * Includes randomized info parameter for domain separation
+   * 
+   * Security Properties:
+   * - Includes randomized contextId and timestamp in HKDF info parameter for domain separation
+   * - ContextId: Random 16-byte value ensures different keys even with same shared secret
+   * - Timestamp: Included to bind key derivation to specific time, preventing replay attacks
+   * - Protocol version: Included to ensure version-specific key derivation
+   * 
+   * Security Considerations:
+   * - Timestamp manipulation will cause decryption failure (timestamp must match encryption)
+   * - ContextId is stored in payload parameters and must be preserved for decryption
+   * - HKDF info parameter format: "DH-AES-GCM-Cascading-Cipher|v{version}|{contextIdHex}|{timestamp}"
+   * - This ensures keys are unique per encryption operation, even with same shared secret
+   * 
+   * @param sharedSecret - The ECDH-derived shared secret
+   * @param salt - Random salt for HKDF
+   * @param contextId - Optional random context ID (generated if not provided)
+   * @param timestamp - Optional timestamp (uses current time if not provided)
+   * @returns Derived AES-GCM key
    */
   private async deriveAESKey(
     sharedSecret: Uint8Array,
@@ -228,6 +245,10 @@ export class DHCipherLayer implements CipherLayer {
       const actualTimestamp = timestamp !== undefined ? timestamp : Date.now();
 
       // Include protocol version, context ID, and timestamp in HKDF info
+      // Format: "DH-AES-GCM-Cascading-Cipher|v{version}|{contextIdHex}|{timestamp}"
+      // This ensures domain separation: same shared secret produces different keys
+      // for different contexts/timestamps, preventing key reuse attacks
+      // Security: Timestamp manipulation will cause decryption failure (must match encryption)
       const infoParts = [
         'DH-AES-GCM-Cascading-Cipher',
         `v${this.version}`,
@@ -284,9 +305,13 @@ export class DHCipherLayer implements CipherLayer {
       }
 
       // Validate public key fingerprint if provided (MITM protection)
+      // Use constant-time comparison to prevent timing attacks
       if (keys.publicKey && keys.expectedPublicKeyFingerprint) {
-        const fingerprint = await KeyAuthentication.generateFingerprint(keys.publicKey);
-        if (fingerprint !== keys.expectedPublicKeyFingerprint) {
+        const isValid = await KeyAuthentication.verifyFingerprint(
+          keys.publicKey,
+          keys.expectedPublicKeyFingerprint
+        );
+        if (!isValid) {
           throw new CipherLayerError(
             'Public key fingerprint mismatch - possible MITM attack',
             this.name,
@@ -379,7 +404,24 @@ export class DHCipherLayer implements CipherLayer {
       Zeroization.zeroizeAll(sharedSecret, salt, iv, contextId);
       aesKey = null;
 
+      // Don't leak sensitive data in error messages
       const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data in error message
+      const hasSensitiveData = 
+        (keys?.privateKey && (errorMessage.includes('private') || errorMessage.includes('key'))) ||
+        (keys?.publicKey && errorMessage.includes('public')) ||
+        (keys?.sharedSecret && errorMessage.includes('secret')) ||
+        (keys?.expectedPublicKeyFingerprint && errorMessage.includes('fingerprint'));
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'DH-AES encryption failed',
+          this.name,
+          'encrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
         `DH-AES encryption failed: ${errorMessage}`,
         this.name,
@@ -411,9 +453,13 @@ export class DHCipherLayer implements CipherLayer {
       }
 
       // Validate public key fingerprint if provided
+      // Use constant-time comparison to prevent timing attacks
       if (keys.publicKey && keys.expectedPublicKeyFingerprint) {
-        const fingerprint = await KeyAuthentication.generateFingerprint(keys.publicKey);
-        if (fingerprint !== keys.expectedPublicKeyFingerprint) {
+        const isValid = await KeyAuthentication.verifyFingerprint(
+          keys.publicKey,
+          keys.expectedPublicKeyFingerprint
+        );
+        if (!isValid) {
           throw new CipherLayerError(
             'Public key fingerprint mismatch - possible MITM attack',
             this.name,
@@ -535,10 +581,27 @@ export class DHCipherLayer implements CipherLayer {
       Zeroization.zeroizeAll(sharedSecret, contextId);
       aesKey = null;
 
+      // Don't leak sensitive data in error messages
       const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data in error message
+      const hasSensitiveData = 
+        (keys?.privateKey && (errorMessage.includes('private') || errorMessage.includes('key'))) ||
+        (keys?.publicKey && errorMessage.includes('public')) ||
+        (keys?.sharedSecret && errorMessage.includes('secret')) ||
+        (keys?.expectedPublicKeyFingerprint && errorMessage.includes('fingerprint'));
+
       if (errorMessage.includes('decryption failed') || errorMessage.includes('OperationError')) {
         throw new CipherLayerError(
           'DH-AES decryption failed: wrong keys or corrupted data',
+          this.name,
+          'decrypt',
+          error as Error
+        );
+      }
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'DH-AES decryption failed',
           this.name,
           'decrypt',
           error as Error
