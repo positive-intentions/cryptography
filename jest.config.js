@@ -11,8 +11,12 @@ module.exports = {
       '\\.(css|less|scss)$': 'identity-obj-proxy',
       // MLS mock used because ts-mls is an ES module incompatible with Jest
       // Real implementation is tested in Storybook (browser environment)
-      '^.*/crypto/MLS/MLSManager\\.tsx$': '<rootDir>/src/__mocks__/crypto/MLS/MLSManager.tsx',
-      '^.*/crypto/SFrame/SFrameManager\\.tsx$': '<rootDir>/src/__mocks__/crypto/SFrame/SFrameManager.tsx'
+      // Match both with and without .tsx extension
+      '^.*/crypto/MLS/MLSManager(\\.tsx)?$': '<rootDir>/src/__mocks__/crypto/MLS/MLSManager.tsx',
+      '^.*/MLS/MLSManager(\\.tsx)?$': '<rootDir>/src/__mocks__/crypto/MLS/MLSManager.tsx',
+      '^.*/crypto/SFrame/SFrameManager\\.tsx$': '<rootDir>/src/__mocks__/crypto/SFrame/SFrameManager.tsx',
+      // Mock @noble/hashes/scrypt.js for Jest ES module compatibility
+      '^@noble/hashes/scrypt\\.js$': '<rootDir>/src/__mocks__/@noble/hashes/scrypt.js'
       // WASM files should not be mocked - they are a key output of this repo
     },
     collectCoverage: true,
@@ -41,7 +45,7 @@ module.exports = {
     ],
     // Configure module handling for WASM and ES modules
     transformIgnorePatterns: [
-        'node_modules/(?!(@?(?:signal_protocol_wasm|pkg|ts-mls|hpke|noble|mlkem)))',
+        'node_modules/(?!(@?(?:signal_protocol_wasm|pkg|ts-mls|hpke|noble|mlkem)|@noble/hashes))',
         'Frontend/pkg/(?!.*\\.js$)'
     ],
     // Enable ES module support

@@ -95,7 +95,7 @@ const decrypted = await manager.decrypt(encrypted, keys);
 
 ### 1. AESCipherLayer
 
-Password-based AES-GCM-256 encryption with PBKDF2 key derivation.
+Password-based AES-GCM-256 encryption with Scrypt key derivation (GPU/ASIC resistant).
 
 ```typescript
 const aesLayer = new AESCipherLayer();
@@ -105,8 +105,11 @@ const keys = { password: "secure-password" };
 **Features:**
 
 - AES-GCM-256 authenticated encryption
-- PBKDF2 key derivation (100,000 iterations)
+- Scrypt key derivation (N=32768, r=8, p=1) - GPU/ASIC resistant
 - Random salt and IV per encryption
+- IV reuse protection
+- Protocol version in AAD
+- Zeroization of sensitive buffers
 - Compatible with Web Crypto API
 
 ### 2. DHCipherLayer
@@ -163,7 +166,7 @@ Signal Protocol with Double Ratchet algorithm via WASM from federated module.
 
 ```typescript
 // Load WASM bindings from federated signal_protocol module
-const wasmBindings = await import('signal_protocol/WasmBindings');
+const wasmBindings = await import("signal_protocol/WasmBindings");
 const signalWasm = await wasmBindings.loadWasmModule();
 
 const signalLayer = new SignalCipherLayer(signalWasm, doubleRatchetState);
