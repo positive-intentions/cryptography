@@ -46,29 +46,19 @@ export class ConstantTime {
     // Track length mismatch (but continue comparison)
     let lengthMismatch = len1 !== len2 ? 1 : 0;
 
-    // Compare all characters up to the minimum length
-    // Use XOR to accumulate differences
+    // Always process the maximum length to ensure constant-time behavior
+    // This prevents timing leaks based on string length differences
     let diff = 0;
-    const minLen = Math.min(len1, len2);
+    const maxLen = Math.max(len1, len2);
 
-    for (let i = 0; i < minLen; i++) {
+    for (let i = 0; i < maxLen; i++) {
+      // Get character codes, using 0 for out-of-bounds access
+      // This ensures we always process the same number of iterations
+      const c1 = i < len1 ? str1.charCodeAt(i) : 0;
+      const c2 = i < len2 ? str2.charCodeAt(i) : 0;
       // Compare character codes using XOR
       // JavaScript strings are UTF-16, so we compare character codes
-      diff |= str1.charCodeAt(i) ^ str2.charCodeAt(i);
-    }
-
-    // If lengths differ, we need to compare remaining characters
-    // This ensures we always process the same amount of data
-    if (len1 > len2) {
-      // Process remaining characters from str1
-      for (let i = minLen; i < len1; i++) {
-        diff |= str1.charCodeAt(i) ^ 0; // Compare with null character
-      }
-    } else if (len2 > len1) {
-      // Process remaining characters from str2
-      for (let i = minLen; i < len2; i++) {
-        diff |= 0 ^ str2.charCodeAt(i); // Compare null with character
-      }
+      diff |= c1 ^ c2;
     }
 
     // Return true only if no differences found AND lengths match
@@ -125,28 +115,18 @@ export class ConstantTime {
     // Track length mismatch (but continue comparison)
     let lengthMismatch = len1 !== len2 ? 1 : 0;
 
-    // Compare all bytes up to the minimum length
-    // Use XOR to accumulate differences
+    // Always process the maximum length to ensure constant-time behavior
+    // This prevents timing leaks based on buffer length differences
     let diff = 0;
-    const minLen = Math.min(len1, len2);
+    const maxLen = Math.max(len1, len2);
 
-    for (let i = 0; i < minLen; i++) {
+    for (let i = 0; i < maxLen; i++) {
+      // Get bytes, using 0 for out-of-bounds access
+      // This ensures we always process the same number of iterations
+      const b1 = i < len1 ? arr1[i] : 0;
+      const b2 = i < len2 ? arr2[i] : 0;
       // Compare bytes using XOR
-      diff |= arr1[i] ^ arr2[i];
-    }
-
-    // If lengths differ, we need to compare remaining bytes
-    // This ensures we always process the same amount of data
-    if (len1 > len2) {
-      // Process remaining bytes from arr1
-      for (let i = minLen; i < len1; i++) {
-        diff |= arr1[i] ^ 0; // Compare with zero
-      }
-    } else if (len2 > len1) {
-      // Process remaining bytes from arr2
-      for (let i = minLen; i < len2; i++) {
-        diff |= 0 ^ arr2[i]; // Compare zero with byte
-      }
+      diff |= b1 ^ b2;
     }
 
     // Return true only if no differences found AND lengths match

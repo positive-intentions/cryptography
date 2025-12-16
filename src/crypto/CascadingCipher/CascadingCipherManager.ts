@@ -171,16 +171,6 @@ export class CascadingCipherManager {
           layerMetadataList.push(encrypted.layerMetadata);
           layerParametersList.push(encrypted.parameters);
 
-          // Debug: Log data format after encrypt
-          if (process.env.DEBUG_CASCADE) {
-            console.log(`[Cascade Encrypt] Layer ${i} (${layer.name}) output:`, {
-              ciphertextType: typeof encrypted.ciphertext,
-              ciphertextConstructor: encrypted.ciphertext?.constructor?.name,
-              ciphertextLength: encrypted.ciphertext?.length,
-              isUint8Array: encrypted.ciphertext instanceof Uint8Array,
-            });
-          }
-
           // Convert ciphertext to base64 string for consistent format between layers
           // This ensures all layers receive data in the same format
           currentData = this.arrayBufferToBase64(encrypted.ciphertext);
@@ -195,16 +185,6 @@ export class CascadingCipherManager {
 
       const endTime = performance.now();
       const totalProcessingTime = endTime - startTime;
-
-      // Debug: Log final ciphertext format
-      if (process.env.DEBUG_CASCADE) {
-        console.log(`[Cascade Encrypt] Final ciphertext:`, {
-          type: typeof currentData,
-          constructor: currentData?.constructor?.name,
-          length: currentData?.length,
-          isUint8Array: currentData instanceof Uint8Array,
-        });
-      }
 
       // Store final ciphertext as Uint8Array (convert from base64 string if needed)
       // currentData is base64 string after last layer, convert back to Uint8Array for storage
@@ -316,18 +296,6 @@ export class CascadingCipherManager {
             parameters: layerParameters,
           };
 
-          // Debug: Log data format before decrypt
-          if (process.env.DEBUG_CASCADE) {
-            console.log(`[Cascade Decrypt] Layer ${i} (${layer.name}):`, {
-              ciphertextType: typeof payload.ciphertext,
-              ciphertextConstructor: payload.ciphertext?.constructor?.name,
-              ciphertextLength: payload.ciphertext?.length,
-              isUint8Array: payload.ciphertext instanceof Uint8Array,
-              isArrayBuffer: payload.ciphertext instanceof ArrayBuffer,
-              isArray: Array.isArray(payload.ciphertext),
-            });
-          }
-
           const decrypted = await layer.decrypt(payload, layerKeys);
 
           // Convert decrypted data to base64 string for next layer
@@ -338,16 +306,6 @@ export class CascadingCipherManager {
           } else {
             // Last layer - return Uint8Array directly
             currentData = decrypted;
-          }
-
-          // Debug: Log data format after decrypt
-          if (process.env.DEBUG_CASCADE) {
-            console.log(`[Cascade Decrypt] Layer ${i} (${layer.name}) output:`, {
-              dataType: typeof currentData,
-              dataConstructor: currentData?.constructor?.name,
-              dataLength: currentData?.length,
-              isUint8Array: currentData instanceof Uint8Array,
-            });
           }
         } catch (error) {
           throw new CascadingCipherError(

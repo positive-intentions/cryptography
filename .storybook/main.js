@@ -90,7 +90,7 @@ const moduleRedundency = ({
 
 const moduleFederationConfig = new ModuleFederationPlugin({
   name: "cryptography",
-  filename: "remoteEntry.js",
+  // filename: "remoteEntry.js",
   exposes: {
     './Cryptography': './src/stories/components/Cryptography.tsx',
     './mlsCodec': './src/crypto/MLS/mlsCodec.ts',

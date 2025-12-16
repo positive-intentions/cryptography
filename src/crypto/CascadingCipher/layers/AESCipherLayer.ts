@@ -45,7 +45,8 @@ export class AESCipherLayer implements CipherLayer {
   private readonly KEY_LENGTH = 256;
 
   // Track used IVs per key derivation (keyed by salt+password hash)
-  private usedIVs: Map<string, Set<string>> = new Map();
+  // Structure: Map<ivKey, { ivSet: Set<string>, lastAccessTime: number }>
+  private usedIVs: Map<string, { ivSet: Set<string>; lastAccessTime: number }> = new Map();
   // Per-key limit: Maximum IVs to track per password+salt combination
   // This prevents IV reuse while limiting memory per key
   // 10000 is chosen as a balance between security (preventing reuse) and memory usage
@@ -58,6 +59,11 @@ export class AESCipherLayer implements CipherLayer {
   // Prevents infinite loops if IV space is exhausted
   // 100 attempts is sufficient given 96-bit IV space (2^96 possible IVs)
   private readonly MAX_IV_GENERATION_ATTEMPTS = 100;
+  // Time-based expiration: Remove IV tracking entries older than 1 hour
+  private readonly IV_TRACKING_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+  // Cleanup interval: Run cleanup every 1000 encryptions
+  private readonly CLEANUP_INTERVAL = 1000;
+  private encryptionCount = 0;
 
   // Cache scrypt function to avoid repeated imports
   private static scryptCache: any = null;
@@ -88,10 +94,12 @@ export class AESCipherLayer implements CipherLayer {
    * Check if IV has been used before
    */
   private isIVUsed(ivKey: string, iv: Uint8Array): boolean {
-    const ivSet = this.usedIVs.get(ivKey);
-    if (!ivSet) return false;
+    const ivEntry = this.usedIVs.get(ivKey);
+    if (!ivEntry) return false;
+    // Update last access time
+    ivEntry.lastAccessTime = Date.now();
     const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
-    return ivSet.has(ivHex);
+    return ivEntry.ivSet.has(ivHex);
   }
 
   /**
@@ -105,22 +113,46 @@ export class AESCipherLayer implements CipherLayer {
       this.usedIVs.delete(firstKey);
     }
 
-    let ivSet = this.usedIVs.get(ivKey);
-    if (!ivSet) {
-      ivSet = new Set();
-      this.usedIVs.set(ivKey, ivSet);
+    let ivEntry = this.usedIVs.get(ivKey);
+    if (!ivEntry) {
+      ivEntry = {
+        ivSet: new Set(),
+        lastAccessTime: Date.now(),
+      };
+      this.usedIVs.set(ivKey, ivEntry);
+    } else {
+      // Update last access time
+      ivEntry.lastAccessTime = Date.now();
     }
 
     const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
-    ivSet.add(ivHex);
+    ivEntry.ivSet.add(ivHex);
 
     // Limit memory usage per key - remove oldest entries if over limit
     // This maintains per-key limit while global limit is handled above
-    if (ivSet.size > this.MAX_IV_TRACKING) {
-      const entries = Array.from(ivSet);
+    if (ivEntry.ivSet.size > this.MAX_IV_TRACKING) {
+      const entries = Array.from(ivEntry.ivSet);
       const toRemove = entries.length - this.MAX_IV_TRACKING;
-      entries.slice(0, toRemove).forEach(e => ivSet!.delete(e));
+      entries.slice(0, toRemove).forEach(e => ivEntry!.ivSet.delete(e));
     }
+  }
+
+  /**
+   * Clean up old IV tracking entries based on time-based expiration
+   * Removes entries that haven't been accessed in the last hour
+   */
+  private cleanupOldIVs(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    for (const [key, entry] of this.usedIVs.entries()) {
+      if (now - entry.lastAccessTime > this.IV_TRACKING_EXPIRY_MS) {
+        keysToDelete.push(key);
+      }
+    }
+
+    // Delete expired entries
+    keysToDelete.forEach(key => this.usedIVs.delete(key));
   }
 
   /**
@@ -206,6 +238,13 @@ export class AESCipherLayer implements CipherLayer {
     let key: CryptoKey | null = null;
 
     try {
+      // Periodically cleanup old IV tracking entries
+      this.encryptionCount++;
+      if (this.encryptionCount >= this.CLEANUP_INTERVAL) {
+        this.cleanupOldIVs();
+        this.encryptionCount = 0;
+      }
+
       // Validate keys
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError(
@@ -255,15 +294,20 @@ export class AESCipherLayer implements CipherLayer {
       const aad = encoder.encode(JSON.stringify(aadData));
 
       // Encrypt data with AAD
+      // Create a new ArrayBuffer from IV to satisfy TypeScript's strict BufferSource type requirement
+      const ivArrayBuffer = new ArrayBuffer(iv.length);
+      new Uint8Array(ivArrayBuffer).set(iv);
+      const ivBuffer = new Uint8Array(ivArrayBuffer) as unknown as BufferSource;
+      const dataBuffer = data as unknown as BufferSource;
       const ciphertextBuffer = await crypto.subtle.encrypt(
         {
           name: 'AES-GCM',
-          iv,
+          iv: ivBuffer,
           additionalData: aad,
           tagLength: 128,
         },
         key,
-        data
+        dataBuffer
       );
 
       const ciphertext = new Uint8Array(ciphertextBuffer);
@@ -401,15 +445,20 @@ export class AESCipherLayer implements CipherLayer {
       const aad = encoder.encode(JSON.stringify(aadData));
 
       // Decrypt data with AAD validation
+      // Create a new ArrayBuffer from IV to satisfy TypeScript's strict BufferSource type requirement
+      const ivArrayBuffer = new ArrayBuffer(ivBytes.length);
+      new Uint8Array(ivArrayBuffer).set(ivBytes);
+      const ivBuffer = new Uint8Array(ivArrayBuffer) as unknown as BufferSource;
+      const ciphertextBuffer = payload.ciphertext as unknown as BufferSource;
       const plaintextBuffer = await crypto.subtle.decrypt(
         {
           name: 'AES-GCM',
-          iv: ivBytes,
+          iv: ivBuffer,
           additionalData: aad,
           tagLength: 128,
         },
         key,
-        payload.ciphertext
+        ciphertextBuffer
       );
       
       const plaintext = new Uint8Array(plaintextBuffer);

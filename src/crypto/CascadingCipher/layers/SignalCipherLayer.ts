@@ -90,18 +90,14 @@ export class SignalCipherLayer implements CipherLayer {
             if (wasmModule) {
               this.wasmModule = wasmModule;
               this.useWasm = true;
-              console.log('✅ Signal Protocol: Using WASM implementation from federated module');
             } else {
-              console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
               this.useWasm = false;
             }
           } else {
-            console.log('ℹ️ Signal Protocol: Federated module not available, using Web Crypto API implementation');
             this.useWasm = false;
           }
         } catch (wasmError) {
           // WASM not available, will use Web Crypto API
-          console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
           this.useWasm = false;
         }
       }
@@ -111,7 +107,7 @@ export class SignalCipherLayer implements CipherLayer {
       }
     } catch (error) {
       // Initialization errors are only critical if we can't fall back
-      console.warn('Signal Protocol initialization warning:', error.message);
+      // Silently fall back to Web Crypto API implementation
       this.useWasm = false;
     }
   }
