@@ -12,7 +12,9 @@ import {
   AESCipherLayer,
   MLSCipherLayer,
   DHCipherLayer,
+  MLKEMCipherLayer,
 } from '../../crypto/CascadingCipher';
+import { MlKem768 } from '@hpke/ml-kem';
 import {
   ThemeProvider,
   Container,
@@ -51,13 +53,14 @@ export default {
 
 const MultiProtocolDemo = () => {
   // State
-  const [message, setMessage] = useState('Secret message with MLS + Signal + DH + AES!');
+  const [message, setMessage] = useState('Secret message with MLS + Signal + ML-KEM + DH + AES!');
   const [rounds, setRounds] = useState(2);
   const [aesPassword, setAesPassword] = useState('secure-password-123');
 
   // Layer toggles
   const [enableMLS, setEnableMLS] = useState(true);
   const [enableSignal, setEnableSignal] = useState(true);
+  const [enableMLKEM, setEnableMLKEM] = useState(true);
   const [enableDH, setEnableDH] = useState(true);
   const [enableAES, setEnableAES] = useState(true);
 
@@ -72,6 +75,11 @@ const MultiProtocolDemo = () => {
   const [aliceSignalState, setAliceSignalState] = useState(null);
   const [bobSignalState, setBobSignalState] = useState(null);
   const [signalInitialized, setSignalInitialized] = useState(false);
+
+  // ML-KEM state
+  const [aliceMLKEMKeyPair, setAliceMLKEMKeyPair] = useState(null);
+  const [bobMLKEMKeyPair, setBobMLKEMKeyPair] = useState(null);
+  const [mlkemInitialized, setMlkemInitialized] = useState(false);
 
   // DH state
   const [aliceDHKeyPair, setAliceDHKeyPair] = useState(null);
@@ -209,6 +217,34 @@ const MultiProtocolDemo = () => {
     }
   };
 
+  // Initialize ML-KEM keys
+  const initializeMLKEM = async () => {
+    try {
+      addLog('🔐 Initializing ML-KEM (quantum-resistant) for Alice and Bob...', 'info');
+
+      const kem = new MlKem768();
+
+      // Generate ML-KEM key pairs for Alice
+      const aliceKeyPair = await kem.generateKeyPair();
+      addLog('✅ Alice ML-KEM key pair generated', 'success');
+      addLog(`📊 Alice public key size: ${aliceKeyPair.publicKey.key.length} bytes`, 'info');
+
+      // Generate ML-KEM key pairs for Bob
+      const bobKeyPair = await kem.generateKeyPair();
+      addLog('✅ Bob ML-KEM key pair generated', 'success');
+      addLog(`📊 Bob public key size: ${bobKeyPair.publicKey.key.length} bytes`, 'info');
+
+      setAliceMLKEMKeyPair(aliceKeyPair);
+      setBobMLKEMKeyPair(bobKeyPair);
+      setMlkemInitialized(true);
+      addLog('🎉 ML-KEM setup complete!', 'success');
+    } catch (err) {
+      console.error('ML-KEM initialization error:', err);
+      setError(`ML-KEM initialization failed: ${err.message}`);
+      addLog(`❌ ML-KEM init failed: ${err.message}`, 'error');
+    }
+  };
+
   // Initialize Diffie-Hellman keys
   const initializeDH = async () => {
     try {
@@ -256,6 +292,7 @@ const MultiProtocolDemo = () => {
     try {
       await initializeMLS();
       await initializeSignal();
+      await initializeMLKEM();
       await initializeDH();
     } catch (err) {
       setError(err.message);
@@ -270,6 +307,7 @@ const MultiProtocolDemo = () => {
     const missingInitializations = [];
     if (enableMLS && !mlsInitialized) missingInitializations.push('MLS');
     if (enableSignal && !signalInitialized) missingInitializations.push('Signal');
+    if (enableMLKEM && !mlkemInitialized) missingInitializations.push('ML-KEM');
     if (enableDH && !dhInitialized) missingInitializations.push('DH');
 
     if (missingInitializations.length > 0) {
@@ -277,7 +315,7 @@ const MultiProtocolDemo = () => {
       return;
     }
 
-    const layersPerRound = [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length;
+    const layersPerRound = [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length;
     if (layersPerRound === 0) {
       setError('Please select at least one encryption layer');
       return;
@@ -291,6 +329,7 @@ const MultiProtocolDemo = () => {
       const layerNames = [];
       if (enableMLS) layerNames.push('MLS');
       if (enableSignal) layerNames.push('Signal');
+      if (enableMLKEM) layerNames.push('ML-KEM');
       if (enableDH) layerNames.push('DH');
       if (enableAES) layerNames.push('AES');
 
@@ -324,6 +363,16 @@ const MultiProtocolDemo = () => {
           });
           manager.addLayer(aesLayerSignal);
           layerStack.push(`Signal-Round${round + 1}`);
+        }
+
+        // ML-KEM Layer (quantum-resistant)
+        if (enableMLKEM) {
+          const mlkemLayer = new MLKEMCipherLayer();
+          Object.defineProperty(mlkemLayer, 'name', {
+            value: `ML-KEM-Round${round + 1}`
+          });
+          manager.addLayer(mlkemLayer);
+          layerStack.push(`ML-KEM-Round${round + 1}`);
         }
 
         // DH Layer
@@ -364,6 +413,11 @@ const MultiProtocolDemo = () => {
             password: `signal-round-${round + 1}-${aesPassword}`,
           };
         }
+        if (enableMLKEM) {
+          keys[`ML-KEM-Round${round + 1}`] = {
+            publicKey: bobMLKEMKeyPair.publicKey, // Alice encrypts with Bob's public key
+          };
+        }
         if (enableDH) {
           keys[`DH-Round${round + 1}`] = {
             privateKey: aliceDHKeyPair.privateKey,
@@ -388,7 +442,7 @@ const MultiProtocolDemo = () => {
       addLog(`⏱️ Total encryption time: ${result.totalProcessingTime.toFixed(2)}ms`, 'info');
 
       // Show breakdown by round
-      const layersPerRound = [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length;
+      const layersPerRound = [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length;
       for (let round = 0; round < rounds; round++) {
         const roundLayers = result.layers.slice(round * layersPerRound, (round + 1) * layersPerRound);
         if (roundLayers.length > 0) {
@@ -445,6 +499,14 @@ const MultiProtocolDemo = () => {
           manager.addLayer(aesLayerSignal);
         }
 
+        if (enableMLKEM) {
+          const mlkemLayer = new MLKEMCipherLayer();
+          Object.defineProperty(mlkemLayer, 'name', {
+            value: `ML-KEM-Round${round + 1}`
+          });
+          manager.addLayer(mlkemLayer);
+        }
+
         if (enableDH) {
           const dhLayer = new DHCipherLayer();
           Object.defineProperty(dhLayer, 'name', {
@@ -474,6 +536,11 @@ const MultiProtocolDemo = () => {
         if (enableSignal) {
           keys[`Signal-Round${round + 1}`] = {
             password: `signal-round-${round + 1}-${aesPassword}`,
+          };
+        }
+        if (enableMLKEM) {
+          keys[`ML-KEM-Round${round + 1}`] = {
+            privateKey: bobMLKEMKeyPair.privateKey, // Bob decrypts with his private key
           };
         }
         if (enableDH) {
@@ -549,6 +616,10 @@ const MultiProtocolDemo = () => {
                 color={signalInitialized ? 'success' : 'default'}
               />
               <Chip
+                label={mlkemInitialized ? '✅ ML-KEM Ready' : '⏳ ML-KEM Not Initialized'}
+                color={mlkemInitialized ? 'success' : 'default'}
+              />
+              <Chip
                 label={dhInitialized ? '✅ DH Ready' : '⏳ DH Not Initialized'}
                 color={dhInitialized ? 'success' : 'default'}
               />
@@ -557,7 +628,7 @@ const MultiProtocolDemo = () => {
             <Button
               variant="contained"
               onClick={initializeAll}
-              disabled={processing || (mlsInitialized && signalInitialized && dhInitialized)}
+              disabled={processing || (mlsInitialized && signalInitialized && mlkemInitialized && dhInitialized)}
             >
               {processing ? <CircularProgress size={24} /> : 'Initialize All Protocols'}
             </Button>
@@ -565,7 +636,7 @@ const MultiProtocolDemo = () => {
         </Card>
 
         {/* Configuration */}
-        {(mlsInitialized || signalInitialized || dhInitialized) && (
+        {(mlsInitialized || signalInitialized || mlkemInitialized || dhInitialized) && (
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -610,6 +681,16 @@ const MultiProtocolDemo = () => {
                   <FormControlLabel
                     control={
                       <Checkbox
+                        checked={enableMLKEM}
+                        onChange={(e) => setEnableMLKEM(e.target.checked)}
+                        disabled={processing}
+                      />
+                    }
+                    label="ML-KEM (Quantum-Resistant Key Encapsulation)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
                         checked={enableDH}
                         onChange={(e) => setEnableDH(e.target.checked)}
                         disabled={processing}
@@ -628,7 +709,7 @@ const MultiProtocolDemo = () => {
                     label="AES (Password-Based Encryption)"
                   />
                 </FormGroup>
-                {[enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length === 0 && (
+                {[enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length === 0 && (
                   <Alert severity="warning" sx={{ mt: 2 }}>
                     ⚠️ Please select at least one encryption layer
                   </Alert>
@@ -652,9 +733,10 @@ const MultiProtocolDemo = () => {
                   disabled={processing}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  Total layers: {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length}
+                  Total layers: {rounds * [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length}
                   {enableMLS && ` (MLS × ${rounds})`}
                   {enableSignal && ` (Signal × ${rounds})`}
+                  {enableMLKEM && ` (ML-KEM × ${rounds})`}
                   {enableDH && ` (DH × ${rounds})`}
                   {enableAES && ` (AES × ${rounds})`}
                 </Typography>
@@ -678,6 +760,7 @@ const MultiProtocolDemo = () => {
                   const flowSteps = ['Plaintext'];
                   if (enableMLS) flowSteps.push('MLS');
                   if (enableSignal) flowSteps.push('Signal');
+                  if (enableMLKEM) flowSteps.push('ML-KEM');
                   if (enableDH) flowSteps.push('DH');
                   if (enableAES) flowSteps.push('AES');
                   flowSteps.push('Intermediate Ciphertext');
@@ -688,7 +771,7 @@ const MultiProtocolDemo = () => {
                   );
                 })}
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                  Decryption reverses all {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} layers automatically
+                  Decryption reverses all {rounds * [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length} layers automatically
                 </Typography>
               </Box>
             </CardContent>
@@ -696,16 +779,16 @@ const MultiProtocolDemo = () => {
         )}
 
         {/* Actions */}
-        {(mlsInitialized || signalInitialized || dhInitialized) && (
+        {(mlsInitialized || signalInitialized || mlkemInitialized || dhInitialized) && (
           <Paper sx={{ p: 2 }}>
             <Stack direction="row" spacing={2}>
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleEncrypt}
-                disabled={processing || !message || [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length === 0}
+                disabled={processing || !message || [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length === 0}
               >
-                🔒 Encrypt with {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} Layers
+                🔒 Encrypt with {rounds * [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length} Layers
               </Button>
               <Button
                 variant="contained"
@@ -813,7 +896,7 @@ const MultiProtocolDemo = () => {
             </Typography>
             {decrypted === message && (
               <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                ✅ Perfect match! All {rounds * [enableMLS, enableSignal, enableDH, enableAES].filter(Boolean).length} layers successfully reversed.
+                ✅ Perfect match! All {rounds * [enableMLS, enableSignal, enableMLKEM, enableDH, enableAES].filter(Boolean).length} layers successfully reversed.
               </Typography>
             )}
           </Alert>

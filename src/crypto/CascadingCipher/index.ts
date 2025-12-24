@@ -11,13 +11,15 @@
  *   MLSCipherLayer,
  *   SignalCipherLayer,
  *   DHCipherLayer,
- *   AESCipherLayer
+ *   AESCipherLayer,
+ *   MLKEMCipherLayer
  * } from 'cryptography/CascadingCipher';
  *
  * const cascader = new CascadingCipherManager();
  * cascader.addLayer(new MLSCipherLayer(mlsManager, groupId));
  * cascader.addLayer(new SignalCipherLayer(wasmModule, state));
  * cascader.addLayer(new DHCipherLayer());
+ * cascader.addLayer(new MLKEMCipherLayer());
  * cascader.addLayer(new AESCipherLayer());
  *
  * const encrypted = await cascader.encrypt(plaintext, keys);
@@ -54,6 +56,9 @@ export type { SignalKeys } from './layers/SignalCipherLayer';
 
 export { DHCipherLayer } from './layers/DHCipherLayer';
 export type { DHKeys } from './layers/DHCipherLayer';
+
+export { MLKEMCipherLayer } from './layers/MLKEMCipherLayer';
+export type { MLKEMKeys } from './layers/MLKEMCipherLayer';
 
 /**
  * Create a basic cascading cipher with common layers

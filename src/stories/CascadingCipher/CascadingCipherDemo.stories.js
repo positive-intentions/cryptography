@@ -10,7 +10,9 @@ import {
   CascadingCipherManager,
   AESCipherLayer,
   DHCipherLayer,
+  MLKEMCipherLayer,
 } from '../../crypto/CascadingCipher';
+import { MlKem768 } from '@hpke/ml-kem';
 import {
   ThemeProvider,
   Container,
@@ -48,6 +50,10 @@ const CascadingCipherDemo = () => {
   const [useDH, setUseDH] = useState(true);
   const [dhKeyPair, setDhKeyPair] = useState(null);
   const [dhPublicKey, setDhPublicKey] = useState(null);
+
+  const [useMLKEM, setUseMLKEM] = useState(false);
+  const [mlkemKeyPair, setMlkemKeyPair] = useState(null);
+  const [mlkemPublicKey, setMlkemPublicKey] = useState(null);
 
   const [encrypted, setEncrypted] = useState(null);
   const [decrypted, setDecrypted] = useState('');
@@ -88,6 +94,29 @@ const CascadingCipherDemo = () => {
     }
   };
 
+  // Generate ML-KEM key pair
+  const generateMLKEMKeys = async () => {
+    try {
+      addLog('🔑 Generating ML-KEM key pair...', 'info');
+
+      const kem = new MlKem768();
+      const keyPair = await kem.generateKeyPair();
+
+      // Get public key bytes
+      const publicKeyBytes = keyPair.publicKey.key;
+
+      setMlkemKeyPair(keyPair);
+      setMlkemPublicKey(publicKeyBytes);
+
+      addLog('✅ ML-KEM key pair generated', 'success');
+      addLog(`📤 Public key: ${Array.from(publicKeyBytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('')}...`, 'info');
+      addLog(`📊 Public key size: ${publicKeyBytes.length} bytes`, 'info');
+    } catch (err) {
+      setError(`ML-KEM key generation failed: ${err.message}`);
+      addLog(`❌ ${err.message}`, 'error');
+    }
+  };
+
   // Encrypt with cascading layers
   const handleEncrypt = async () => {
     setProcessing(true);
@@ -101,6 +130,15 @@ const CascadingCipherDemo = () => {
       const manager = new CascadingCipherManager();
 
       // Add layers based on configuration
+      if (useMLKEM) {
+        if (!mlkemKeyPair) {
+          throw new Error('ML-KEM keys not generated. Click "Generate ML-KEM Keys" first.');
+        }
+        const mlkemLayer = new MLKEMCipherLayer();
+        manager.addLayer(mlkemLayer);
+        addLog('✅ Added ML-KEM-768 layer (quantum-resistant)', 'success');
+      }
+
       if (useDH) {
         if (!dhKeyPair) {
           throw new Error('DH keys not generated. Click "Generate DH Keys" first.');
@@ -134,6 +172,12 @@ const CascadingCipherDemo = () => {
         'AES-Layer-2': { password: password2 },
         'AES-Layer-3': { password: password3 },
       };
+
+      if (useMLKEM) {
+        keys['ML-KEM-768'] = {
+          publicKey: mlkemKeyPair.publicKey,
+        };
+      }
 
       if (useDH) {
         // For DH, use same key pair (simulating key exchange with self)
@@ -187,6 +231,11 @@ const CascadingCipherDemo = () => {
       // Create manager with same layers
       const manager = new CascadingCipherManager();
 
+      if (useMLKEM) {
+        const mlkemLayer = new MLKEMCipherLayer();
+        manager.addLayer(mlkemLayer);
+      }
+
       if (useDH) {
         const dhLayer = new DHCipherLayer();
         manager.addLayer(dhLayer);
@@ -210,6 +259,12 @@ const CascadingCipherDemo = () => {
         'AES-Layer-2': { password: password2 },
         'AES-Layer-3': { password: password3 },
       };
+
+      if (useMLKEM) {
+        keys['ML-KEM-768'] = {
+          privateKey: mlkemKeyPair.privateKey,
+        };
+      }
 
       if (useDH) {
         keys['DH-AES-GCM'] = {
@@ -258,6 +313,29 @@ const CascadingCipherDemo = () => {
             <Typography variant="h6" gutterBottom>
               Configuration
             </Typography>
+
+            <Box sx={{ mb: 2 }}>
+              <FormControlLabel
+                control={<Switch checked={useMLKEM} onChange={(e) => setUseMLKEM(e.target.checked)} />}
+                label="Include ML-KEM Layer (Quantum-Resistant)"
+              />
+            </Box>
+
+            {useMLKEM && (
+              <Box sx={{ mb: 2 }}>
+                <Button variant="outlined" onClick={generateMLKEMKeys} disabled={processing}>
+                  Generate ML-KEM Keys
+                </Button>
+                {mlkemPublicKey && (
+                  <Chip
+                    label="ML-KEM Keys Ready"
+                    color="success"
+                    size="small"
+                    sx={{ ml: 2 }}
+                  />
+                )}
+              </Box>
+            )}
 
             <Box sx={{ mb: 2 }}>
               <FormControlLabel
@@ -334,7 +412,7 @@ const CascadingCipherDemo = () => {
               variant="contained"
               color="primary"
               onClick={handleEncrypt}
-              disabled={processing || (useDH && !dhKeyPair)}
+              disabled={processing || (useDH && !dhKeyPair) || (useMLKEM && !mlkemKeyPair)}
             >
               🔒 Encrypt
             </Button>
