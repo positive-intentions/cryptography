@@ -10,6 +10,7 @@ import {
   EncryptedPayload,
   CipherLayerError,
 } from '../types';
+import { Zeroization } from '../../utils/zeroization';
 
 /**
  * Keys for Signal encryption
@@ -89,18 +90,14 @@ export class SignalCipherLayer implements CipherLayer {
             if (wasmModule) {
               this.wasmModule = wasmModule;
               this.useWasm = true;
-              console.log('✅ Signal Protocol: Using WASM implementation from federated module');
             } else {
-              console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
               this.useWasm = false;
             }
           } else {
-            console.log('ℹ️ Signal Protocol: Federated module not available, using Web Crypto API implementation');
             this.useWasm = false;
           }
         } catch (wasmError) {
           // WASM not available, will use Web Crypto API
-          console.log('ℹ️ Signal Protocol: WASM not available, using Web Crypto API implementation');
           this.useWasm = false;
         }
       }
@@ -110,7 +107,7 @@ export class SignalCipherLayer implements CipherLayer {
       }
     } catch (error) {
       // Initialization errors are only critical if we can't fall back
-      console.warn('Signal Protocol initialization warning:', error.message);
+      // Silently fall back to Web Crypto API implementation
       this.useWasm = false;
     }
   }
@@ -124,21 +121,32 @@ export class SignalCipherLayer implements CipherLayer {
     data: Uint8Array,
     aad: Uint8Array
   ): Promise<Uint8Array> {
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      key,
-      { name: 'AES-GCM' },
-      false,
-      ['encrypt']
-    );
+    let keyCopy: Uint8Array | null = null;
+    try {
+      // Create a copy of key for zeroization (key may be reused)
+      keyCopy = new Uint8Array(key);
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyCopy,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+      );
 
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: nonce, additionalData: aad },
-      cryptoKey,
-      data
-    );
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: nonce, additionalData: aad },
+        cryptoKey,
+        data
+      );
 
-    return new Uint8Array(encrypted);
+      return new Uint8Array(encrypted);
+    } finally {
+      // Zeroize key copy
+      if (keyCopy) {
+        Zeroization.zeroize(keyCopy);
+      }
+    }
   }
 
   /**
@@ -150,21 +158,32 @@ export class SignalCipherLayer implements CipherLayer {
     data: Uint8Array,
     aad: Uint8Array
   ): Promise<Uint8Array> {
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      key,
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt']
-    );
+    let keyCopy: Uint8Array | null = null;
+    try {
+      // Create a copy of key for zeroization (key may be reused)
+      keyCopy = new Uint8Array(key);
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyCopy,
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+      );
 
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: nonce, additionalData: aad },
-      cryptoKey,
-      data
-    );
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: nonce, additionalData: aad },
+        cryptoKey,
+        data
+      );
 
-    return new Uint8Array(decrypted);
+      return new Uint8Array(decrypted);
+    } finally {
+      // Zeroize key copy
+      if (keyCopy) {
+        Zeroization.zeroize(keyCopy);
+      }
+    }
   }
 
   /**
@@ -172,6 +191,9 @@ export class SignalCipherLayer implements CipherLayer {
    */
   async encrypt(data: Uint8Array, keys: SignalKeys): Promise<EncryptedPayload> {
     const startTime = performance.now();
+    let messageKey: Uint8Array | null = null;
+    let nonce: Uint8Array | null = null;
+    let aad: Uint8Array | null = null;
 
     try {
       const state = keys.doubleRatchetState || this.doubleRatchetState;
@@ -224,11 +246,11 @@ export class SignalCipherLayer implements CipherLayer {
       const previousChainLength = state.previousChainLength || 0;
 
       // Generate message key (simplified - real implementation uses HKDF)
-      const messageKey = state.sendingChainKey || crypto.getRandomValues(new Uint8Array(32));
-      const nonce = crypto.getRandomValues(new Uint8Array(12));
+      messageKey = state.sendingChainKey ? new Uint8Array(state.sendingChainKey) : crypto.getRandomValues(new Uint8Array(32));
+      nonce = crypto.getRandomValues(new Uint8Array(12));
 
       // Create AAD
-      const aad = new Uint8Array([
+      aad = new Uint8Array([
         ...publicKey,
         ...new Uint8Array(new Uint32Array([messageNumber]).buffer),
         ...new Uint8Array(new Uint32Array([previousChainLength]).buffer),
@@ -243,6 +265,9 @@ export class SignalCipherLayer implements CipherLayer {
       ciphertext.set(encrypted, nonce.length);
 
       const endTime = performance.now();
+
+      // Create copies for return (before zeroization)
+      const publicKeyCopy = new Uint8Array(publicKey);
 
       return {
         ciphertext,
@@ -259,19 +284,44 @@ export class SignalCipherLayer implements CipherLayer {
           },
         },
         parameters: {
-          publicKey,
+          publicKey: publicKeyCopy,
           messageNumber,
           previousChainLength,
           sessionId: keys.sessionId,
         },
       };
     } catch (error) {
+      // Zeroize sensitive data before throwing
+      Zeroization.zeroizeAll(messageKey, nonce, aad);
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (sessionId, state info) in error message
+      const sessionId = keys.sessionId;
+      const hasSensitiveData = 
+        (sessionId && errorMessage.includes(sessionId)) ||
+        errorMessage.includes('sessionId') ||
+        errorMessage.includes('state') ||
+        errorMessage.includes('ratchet');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'Signal encryption failed',
+          this.name,
+          'encrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `Signal encryption failed: ${error.message}`,
+        `Signal encryption failed: ${errorMessage}`,
         this.name,
         'encrypt',
         error as Error
       );
+    } finally {
+      // Always zeroize sensitive data
+      Zeroization.zeroizeAll(messageKey, nonce, aad);
     }
   }
 
@@ -279,6 +329,11 @@ export class SignalCipherLayer implements CipherLayer {
    * Decrypt data using Signal Protocol Double Ratchet
    */
   async decrypt(payload: EncryptedPayload, keys: SignalKeys): Promise<Uint8Array> {
+    let messageKey: Uint8Array | null = null;
+    let nonce: Uint8Array | null = null;
+    let aad: Uint8Array | null = null;
+    let encryptedData: Uint8Array | null = null;
+
     try {
       const state = keys.doubleRatchetState || this.doubleRatchetState;
 
@@ -322,14 +377,15 @@ export class SignalCipherLayer implements CipherLayer {
         );
       }
 
-      const nonce = ciphertext.slice(0, 12);
-      const encryptedData = ciphertext.slice(12);
+      nonce = ciphertext.slice(0, 12);
+      encryptedData = ciphertext.slice(12);
 
       // Get message key (simplified - real implementation uses HKDF chain)
-      const messageKey = state.receivingChainKey || state.sendingChainKey || new Uint8Array(32);
+      const chainKey = state.receivingChainKey || state.sendingChainKey;
+      messageKey = chainKey ? new Uint8Array(chainKey) : crypto.getRandomValues(new Uint8Array(32));
 
       // Recreate AAD
-      const aad = new Uint8Array([
+      aad = new Uint8Array([
         ...publicKey,
         ...new Uint8Array(new Uint32Array([messageNumber]).buffer),
         ...new Uint8Array(new Uint32Array([previousChainLength]).buffer),
@@ -338,14 +394,41 @@ export class SignalCipherLayer implements CipherLayer {
       // Decrypt
       const plaintext = await this.webCryptoDecrypt(messageKey, nonce, encryptedData, aad);
 
-      return plaintext;
+      // Create a copy for return (before zeroization)
+      const plaintextCopy = new Uint8Array(plaintext);
+      return plaintextCopy;
     } catch (error) {
+      // Zeroize sensitive data before throwing
+      Zeroization.zeroizeAll(messageKey, nonce, aad, encryptedData);
+
+      // Don't leak sensitive data in error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Check for sensitive data (sessionId, state info) in error message
+      const sessionId = keys.sessionId;
+      const hasSensitiveData = 
+        (sessionId && errorMessage.includes(sessionId)) ||
+        errorMessage.includes('sessionId') ||
+        errorMessage.includes('state') ||
+        errorMessage.includes('ratchet');
+
+      if (hasSensitiveData) {
+        throw new CipherLayerError(
+          'Signal decryption failed',
+          this.name,
+          'decrypt',
+          error as Error
+        );
+      }
+
       throw new CipherLayerError(
-        `Signal decryption failed: ${error.message}`,
+        `Signal decryption failed: ${errorMessage}`,
         this.name,
         'decrypt',
         error as Error
       );
+    } finally {
+      // Always zeroize sensitive data
+      Zeroization.zeroizeAll(messageKey, nonce, aad, encryptedData);
     }
   }
 

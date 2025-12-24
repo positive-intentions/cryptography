@@ -183,7 +183,7 @@ module.exports = {
         "dim": moduleRedundency({
           moduleName: 'dim',
           urls: [
-            'http://localhost:8082/remoteEntry.js', // local for testing
+            // 'http://localhost:8082/remoteEntry.js', // local for testing
             'https://positive-intentions.github.io/dim/remoteEntry.js',
             'https://dim.positive-intentions.com/remoteEntry.js'
           ]
@@ -191,7 +191,7 @@ module.exports = {
         "ui": moduleRedundency({
           moduleName: 'ui',
           urls: [
-            'http://localhost:8081/remoteEntry.js', // local for testing
+            // 'http://localhost:8081/remoteEntry.js', // local for testing
             'https://positive-intentions.github.io/ui/remoteEntry.js',
             'https://ui.positive-intentions.com/remoteEntry.js'
           ]
@@ -199,7 +199,7 @@ module.exports = {
         "glitr": moduleRedundency({
           moduleName: 'glitr',
           urls: [
-            'http://localhost:8083/remoteEntry.js', // local for testing
+            // 'http://localhost:8083/remoteEntry.js', // local for testing
             'https://positive-intentions.github.io/glitr-chat/remoteEntry.js',
             'https://glitr.positive-intentions.com/remoteEntry.js'
           ]
@@ -207,7 +207,7 @@ module.exports = {
         "signal_protocol": moduleRedundency({
           moduleName: 'signal_protocol',
           urls: [
-            'http://localhost:8084/remoteEntry.js', // local for testing
+            // 'http://localhost:8084/remoteEntry.js', // local for testing
             'https://positive-intentions.github.io/signal-protocol/remoteEntry.js',
             'https://signal.positive-intentions.com/remoteEntry.js'
           ]
