@@ -178,6 +178,7 @@ module.exports = {
         './Cryptography': './src/stories/components/Cryptography.tsx',
         './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
         './CascadingCipher': './src/crypto/CascadingCipher/index.ts',
+        './MLKEMUtils': './src/crypto/MLKEMUtils.ts',
       },
       remotes: {
         "dim": moduleRedundency({
@@ -223,6 +224,11 @@ module.exports = {
           singleton: true,
           requiredVersion: deps["react-dom"],
           eager: true
+        },
+        "@hpke/ml-kem": {
+          singleton: true,
+          requiredVersion: "^0.2.1",
+          eager: false
         }
       }
     }),

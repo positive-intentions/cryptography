@@ -81,7 +81,7 @@ eval("{\n\nif (false) // removed by dead control flow\n{} else {\n  module.expor
   \**********************/
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://chat/./src/index.ts?\n}");
+eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_hpke_common_esm_mod_js\"), __webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\"), __webpack_require__.e(\"src_bootstrap_tsx\")]).then(__webpack_require__.bind(__webpack_require__, /*! ./bootstrap.tsx */ \"./src/bootstrap.tsx\"));\n\n//# sourceURL=webpack://chat/./src/index.ts?\n}");
 
 /***/ })
 
@@ -375,6 +375,7 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 			var promises = [];
 /******/ 			switch(name) {
 /******/ 				case "default": {
+/******/ 					register("@hpke/ml-kem", "0", () => (Promise.all([__webpack_require__.e("vendors-node_modules_hpke_common_esm_mod_js"), __webpack_require__.e("vendors-node_modules_mlkem_esm_mod_js"), __webpack_require__.e("vendors-node_modules_hpke_ml-kem_esm_mod_js")]).then(() => (() => (__webpack_require__(/*! ./node_modules/@hpke/ml-kem/esm/mod.js */ "./node_modules/@hpke/ml-kem/esm/mod.js"))))));
 /******/ 					register("react-dom", "18.3.1", () => (() => (__webpack_require__(/*! ./node_modules/react-dom/index.js */ "./node_modules/react-dom/index.js"))), 1);
 /******/ 					register("react", "18.3.1", () => (() => (__webpack_require__(/*! ./node_modules/react/index.js */ "./node_modules/react/index.js"))), 1);
 /******/ 				}
@@ -534,7 +535,8 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 		var installedModules = {};
 /******/ 		var moduleToHandlerMapping = {
 /******/ 			"webpack/sharing/consume/default/react/react": () => (loadSingletonVersion("default", "react", true, [1,18,2,0], () => (() => (__webpack_require__(/*! react */ "./node_modules/react/index.js"))))),
-/******/ 			"webpack/sharing/consume/default/react-dom/react-dom": () => (loadSingletonVersion("default", "react-dom", true, [1,18,2,0], () => (() => (__webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js")))))
+/******/ 			"webpack/sharing/consume/default/react-dom/react-dom": () => (loadSingletonVersion("default", "react-dom", true, [1,18,2,0], () => (() => (__webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js"))))),
+/******/ 			"webpack/sharing/consume/default/@hpke/ml-kem/@hpke/ml-kem": () => (loadSingletonVersion("default", "@hpke/ml-kem", false, [2,0,2,1], () => (Promise.all([__webpack_require__.e("vendors-node_modules_hpke_common_esm_mod_js"), __webpack_require__.e("vendors-node_modules_mlkem_esm_mod_js"), __webpack_require__.e("vendors-node_modules_hpke_ml-kem_esm_mod_js")]).then(() => (() => (__webpack_require__(/*! @hpke/ml-kem */ "./node_modules/@hpke/ml-kem/esm/mod.js")))))))
 /******/ 		};
 /******/ 		var initialConsumes = ["webpack/sharing/consume/default/react/react"];
 /******/ 		initialConsumes.forEach((id) => {
@@ -553,6 +555,9 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 			],
 /******/ 			"src_bootstrap_tsx": [
 /******/ 				"webpack/sharing/consume/default/react-dom/react-dom"
+/******/ 			],
+/******/ 			"webpack_sharing_consume_default_hpke_ml-kem_hpke_ml-kem": [
+/******/ 				"webpack/sharing/consume/default/@hpke/ml-kem/@hpke/ml-kem"
 /******/ 			]
 /******/ 		};
 /******/ 		var startedInstallModules = {};
@@ -608,7 +613,7 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 					if(installedChunkData) {
 /******/ 						promises.push(installedChunkData[2]);
 /******/ 					} else {
-/******/ 						if(true) { // all chunks have JS
+/******/ 						if("webpack_sharing_consume_default_hpke_ml-kem_hpke_ml-kem" != chunkId) {
 /******/ 							// setup Promise in chunk cache
 /******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
 /******/ 							promises.push(installedChunkData[2] = promise);
@@ -633,7 +638,7 @@ eval("{Promise.all(/*! import() */[__webpack_require__.e(\"vendors-node_modules_
 /******/ 								}
 /******/ 							};
 /******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
-/******/ 						}
+/******/ 						} else installedChunks[chunkId] = 0;
 /******/ 					}
 /******/ 				}
 /******/ 		};

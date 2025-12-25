@@ -60,6 +60,15 @@ export type { DHKeys } from './layers/DHCipherLayer';
 export { MLKEMCipherLayer } from './layers/MLKEMCipherLayer';
 export type { MLKEMKeys } from './layers/MLKEMCipherLayer';
 
+// Export ML-KEM utilities for direct use
+// Import and re-export from MLKEMUtils to ensure proper module federation exposure
+// Note: Direct re-export may not work with module federation, so we import and re-export explicitly
+import { getMLKEMInstance as _getMLKEMInstance, getMlKem768Class as _getMlKem768Class, MlKem768 as _MlKem768 } from '../MLKEMUtils';
+
+export const getMLKEMInstance = _getMLKEMInstance;
+export const getMlKem768Class = _getMlKem768Class;
+export { _MlKem768 as MlKem768 };
+
 /**
  * Create a basic cascading cipher with common layers
  *

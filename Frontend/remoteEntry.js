@@ -77,7 +77,7 @@ eval("{\n\nif (false) // removed by dead control flow\n{} else {\n  module.expor
   \***********************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-eval("{var moduleMap = {\n\t\"./Cryptography\": () => {\n\t\treturn Promise.all([__webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\")]).then(() => (() => ((__webpack_require__(/*! ./src/stories/components/Cryptography.tsx */ \"./src/stories/components/Cryptography.tsx\")))));\n\t},\n\t\"./mlsCodec\": () => {\n\t\treturn __webpack_require__.e(\"src_crypto_MLS_mlsCodec_ts\").then(() => (() => ((__webpack_require__(/*! ./src/crypto/MLS/mlsCodec.ts */ \"./src/crypto/MLS/mlsCodec.ts\")))));\n\t},\n\t\"./CascadingCipher\": () => {\n\t\treturn Promise.all([__webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"vendors-node_modules_mlkem_esm_mod_js\"), __webpack_require__.e(\"vendors-node_modules_hpke_ml-kem_esm_mod_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"src_crypto_CascadingCipher_index_ts\")]).then(() => (() => ((__webpack_require__(/*! ./src/crypto/CascadingCipher/index.ts */ \"./src/crypto/CascadingCipher/index.ts\")))));\n\t}\n};\nvar get = (module, getScope) => {\n\t__webpack_require__.R = getScope;\n\tgetScope = (\n\t\t__webpack_require__.o(moduleMap, module)\n\t\t\t? moduleMap[module]()\n\t\t\t: Promise.resolve().then(() => {\n\t\t\t\tthrow new Error('Module \"' + module + '\" does not exist in container.');\n\t\t\t})\n\t);\n\t__webpack_require__.R = undefined;\n\treturn getScope;\n};\nvar init = (shareScope, initScope) => {\n\tif (!__webpack_require__.S) return;\n\tvar name = \"default\"\n\tvar oldScope = __webpack_require__.S[name];\n\tif(oldScope && oldScope !== shareScope) throw new Error(\"Container initialization failed as it has already been initialized with a different share scope\");\n\t__webpack_require__.S[name] = shareScope;\n\treturn __webpack_require__.I(name, initScope);\n};\n\n// This exports getters to disallow modifications\n__webpack_require__.d(exports, {\n\tget: () => (get),\n\tinit: () => (init)\n});\n\n//# sourceURL=webpack://chat/container_entry?\n}");
+eval("{var moduleMap = {\n\t\"./Cryptography\": () => {\n\t\treturn Promise.all([__webpack_require__.e(\"vendors-node_modules_hpke_common_esm_mod_js\"), __webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"vendors-node_modules_chance_chance_js-node_modules_js-sha3_src_sha3_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"src_stories_components_Cryptography_tsx\")]).then(() => (() => ((__webpack_require__(/*! ./src/stories/components/Cryptography.tsx */ \"./src/stories/components/Cryptography.tsx\")))));\n\t},\n\t\"./mlsCodec\": () => {\n\t\treturn __webpack_require__.e(\"src_crypto_MLS_mlsCodec_ts\").then(() => (() => ((__webpack_require__(/*! ./src/crypto/MLS/mlsCodec.ts */ \"./src/crypto/MLS/mlsCodec.ts\")))));\n\t},\n\t\"./CascadingCipher\": () => {\n\t\treturn Promise.all([__webpack_require__.e(\"vendors-node_modules_hpke_common_esm_mod_js\"), __webpack_require__.e(\"vendors-node_modules_ts-mls_dist_index_js\"), __webpack_require__.e(\"src_crypto_MLS_MLSManager_tsx-src_crypto_utils_zeroization_ts\"), __webpack_require__.e(\"webpack_sharing_consume_default_hpke_ml-kem_hpke_ml-kem\"), __webpack_require__.e(\"src_crypto_MLKEMUtils_ts\"), __webpack_require__.e(\"src_crypto_CascadingCipher_index_ts\")]).then(() => (() => ((__webpack_require__(/*! ./src/crypto/CascadingCipher/index.ts */ \"./src/crypto/CascadingCipher/index.ts\")))));\n\t},\n\t\"./MLKEMUtils\": () => {\n\t\treturn Promise.all([__webpack_require__.e(\"webpack_sharing_consume_default_hpke_ml-kem_hpke_ml-kem\"), __webpack_require__.e(\"src_crypto_MLKEMUtils_ts\")]).then(() => (() => ((__webpack_require__(/*! ./src/crypto/MLKEMUtils.ts */ \"./src/crypto/MLKEMUtils.ts\")))));\n\t}\n};\nvar get = (module, getScope) => {\n\t__webpack_require__.R = getScope;\n\tgetScope = (\n\t\t__webpack_require__.o(moduleMap, module)\n\t\t\t? moduleMap[module]()\n\t\t\t: Promise.resolve().then(() => {\n\t\t\t\tthrow new Error('Module \"' + module + '\" does not exist in container.');\n\t\t\t})\n\t);\n\t__webpack_require__.R = undefined;\n\treturn getScope;\n};\nvar init = (shareScope, initScope) => {\n\tif (!__webpack_require__.S) return;\n\tvar name = \"default\"\n\tvar oldScope = __webpack_require__.S[name];\n\tif(oldScope && oldScope !== shareScope) throw new Error(\"Container initialization failed as it has already been initialized with a different share scope\");\n\t__webpack_require__.S[name] = shareScope;\n\treturn __webpack_require__.I(name, initScope);\n};\n\n// This exports getters to disallow modifications\n__webpack_require__.d(exports, {\n\tget: () => (get),\n\tinit: () => (init)\n});\n\n//# sourceURL=webpack://chat/container_entry?\n}");
 
 /***/ }),
 
@@ -459,6 +459,7 @@ module.exports = new Promise(async (resolve) => {
 /******/ 			var promises = [];
 /******/ 			switch(name) {
 /******/ 				case "default": {
+/******/ 					register("@hpke/ml-kem", "0", () => (Promise.all([__webpack_require__.e("vendors-node_modules_hpke_common_esm_mod_js"), __webpack_require__.e("vendors-node_modules_mlkem_esm_mod_js"), __webpack_require__.e("vendors-node_modules_hpke_ml-kem_esm_mod_js")]).then(() => (() => (__webpack_require__(/*! ./node_modules/@hpke/ml-kem/esm/mod.js */ "./node_modules/@hpke/ml-kem/esm/mod.js"))))));
 /******/ 					register("react-dom", "18.3.1", () => (() => (__webpack_require__(/*! ./node_modules/react-dom/index.js */ "./node_modules/react-dom/index.js"))), 1);
 /******/ 					register("react", "18.3.1", () => (() => (__webpack_require__(/*! ./node_modules/react/index.js */ "./node_modules/react/index.js"))), 1);
 /******/ 					initExternal("webpack/container/reference/signal_protocol");
@@ -618,7 +619,8 @@ module.exports = new Promise(async (resolve) => {
 /******/ 		});
 /******/ 		var installedModules = {};
 /******/ 		var moduleToHandlerMapping = {
-/******/ 			"webpack/sharing/consume/default/react/react": () => (loadSingletonVersion("default", "react", true, [1,18,2,0], () => (() => (__webpack_require__(/*! react */ "./node_modules/react/index.js")))))
+/******/ 			"webpack/sharing/consume/default/react/react": () => (loadSingletonVersion("default", "react", true, [1,18,2,0], () => (() => (__webpack_require__(/*! react */ "./node_modules/react/index.js"))))),
+/******/ 			"webpack/sharing/consume/default/@hpke/ml-kem/@hpke/ml-kem": () => (loadSingletonVersion("default", "@hpke/ml-kem", false, [2,0,2,1], () => (Promise.all([__webpack_require__.e("vendors-node_modules_hpke_common_esm_mod_js"), __webpack_require__.e("vendors-node_modules_mlkem_esm_mod_js"), __webpack_require__.e("vendors-node_modules_hpke_ml-kem_esm_mod_js")]).then(() => (() => (__webpack_require__(/*! @hpke/ml-kem */ "./node_modules/@hpke/ml-kem/esm/mod.js")))))))
 /******/ 		};
 /******/ 		var initialConsumes = ["webpack/sharing/consume/default/react/react"];
 /******/ 		initialConsumes.forEach((id) => {
@@ -634,6 +636,9 @@ module.exports = new Promise(async (resolve) => {
 /******/ 		var chunkMapping = {
 /******/ 			"cryptography": [
 /******/ 				"webpack/sharing/consume/default/react/react"
+/******/ 			],
+/******/ 			"webpack_sharing_consume_default_hpke_ml-kem_hpke_ml-kem": [
+/******/ 				"webpack/sharing/consume/default/@hpke/ml-kem/@hpke/ml-kem"
 /******/ 			]
 /******/ 		};
 /******/ 		var startedInstallModules = {};
@@ -689,7 +694,7 @@ module.exports = new Promise(async (resolve) => {
 /******/ 					if(installedChunkData) {
 /******/ 						promises.push(installedChunkData[2]);
 /******/ 					} else {
-/******/ 						if("webpack_container_remote_signal_protocol_WasmBindings" != chunkId) {
+/******/ 						if(!/^webpack_(container_remote_signal_protocol_WasmBindings|sharing_consume_default_hpke_ml\-kem_hpke_ml\-kem)$/.test(chunkId)) {
 /******/ 							// setup Promise in chunk cache
 /******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
 /******/ 							promises.push(installedChunkData[2] = promise);
