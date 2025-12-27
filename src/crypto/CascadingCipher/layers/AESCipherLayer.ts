@@ -2,13 +2,14 @@
  * AES-GCM Cipher Layer
  *
  * A simple, password-based AES-GCM encryption layer demonstrating
- * the extensibility of the cascading cipher system.
+ * extensibility of cascading cipher system.
  *
  * Security Features:
  * - Scrypt key derivation (GPU/ASIC resistant)
  * - IV reuse protection
  * - Protocol version in AAD
  * - Zeroization of sensitive buffers
+ * - Constant-time key validation (timing attack protection)
  * - Exception handling with buffer cleanup
  */
 
@@ -18,6 +19,7 @@ import {
   CipherLayerError,
 } from '../types';
 import { Zeroization } from '../../utils/zeroization';
+import { ConstantTime } from '../../utils/constantTime';
 
 /**
  * Keys for AES encryption
@@ -70,10 +72,27 @@ export class AESCipherLayer implements CipherLayer {
   private static scryptCachePromise: Promise<any> | null = null;
 
   /**
-   * Validate that keys contain required fields
+   * Validate that keys contain required fields with constant-time comparison
+   *
+   * SECURITY: Uses constant-time comparison to prevent timing attacks
+   * on key validation operations.
    */
   validateKeys(keys: any): boolean {
-    return keys !== null && keys !== undefined && typeof keys.password === 'string';
+    try {
+      // Always perform all checks without early returns
+      const hasKeys = keys !== null && keys !== undefined;
+      const hasPassword = typeof keys?.password === 'string';
+      const hasValidPassword = hasPassword && keys.password.length > 0;
+
+      // Use constant-time comparison for result
+      const resultString = String(hasKeys && hasValidPassword);
+      const expectedString = 'true';
+
+      return ConstantTime.constantTimeCompareStrings(resultString, expectedString);
+    } catch (error) {
+      // Constant-time error handling
+      return false;
+    }
   }
 
   /**

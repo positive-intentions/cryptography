@@ -11,6 +11,7 @@ import {
   CipherLayerError,
 } from '../types';
 import { Zeroization } from '../../utils/zeroization';
+import { ConstantTime } from '../../utils/constantTime';
 import { KeyAuthentication } from '../../utils/keyAuthentication';
 
 /**
@@ -42,6 +43,7 @@ export class DHCipherLayer implements CipherLayer {
 
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;
+  private readonly SALT_LENGTH = 16;
 
   /**
    * Validate DH keys
@@ -298,14 +300,13 @@ export class DHCipherLayer implements CipherLayer {
     try {
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError(
-          'Invalid keys: need sharedSecret OR (privateKey + publicKey)',
+          'Invalid keys',
           this.name,
           'encrypt'
         );
       }
 
       // Validate public key fingerprint if provided (MITM protection)
-      // Use constant-time comparison to prevent timing attacks
       if (keys.publicKey && keys.expectedPublicKeyFingerprint) {
         const isValid = await KeyAuthentication.verifyFingerprint(
           keys.publicKey,
@@ -313,7 +314,7 @@ export class DHCipherLayer implements CipherLayer {
         );
         if (!isValid) {
           throw new CipherLayerError(
-            'Public key fingerprint mismatch - possible MITM attack',
+            'Public key fingerprint mismatch',
             this.name,
             'encrypt'
           );
@@ -321,22 +322,15 @@ export class DHCipherLayer implements CipherLayer {
       }
 
       // Get or derive shared secret
-      // Create a copy to avoid zeroizing the original if it's from keys
+      // Create a copy to avoid zeroizing original if it's from keys
       if (keys.sharedSecret) {
         sharedSecret = new Uint8Array(keys.sharedSecret);
       } else {
-        if (!keys.privateKey || !keys.publicKey) {
-          throw new CipherLayerError(
-            'Invalid keys: need sharedSecret OR (privateKey + publicKey)',
-            this.name,
-            'encrypt'
-          );
-        }
         sharedSecret = await this.deriveSharedSecret(keys.privateKey, keys.publicKey);
       }
 
       // Generate random salt, IV, and context ID
-      salt = crypto.getRandomValues(new Uint8Array(16));
+      salt = crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
       iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
       contextId = crypto.getRandomValues(new Uint8Array(16));
 
@@ -346,14 +340,12 @@ export class DHCipherLayer implements CipherLayer {
       // Derive AES key from shared secret with randomized HKDF info
       aesKey = await this.deriveAESKey(sharedSecret, salt, contextId, timestamp);
 
-      // Create AAD with protocol version and context (using same timestamp)
+      // Create AAD with protocol version and context
       const protocolVersion = `${this.name}-v${this.version}`;
-      const context = 'cascading-cipher-encrypt';
       const aadData = {
         protocol: protocolVersion,
-        context,
+        context: Array.from(contextId),
         timestamp,
-        encoding: 'binary',
       };
       const encoder = new TextEncoder();
       const aad = encoder.encode(JSON.stringify(aadData));
@@ -364,7 +356,6 @@ export class DHCipherLayer implements CipherLayer {
           name: 'AES-GCM',
           iv,
           additionalData: aad,
-          tagLength: 128,
         },
         aesKey,
         data
@@ -382,7 +373,7 @@ export class DHCipherLayer implements CipherLayer {
         layerMetadata: {
           algorithm: this.name,
           version: this.version,
-          timestamp,
+          timestamp: Date.now(),
           inputSize: data.length,
           outputSize: ciphertext.length,
           processingTime: endTime - startTime,
@@ -390,48 +381,26 @@ export class DHCipherLayer implements CipherLayer {
             keyExchange: 'ECDH-P256',
             keyDerivation: 'HKDF-SHA256',
             encryption: 'AES-GCM-256',
+            protocolVersion,
           },
         },
         parameters: {
           iv: ivCopy,
           salt: saltCopy,
-          usedPreSharedSecret: !!keys.sharedSecret,
-          contextId: Array.from(contextId), // Store context ID for decryption
+          contextId,
         },
       };
     } catch (error) {
-      // Zeroize sensitive data before throwing
-      Zeroization.zeroizeAll(sharedSecret, salt, iv, contextId);
-      aesKey = null;
-
-      // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      // Check for sensitive data in error message
-      const hasSensitiveData = 
-        (keys?.privateKey && (errorMessage.includes('private') || errorMessage.includes('key'))) ||
-        (keys?.publicKey && errorMessage.includes('public')) ||
-        (keys?.sharedSecret && errorMessage.includes('secret')) ||
-        (keys?.expectedPublicKeyFingerprint && errorMessage.includes('fingerprint'));
-
-      if (hasSensitiveData) {
-        throw new CipherLayerError(
-          'DH-AES encryption failed',
-          this.name,
-          'encrypt',
-          error as Error
-        );
-      }
-
       throw new CipherLayerError(
-        `DH-AES encryption failed: ${errorMessage}`,
+        'Encryption failed',
         this.name,
         'encrypt',
         error as Error
       );
     } finally {
-      // Always zeroize sensitive data
+      // SECURITY: Zeroize all sensitive buffers before returning or throwing
       Zeroization.zeroizeAll(sharedSecret, salt, iv, contextId);
-      aesKey = null;
+      aesKey = null; // Clear CryptoKey reference
     }
   }
 
@@ -583,16 +552,16 @@ export class DHCipherLayer implements CipherLayer {
 
       // Don't leak sensitive data in error messages
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Check for sensitive data in error message
-      const hasSensitiveData = 
-        (keys?.privateKey && (errorMessage.includes('private') || errorMessage.includes('key'))) ||
+       // Check for sensitive data in error message to prevent leakage
+      const hasSensitiveData =
+        (keys?.privateKey && errorMessage.includes('private')) ||
         (keys?.publicKey && errorMessage.includes('public')) ||
         (keys?.sharedSecret && errorMessage.includes('secret')) ||
         (keys?.expectedPublicKeyFingerprint && errorMessage.includes('fingerprint'));
 
       if (errorMessage.includes('decryption failed') || errorMessage.includes('OperationError')) {
         throw new CipherLayerError(
-          'DH-AES decryption failed: wrong keys or corrupted data',
+          'Decryption failed',
           this.name,
           'decrypt',
           error as Error
@@ -609,11 +578,12 @@ export class DHCipherLayer implements CipherLayer {
       }
 
       throw new CipherLayerError(
-        `DH-AES decryption failed: ${errorMessage}`,
+        `DH-AES decryption failed`,
         this.name,
         'decrypt',
         error as Error
       );
+
     } finally {
       // Always zeroize sensitive data
       Zeroization.zeroizeAll(sharedSecret, contextId);
