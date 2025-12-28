@@ -133,15 +133,17 @@ const DoubleRatchetWasmDemo = () => {
                 }
             };
             
-            setWasmInstance(wasmWrapper);
-            setWasmAvailable(true);
-            const wasmModule = mockWasmDoubleRatchet;
-            await wasmModule.initialize();
-            setWasmInstance(wasmModule);
-            setWasmAvailable(false); // Indicate we're using fallback
-        } finally {
-            setWasmInitializing(false);
-        }
+             setWasmInstance(wasmWrapper);
+             setWasmAvailable(true);
+         } catch (err) {
+             console.error('WASM initialization failed, using fallback:', err);
+             const fallbackWasmModule = mockWasmDoubleRatchet;
+             await fallbackWasmModule.initialize();
+             setWasmInstance(fallbackWasmModule);
+             setWasmAvailable(false); // Indicate we're using fallback
+         } finally {
+             setWasmInitializing(false);
+         }
     };
 
     const handleInitializeBothRatchets = async () => {

@@ -1,0 +1,3 @@
+/*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+
+/*! noble-post-quantum - MIT License (c) 2024 Paul Miller (paulmillr.com) */

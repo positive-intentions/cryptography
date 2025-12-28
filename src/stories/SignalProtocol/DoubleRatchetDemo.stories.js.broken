@@ -60,8 +60,9 @@ const DoubleRatchetDemo = () => {
         aliceInitiator: true,
         bobResponder: true
       });
-      
+
     } catch (err) {
+      setError(`Initialization failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -92,11 +93,12 @@ const DoubleRatchetDemo = () => {
         decryptedContent: null
       };
       
-      if (simulateOutOfOrder && Math.random() > 0.5) {
-        // Simulate network delay - add to pending messages
-        setPendingMessages(prev => [...prev, messageData]);
+      if (!simulateOutOfOrder || Math.random() <= 0.5) {
         // Deliver immediately
         await deliverMessage(messageData, receiverState);
+      } else {
+        // Simulate network delay - add to pending messages
+        setPendingMessages(prev => [...prev, messageData]);
       }
       
       // States are already updated by the crypto functions (they mutate the objects)
@@ -130,14 +132,16 @@ const DoubleRatchetDemo = () => {
       // Just trigger a re-render by setting the state again (React won't detect object mutations)
       setAliceState(aliceState);
       setBobState(bobState);
-      
+
     } catch (err) {
+      const failedMessage = {
         ...messageData,
         decrypted: false,
         error: err.message,
         deliveryTime: Date.now()
       };
       setConversation(prev => [...prev, failedMessage]);
+    }
     }
   };
 
@@ -662,12 +666,18 @@ const InteractiveMessagingDemo = () => {
         receivingMessageNumber: bobRatchet.receivingMessageNumber,
         isInitiator: bobRatchet.isInitiator
       });
-      
-      setAliceState(aliceRatchet);
-      setBobState(bobRatchet);
-      setInitialized(true);
-      
-    } catch (error) {
+
+      setAliceState(aliceState);
+      setBobState(bobState);
+
+    } catch (err) {
+      const failedMessage = {
+        ...messageData,
+        decrypted: false,
+        error: err.message,
+        deliveryTime: Date.now()
+      };
+      setConversation(prev => [...prev, failedMessage]);
     }
   };
 
