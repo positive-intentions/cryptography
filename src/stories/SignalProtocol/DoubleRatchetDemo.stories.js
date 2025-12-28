@@ -32,15 +32,11 @@ const DoubleRatchetDemo = () => {
     setError('');
     
     try {
-      console.log('🚀 Initializing Double Ratchet demonstration...');
-      
       // First perform X3DH key exchange to get shared secret
       const alice = await crypto.initializeSignalUser("Alice");
       const bob = await crypto.initializeSignalUser("Bob");
       const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
       const exchangeResult = await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
-      
-      console.log('✅ X3DH key exchange completed');
       
       // Initialize Double Ratchet states
       // Alice starts as initiator, Bob as responder - both start fresh
@@ -65,11 +61,7 @@ const DoubleRatchetDemo = () => {
         bobResponder: true
       });
       
-      console.log('✅ Double Ratchet states initialized successfully');
-      
     } catch (err) {
-      console.error('❌ Initialization failed:', err);
-      setError(`Initialization failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -84,8 +76,6 @@ const DoubleRatchetDemo = () => {
     try {
       const senderState = sender === 'Alice' ? aliceState : bobState;
       const receiverState = sender === 'Alice' ? bobState : aliceState;
-      
-      console.log(`📤 ${sender} sending message: "${newMessage}"`);
       
       // Encrypt the message
       const messageEnvelope = await crypto.doubleRatchetEncrypt(senderState, newMessage);
@@ -105,8 +95,6 @@ const DoubleRatchetDemo = () => {
       if (simulateOutOfOrder && Math.random() > 0.5) {
         // Simulate network delay - add to pending messages
         setPendingMessages(prev => [...prev, messageData]);
-        console.log('📦 Message added to pending queue (simulating network delay)');
-      } else {
         // Deliver immediately
         await deliverMessage(messageData, receiverState);
       }
@@ -119,8 +107,6 @@ const DoubleRatchetDemo = () => {
       setNewMessage('');
       
     } catch (err) {
-      console.error('❌ Send message failed:', err);
-      setError(`Send failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -128,8 +114,6 @@ const DoubleRatchetDemo = () => {
 
   const deliverMessage = async (messageData, receiverState) => {
     try {
-      console.log(`📥 ${messageData.to} receiving message from ${messageData.from}`);
-      
       // Decrypt the message
       const decryptedContent = await crypto.doubleRatchetDecrypt(receiverState, messageData.envelope);
       
@@ -147,11 +131,7 @@ const DoubleRatchetDemo = () => {
       setAliceState(aliceState);
       setBobState(bobState);
       
-      console.log(`✅ Message decrypted by ${messageData.to}: "${decryptedContent}"`);
-      
     } catch (err) {
-      console.error(`❌ Message delivery failed:`, err);
-      const failedMessage = {
         ...messageData,
         decrypted: false,
         error: err.message,
@@ -197,8 +177,6 @@ const DoubleRatchetDemo = () => {
         demoComplete: true,
         ...demoResult
       });
-      
-      console.log('✅ Complete demonstration finished');
       
     } catch (err) {
       setError(`Demo failed: ${err.message}`);
@@ -665,37 +643,12 @@ const InteractiveMessagingDemo = () => {
 
   const initializeStates = async () => {
     try {
-      console.log('🚀 [InteractiveDemo] Starting initialization...');
-      
       // X3DH setup
-      console.log('👤 [InteractiveDemo] Initializing Alice...');
-      const alice = await crypto.initializeSignalUser("Alice");
-      console.log('👤 [InteractiveDemo] Alice initialized successfully');
-      
-      console.log('👤 [InteractiveDemo] Initializing Bob...');
-      const bob = await crypto.initializeSignalUser("Bob");
-      console.log('👤 [InteractiveDemo] Bob initialized successfully');
-      
-      console.log('📦 [InteractiveDemo] Getting Bob\'s public key bundle...');
-      const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
-      console.log('📦 [InteractiveDemo] Bob bundle created:', {
-        hasIdentityKey: !!bobBundle.identityKey,
         hasSignedPrekey: !!bobBundle.signedPrekey,
         hasOneTimePrekey: !!bobBundle.oneTimePrekey
       });
       
-      console.log('🤝 [InteractiveDemo] Performing X3DH key exchange...');
-      const exchangeResult = await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
-      console.log('🤝 [InteractiveDemo] X3DH completed, master secret length:', exchangeResult.masterSecret.length);
-      
       // Double Ratchet setup
-      console.log('🔄 [InteractiveDemo] Initializing Alice Double Ratchet (initiator)...');
-      const aliceRatchet = await crypto.initializeDoubleRatchet(
-        exchangeResult.masterSecret, 
-        true
-      );
-      console.log('🔄 [InteractiveDemo] Alice ratchet state:', {
-        hasRootKey: !!aliceRatchet.rootKey,
         hasSendingChainKey: !!aliceRatchet.sendingChainKey,
         hasReceivingChainKey: !!aliceRatchet.receivingChainKey,
         sendingMessageNumber: aliceRatchet.sendingMessageNumber,
@@ -703,13 +656,6 @@ const InteractiveMessagingDemo = () => {
         isInitiator: aliceRatchet.isInitiator
       });
       
-      console.log('🔄 [InteractiveDemo] Initializing Bob Double Ratchet (responder)...');
-      const bobRatchet = await crypto.initializeDoubleRatchet(
-        exchangeResult.masterSecret,
-        false
-      );
-      console.log('🔄 [InteractiveDemo] Bob ratchet state:', {
-        hasRootKey: !!bobRatchet.rootKey,
         hasSendingChainKey: !!bobRatchet.sendingChainKey,
         hasReceivingChainKey: !!bobRatchet.receivingChainKey,
         sendingMessageNumber: bobRatchet.sendingMessageNumber,
@@ -721,27 +667,14 @@ const InteractiveMessagingDemo = () => {
       setBobState(bobRatchet);
       setInitialized(true);
       
-      console.log('✅ [InteractiveDemo] Initialization completed successfully!');
-      
     } catch (error) {
-      console.error('❌ [InteractiveDemo] Initialization failed:', error);
-      console.error('❌ [InteractiveDemo] Error stack:', error.stack);
     }
   };
 
   const sendMessage = async (sender, content) => {
     if (!initialized) {
-      console.warn('❌ Cannot send message - not initialized');
-      return;
     }
     
-    console.log(`\n🧪 [InteractiveDemo] ${sender} attempting to send: "${content}"`);
-    console.log(`🧪 [InteractiveDemo] Current states:`, {
-      aliceStateExists: !!aliceState,
-      bobStateExists: !!bobState,
-      aliceInitialized: aliceState?.initialized,
-      bobInitialized: bobState?.initialized
-    });
     
     // Use current state references directly (they are mutated by the crypto functions)
     const currentAliceState = aliceState;
@@ -752,8 +685,6 @@ const InteractiveMessagingDemo = () => {
     
     try {
       
-      console.log(`🔐 [InteractiveDemo] Pre-encryption ${sender} state:`, {
-        hasRootKey: !!senderState.rootKey,
         hasSendingChainKey: !!senderState.sendingChainKey,
         hasReceivingChainKey: !!senderState.receivingChainKey,
         sendingMessageNumber: senderState.sendingMessageNumber,
@@ -763,8 +694,6 @@ const InteractiveMessagingDemo = () => {
         isInitiator: senderState.isInitiator
       });
       
-      console.log(`🔓 [InteractiveDemo] Pre-encryption ${sender === 'Alice' ? 'Bob' : 'Alice'} state:`, {
-        hasRootKey: !!receiverState.rootKey,
         hasSendingChainKey: !!receiverState.sendingChainKey,
         hasReceivingChainKey: !!receiverState.receivingChainKey,
         sendingMessageNumber: receiverState.sendingMessageNumber,
@@ -774,24 +703,16 @@ const InteractiveMessagingDemo = () => {
         isInitiator: receiverState.isInitiator
       });
       
-      console.log(`🔐 [InteractiveDemo] Encrypting with ${sender}'s state...`);
-      
       // Encrypt
       const envelope = await crypto.doubleRatchetEncrypt(senderState, content);
-      console.log(`✅ [InteractiveDemo] ${sender} encryption successful, envelope:`, {
-        messageNumber: envelope.messageNumber,
         previousChainLength: envelope.previousChainLength,
         dhPublicKeyLength: envelope.dhPublicKey?.length,
         ciphertextLength: envelope.ciphertext?.length,
         ivLength: envelope.iv?.length
       });
       
-      console.log(`🔓 [InteractiveDemo] Decrypting with ${sender === 'Alice' ? 'Bob' : 'Alice'}'s state...`);
-      
       // Decrypt  
       const decrypted = await crypto.doubleRatchetDecrypt(receiverState, envelope);
-      console.log(`✅ [InteractiveDemo] Decryption successful: "${decrypted}"`);
-      
       const message = {
         id: Date.now(),
         sender,
@@ -809,18 +730,8 @@ const InteractiveMessagingDemo = () => {
       setAliceState(currentAliceState);
       setBobState(currentBobState);
       
-      console.log(`✅ [InteractiveDemo] ${sender} message exchange completed successfully`);
-      
     } catch (error) {
-      console.error(`❌ [InteractiveDemo] ${sender} message failed:`, error);
-      console.error(`❌ [InteractiveDemo] Error details:`, {
-        name: error.name,
-        message: error.message,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n') // First 5 lines of stack
-      });
       
-      console.log(`🔍 [InteractiveDemo] ${sender} state at error:`, {
-        hasRootKey: !!senderState?.rootKey,
         hasSendingChainKey: !!senderState?.sendingChainKey,
         hasReceivingChainKey: !!senderState?.receivingChainKey,
         sendingMessageNumber: senderState?.sendingMessageNumber,
@@ -829,8 +740,6 @@ const InteractiveMessagingDemo = () => {
         hasReceivingDHPublicKey: !!senderState?.receivingDHPublicKey
       });
       
-      console.log(`🔍 [InteractiveDemo] ${sender === 'Alice' ? 'Bob' : 'Alice'} state at error:`, {
-        hasRootKey: !!receiverState?.rootKey,
         hasSendingChainKey: !!receiverState?.sendingChainKey,
         hasReceivingChainKey: !!receiverState?.receivingChainKey,
         sendingMessageNumber: receiverState?.sendingMessageNumber,

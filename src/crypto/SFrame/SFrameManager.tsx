@@ -28,29 +28,19 @@ export class SFrameManager {
   private initialized: boolean = false;
 
   constructor() {
-    console.log('🎥 [SFrame] Manager created');
-  }
 
   /**
    * Initialize the SFrame manager
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
-      console.warn('[SFrame] Already initialized');
-      return;
     }
 
     try {
-      console.log('🔐 [SFrame] Initializing...');
-
       // Generate initial key
       await this.generateKey(0);
 
       this.initialized = true;
-      console.log('✅ [SFrame] Initialized successfully');
-    } catch (error) {
-      console.error('❌ [SFrame] Initialization failed:', error);
-      throw new Error(`SFrame initialization failed: ${error.message}`);
     }
   }
 
@@ -59,8 +49,6 @@ export class SFrameManager {
    */
   async generateKey(keyId: number): Promise<SFrameKey> {
     try {
-      console.log(`🔑 [SFrame] Generating key ${keyId}...`);
-
       // Generate AES-GCM key (128-bit for low overhead)
       const key = await crypto.subtle.generateKey(
         {
@@ -81,12 +69,8 @@ export class SFrameManager {
       };
 
       this.keys.set(keyId, sframeKey);
-      console.log(`✅ [SFrame] Key ${keyId} generated`);
-
       return sframeKey;
     } catch (error) {
-      console.error(`❌ [SFrame] Key generation failed:`, error);
-      throw new Error(`SFrame key generation failed: ${error.message}`);
     }
   }
 
@@ -101,8 +85,6 @@ export class SFrameManager {
     context: string = 'SFrame' // Legacy parameter, ignored for RFC compliance
   ): Promise<SFrameKey> {
     try {
-      console.log(`🔗 [SFrame] Deriving key ${keyId} from MLS secret (RFC 9605 Section 5.2)...`);
-
       // RFC 9605 Section 5.2: Use specific labels for MLS-based derivation
       const secretLabel = new TextEncoder().encode('SFrame 1.0 Secret');
       const saltLabel = new TextEncoder().encode('SFrame 1.0 Salt');
@@ -153,12 +135,8 @@ export class SFrameManager {
       };
 
       this.keys.set(keyId, sframeKey);
-      console.log(`✅ [SFrame] Key ${keyId} derived from MLS (RFC 9605 compliant)`);
-
       return sframeKey;
     } catch (error) {
-      console.error(`❌ [SFrame] Key derivation failed:`, error);
-      throw new Error(`SFrame key derivation failed: ${error.message}`);
     }
   }
 
@@ -170,8 +148,6 @@ export class SFrameManager {
       throw new Error(`SFrame key ${keyId} not found`);
     }
     this.currentKeyId = keyId;
-    console.log(`🔄 [SFrame] Active key set to ${keyId}`);
-  }
 
   /**
    * Encrypt a media frame using SFrame
@@ -229,8 +205,6 @@ export class SFrameManager {
 
       return encrypted;
     } catch (error) {
-      console.error('❌ [SFrame] Frame encryption failed:', error);
-      throw new Error(`SFrame encryption failed: ${error.message}`);
     }
   }
 
@@ -283,8 +257,6 @@ export class SFrameManager {
 
       return plaintext;
     } catch (error) {
-      console.error('❌ [SFrame] Frame decryption failed:', error);
-      throw new Error(`SFrame decryption failed: ${error.message}`);
     }
   }
 
@@ -310,8 +282,6 @@ export class SFrameManager {
           // Forward the encrypted frame
           controller.enqueue(encodedFrame);
         } catch (error) {
-          console.error('[SFrame] Encrypt transform error:', error);
-          // Forward unencrypted frame on error (fallback)
           controller.enqueue(encodedFrame);
         }
       },
@@ -340,8 +310,6 @@ export class SFrameManager {
           // Forward the decrypted frame
           controller.enqueue(encodedFrame);
         } catch (error) {
-          console.error('[SFrame] Decrypt transform error:', error);
-          // Skip frame on decryption error
           // (better to drop frame than show corrupted video)
         }
       },
@@ -355,20 +323,12 @@ export class SFrameManager {
   async rotateKey(): Promise<number> {
     try {
       const newKeyId = this.currentKeyId + 1;
-      console.log(`🔄 [SFrame] Rotating to key ${newKeyId}...`);
-
       await this.generateKey(newKeyId);
       this.setActiveKey(newKeyId);
 
       // RFC 9605: Reset frame counter on key rotation
       this.resetFrameCounter();
-      console.log(`🔄 [SFrame] Frame counter reset to 0 for new key`);
-
-      console.log(`✅ [SFrame] Key rotated to ${newKeyId}`);
-      return newKeyId;
     } catch (error) {
-      console.error('❌ [SFrame] Key rotation failed:', error);
-      throw new Error(`SFrame key rotation failed: ${error.message}`);
     }
   }
 
@@ -391,8 +351,6 @@ export class SFrameManager {
    */
   resetFrameCounter(): void {
     this.frameCounter = 0;
-    console.log('🔄 [SFrame] Frame counter reset');
-  }
 
   /**
    * Remove old keys to prevent memory bloat
@@ -404,46 +362,3 @@ export class SFrameManager {
       const toDelete = keyIds.slice(keepLast);
       toDelete.forEach((keyId) => {
         this.keys.delete(keyId);
-        console.log(`🧹 [SFrame] Deleted old key ${keyId}`);
-      });
-    }
-  }
-
-  /**
-   * Get statistics
-   */
-  getStats(): {
-    keyCount: number;
-    currentKeyId: number;
-    frameCounter: number;
-    initialized: boolean;
-  } {
-    return {
-      keyCount: this.keys.size,
-      currentKeyId: this.currentKeyId,
-      frameCounter: this.frameCounter,
-      initialized: this.initialized,
-    };
-  }
-
-  /**
-   * Clean up resources
-   */
-  destroy(): void {
-    this.keys.clear();
-    this.initialized = false;
-    this.frameCounter = 0;
-    console.log('✅ [SFrame] Manager destroyed');
-  }
-
-  /**
-   * Ensure the manager is initialized
-   */
-  private ensureInitialized(): void {
-    if (!this.initialized) {
-      throw new Error('SFrame Manager not initialized. Call initialize() first.');
-    }
-  }
-}
-
-export default SFrameManager;

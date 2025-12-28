@@ -251,8 +251,6 @@ const EncryptionBenchmarkDemo = () => {
       setRsaKeyPair(rsa);
       setAesKey(aes);
     } catch (error) {
-      console.error('Error initializing keys:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -316,8 +314,6 @@ const EncryptionBenchmarkDemo = () => {
       
       setResults(benchmarkResults);
     } catch (error) {
-      console.error('Error running benchmark:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -481,8 +477,6 @@ const KeyGenerationBenchmarkDemo = () => {
 
       setResults(benchmarkResults);
     } catch (error) {
-      console.error('Error running key generation benchmark:', error);
-    } finally {
       setLoading(false);
     }
   };

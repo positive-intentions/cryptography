@@ -102,8 +102,6 @@ const MLKEMDemo = () => {
       addLog(`📊 Private key size: ${privateKeyBytes.length} bytes`, 'info');
       addLog(`📤 Public key (first 16 bytes): ${pubHex}...`, 'info');
     } catch (err) {
-      console.error('Key generation error:', err);
-      setError(`Key generation failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);
@@ -154,8 +152,6 @@ const MLKEMDemo = () => {
       addLog(`📊 Ciphertext size: ${result.ciphertext.length} bytes`, 'info');
       addLog(`📈 Size overhead: ${((result.ciphertext.length / plaintext.length - 1) * 100).toFixed(1)}%`, 'info');
     } catch (err) {
-      console.error('Encryption error:', err);
-      setError(`Encryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);
@@ -203,8 +199,6 @@ const MLKEMDemo = () => {
         addLog('⚠️ Warning: Decrypted message does not match original', 'error');
       }
     } catch (err) {
-      console.error('Decryption error:', err);
-      setError(`Decryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);

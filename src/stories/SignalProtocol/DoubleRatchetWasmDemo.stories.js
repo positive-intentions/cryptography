@@ -135,10 +135,6 @@ const DoubleRatchetWasmDemo = () => {
             
             setWasmInstance(wasmWrapper);
             setWasmAvailable(true);
-            console.log('Real WASM Double Ratchet module loaded successfully!');
-        } catch (error) {
-            console.warn('Real WASM module failed to load, falling back to mock:', error);
-            // Fall back to mock implementation
             const wasmModule = mockWasmDoubleRatchet;
             await wasmModule.initialize();
             setWasmInstance(wasmModule);
@@ -154,15 +150,11 @@ const DoubleRatchetWasmDemo = () => {
         setResults(null);
         
         try {
-            console.log('🚀 Initializing both JavaScript and WASM Double Ratchets...');
-            
             // First perform X3DH key exchange to get shared secret (JavaScript)
             const alice = await crypto.initializeSignalUser("Alice");
             const bob = await crypto.initializeSignalUser("Bob");
             const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
             const exchangeResult = await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
-            
-            console.log('✅ X3DH key exchange completed, shared secret length:', exchangeResult.masterSecret.byteLength);
             
             // Initialize JavaScript Double Ratchet states
             const jsAliceRatchet = await crypto.initializeDoubleRatchet(
@@ -178,14 +170,10 @@ const DoubleRatchetWasmDemo = () => {
             setJsAliceState(jsAliceRatchet);
             setJsBobState(jsBobRatchet);
             
-            console.log('✅ JavaScript Double Ratchet states initialized');
-            
             // Initialize WASM Double Ratchet states (if available)
             if (wasmInstance) {
                 // Convert ArrayBuffer to Uint8Array for WASM
                 const sharedSecretBytes = new Uint8Array(exchangeResult.masterSecret);
-                console.log('🦀 Converting shared secret for WASM:', {
-                    originalLength: exchangeResult.masterSecret.byteLength,
                     convertedLength: sharedSecretBytes.length,
                     firstBytes: Array.from(sharedSecretBytes.slice(0, 8)).map(b => b.toString(16)).join('')
                 });
@@ -203,8 +191,6 @@ const DoubleRatchetWasmDemo = () => {
                 setWasmAliceState(wasmAliceRatchet);
                 setWasmBobState(wasmBobRatchet);
                 
-                console.log('✅ WASM Double Ratchet states initialized');
-            }
             
             setConversation([]);
             setResults({
@@ -215,8 +201,6 @@ const DoubleRatchetWasmDemo = () => {
             });
             
         } catch (err) {
-            console.error('❌ Initialization failed:', err);
-            setError(`Initialization failed: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -298,8 +282,6 @@ const DoubleRatchetWasmDemo = () => {
             setNewMessage('');
             
         } catch (err) {
-            console.error('❌ Send message failed:', err);
-            setError(`Send failed: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -319,12 +301,8 @@ const DoubleRatchetWasmDemo = () => {
                 iterations
             };
             
-            console.log(`📊 Running ${iterations} iterations of Double Ratchet performance test...`);
-            
             // JavaScript performance test
             if (jsAliceState && jsBobState) {
-                console.log('📊 Testing JavaScript Double Ratchet performance...');
-                for (let i = 0; i < iterations; i++) {
                     const start = performance.now();
                     const envelope = await crypto.doubleRatchetEncrypt(jsAliceState, `${testMessage} ${i}`);
                     await crypto.doubleRatchetDecrypt(jsBobState, envelope);
@@ -337,8 +315,6 @@ const DoubleRatchetWasmDemo = () => {
             
             // WASM performance test
             if (wasmInstance && wasmAliceState && wasmBobState) {
-                console.log('📊 Testing WASM Double Ratchet performance...');
-                for (let i = 0; i < iterations; i++) {
                     const start = performance.now();
                     const envelope = await wasmInstance.doubleRatchetEncrypt(wasmAliceState, `${testMessage} ${i}`);
                     await wasmInstance.doubleRatchetDecrypt(wasmBobState, envelope);
@@ -350,8 +326,6 @@ const DoubleRatchetWasmDemo = () => {
             }
             
             setPerformanceResults(results);
-            console.log('✅ Performance comparison completed', results);
-            
         } catch (err) {
             setError(`Performance test failed: ${err.message}`);
         } finally {

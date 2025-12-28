@@ -207,8 +207,6 @@ const CascadingCipherDemo = () => {
       setEncrypted(result);
       addLog('✅ Encryption complete!', 'success');
     } catch (err) {
-      console.error('Encryption error:', err);
-      setError(`Encryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);
@@ -281,8 +279,6 @@ const CascadingCipherDemo = () => {
       addLog('✅ Decryption complete!', 'success');
       addLog(`📝 Recovered message: "${plaintextStr}"`, 'success');
     } catch (err) {
-      console.error('Decryption error:', err);
-      setError(`Decryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);

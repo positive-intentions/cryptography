@@ -64,8 +64,6 @@ const AESBasicDemo = () => {
       setKey(newKey);
       setTimings(prev => ({ ...prev, keyGen: (performance.now() - start).toFixed(2) }));
     } catch (error) {
-      console.error('Error generating key:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -81,8 +79,6 @@ const AESBasicDemo = () => {
       setEncrypted(result);
       setTimings(prev => ({ ...prev, encrypt: (performance.now() - start).toFixed(2) }));
     } catch (error) {
-      console.error('Error encrypting:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -98,8 +94,6 @@ const AESBasicDemo = () => {
       setDecrypted(result);
       setTimings(prev => ({ ...prev, decrypt: (performance.now() - start).toFixed(2) }));
     } catch (error) {
-      console.error('Error decrypting:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -293,8 +287,6 @@ const AESBulkDemo = () => {
         setKey(newKey);
         return performBulkTestWithKey(newKey);
       } catch (error) {
-        console.error('Error generating key:', error);
-        return;
       }
     }
     
@@ -328,8 +320,6 @@ const AESBulkDemo = () => {
         throughputDecrypt: (dataSize / parseFloat(decryptTime) * 1000).toFixed(0)
       });
     } catch (error) {
-      console.error('Error in bulk test:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -460,8 +450,6 @@ const AESFileDemo = () => {
       const newKey = await generateSymmetricKey();
       setKey(newKey);
     } catch (error) {
-      console.error('Error generating key:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -488,8 +476,6 @@ const AESFileDemo = () => {
       const result = await encryptWithSymmetricKey(fileContent, symmetricKey);
       setEncrypted(result);
     } catch (error) {
-      console.error('Error encrypting file:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -503,8 +489,6 @@ const AESFileDemo = () => {
       const result = await decryptWithSymmetricKey(encrypted, symmetricKey);
       setDecrypted(result);
     } catch (error) {
-      console.error('Error decrypting file:', error);
-    } finally {
       setLoading(false);
     }
   };

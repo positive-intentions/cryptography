@@ -98,14 +98,10 @@ const DoubleRatchetGoWasmDemo = () => {
             if (window.SignalProtocol) {
                 signalProtocolRef.current = window.SignalProtocol;
                 setWasmReady(true);
-                console.log('✅ Signal Protocol Go WASM loaded successfully');
-            } else {
                 throw new Error('SignalProtocol not found on window after WASM load');
             }
             
         } catch (err) {
-            console.error('Failed to initialize WASM:', err);
-            setError(`Failed to load WASM: ${err.message}`);
         } finally {
             setLoading(false);
         }

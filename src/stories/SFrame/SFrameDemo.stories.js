@@ -61,8 +61,6 @@ const SFrameDemoApp = () => {
       setStatus('Initialized');
       addLog('✅ All managers initialized successfully');
     } catch (err) {
-      console.error('Initialization error:', err);
-      setError(`Initialization failed: ${err.message}`);
       addLog(`❌ Initialization failed: ${err.message}`);
     }
   };
@@ -107,8 +105,6 @@ const SFrameDemoApp = () => {
 
       setStatus('Ready for encrypted streaming');
     } catch (err) {
-      console.error('Key exchange error:', err);
-      setError(`Key exchange failed: ${err.message}`);
       addLog(`❌ Key exchange failed: ${err.message}`);
     }
   };
@@ -171,8 +167,6 @@ const SFrameDemoApp = () => {
         bob: bobManager?.getStats(),
       });
     } catch (err) {
-      console.error('Encryption error:', err);
-      setError(`Encryption failed: ${err.message}`);
       addLog(`❌ Encryption failed: ${err.message}`);
     }
   };
@@ -203,8 +197,6 @@ const SFrameDemoApp = () => {
         bob: bobManager?.getStats(),
       });
     } catch (err) {
-      console.error('Encryption error:', err);
-      setError(`Encryption failed: ${err.message}`);
       addLog(`❌ Encryption failed: ${err.message}`);
     }
   };
@@ -242,8 +234,6 @@ const SFrameDemoApp = () => {
         bob: bobManager.getStats(),
       });
     } catch (err) {
-      console.error('Decryption error:', err);
-      setError(`Decryption failed: ${err.message}`);
       addLog(`❌ Decryption failed: ${err.message}`);
     }
   };
@@ -286,8 +276,6 @@ const SFrameDemoApp = () => {
       addLog('✅ Key rotation complete');
       setStatus('Keys rotated - Ready for streaming');
     } catch (err) {
-      console.error('Key rotation error:', err);
-      setError(`Key rotation failed: ${err.message}`);
       addLog(`❌ Key rotation failed: ${err.message}`);
     }
   };

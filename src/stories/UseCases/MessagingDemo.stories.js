@@ -90,8 +90,6 @@ const HybridMessagingDemo = () => {
       setBob(prev => ({ ...prev, keyPair: bobKeys }));
       setStep(1);
     } catch (error) {
-      console.error('Error generating key pairs:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -103,8 +101,6 @@ const HybridMessagingDemo = () => {
       setAlice(prev => ({ ...prev, sessionKey }));
       setStep(2);
     } catch (error) {
-      console.error('Error generating session key:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -125,8 +121,6 @@ const HybridMessagingDemo = () => {
       setAlice(prev => ({ ...prev, encryptedSessionKey }));
       setStep(3);
     } catch (error) {
-      console.error('Error exchanging session key:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -143,8 +137,6 @@ const HybridMessagingDemo = () => {
       setAlice(prev => ({ ...prev, encryptedMessage }));
       setStep(4);
     } catch (error) {
-      console.error('Error encrypting message:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -162,8 +154,6 @@ const HybridMessagingDemo = () => {
       try {
         decryptedSessionKey = JSON.parse(decryptedSessionKeyStr);
       } catch (error) {
-        console.error('Error parsing decrypted session key:', error);
-        throw new Error('Failed to parse decrypted session key');
       }
       
       // Step 2: Bob uses the session key to decrypt the message
@@ -176,8 +166,6 @@ const HybridMessagingDemo = () => {
         decryptedMessage 
       }));
     } catch (error) {
-      console.error('Error decrypting message:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -487,8 +475,6 @@ const GroupMessagingDemo = () => {
       const key = await generateSymmetricKey();
       setGroupKey(key);
     } catch (error) {
-      console.error('Error creating group:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -513,8 +499,6 @@ const GroupMessagingDemo = () => {
       setMessages(prev => [...prev, message]);
       setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -535,8 +519,6 @@ const GroupMessagingDemo = () => {
         ));
       }
     } catch (error) {
-      console.error('Error decrypting message:', error);
-    } finally {
       setLoading(false);
     }
   };

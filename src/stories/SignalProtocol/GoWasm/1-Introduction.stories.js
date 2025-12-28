@@ -107,12 +107,8 @@ const IntroductionStory = () => {
 
 // Generate keys for Alice
 const alice = await SignalProtocol.generateIdentityKeyPair();
-console.log("Alice's public key:", alice.publicKey);
-// Output: "BGKz9Ew3..." (base64 encoded)
 
 // The private key stays secret!
-console.log("Alice's private key: [HIDDEN - Never share this!]");`}
-                        language="javascript"
                     />
                 </Paper>
 

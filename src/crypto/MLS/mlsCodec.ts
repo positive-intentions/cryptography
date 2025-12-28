@@ -66,8 +66,6 @@ function arrayToUint8Array(obj: any): any {
 
     if (isArrayLike) {
       // Convert object with numeric keys back to array
-      console.log('🔧 [mlsCodec] Converting array-like object to array, length:', keys.length);
-      return keys.map(key => arrayToUint8Array(obj[key]));
     }
 
     const result: any = {};
@@ -146,44 +144,14 @@ export function encodeRatchetTree(ratchetTree: any): string {
 export function decodeRatchetTree(encoded: string): any {
   const parsed = JSON.parse(encoded);
 
-  console.log('========================================');
-  console.log('🔍 [mlsCodec] AFTER JSON.PARSE:');
-  console.log('  Type:', typeof parsed);
-  console.log('  Is Array:', Array.isArray(parsed));
-  console.log('  Length:', Array.isArray(parsed) ? parsed.length : 'not an array');
-  console.log('  Element 0:', parsed[0] === null ? 'NULL' : parsed[0] === undefined ? 'UNDEFINED' : typeof parsed[0]);
   if (parsed[0] && typeof parsed[0] === 'object') {
-    console.log('    - Keys:', Object.keys(parsed[0]).slice(0, 10));
-    console.log('    - Has nodeType:', 'nodeType' in parsed[0]);
   }
-  console.log('  Element 1:', parsed[1] === null ? 'NULL' : parsed[1] === undefined ? 'UNDEFINED' : typeof parsed[1]);
-  console.log('  Element 2:', parsed[2] === null ? 'NULL' : parsed[2] === undefined ? 'UNDEFINED' : typeof parsed[2]);
   if (parsed[2] && typeof parsed[2] === 'object') {
-    console.log('    - Keys:', Object.keys(parsed[2]).slice(0, 10));
-    console.log('    - Has nodeType:', 'nodeType' in parsed[2]);
   }
 
   const result = arrayToUint8Array(parsed);
 
-  console.log('----------------------------------------');
-  console.log('🔍 [mlsCodec] AFTER ARRAY_TO_UINT8ARRAY:');
-  console.log('  Type:', typeof result);
-  console.log('  Is Array:', Array.isArray(result));
-  console.log('  Length:', Array.isArray(result) ? result.length : 'not an array');
-  console.log('  Element 0:', result[0] === null ? 'NULL' : result[0] === undefined ? 'UNDEFINED' : typeof result[0]);
   if (result[0] && typeof result[0] === 'object') {
-    console.log('    - Keys:', Object.keys(result[0]).slice(0, 10));
-    console.log('    - Has nodeType:', 'nodeType' in result[0]);
-    console.log('    - nodeType value:', result[0].nodeType);
-  }
-  console.log('  Element 1:', result[1] === null ? 'NULL' : result[1] === undefined ? 'UNDEFINED' : typeof result[1]);
-  console.log('  Element 2:', result[2] === null ? 'NULL' : result[2] === undefined ? 'UNDEFINED' : typeof result[2]);
   if (result[2] && typeof result[2] === 'object') {
-    console.log('    - Keys:', Object.keys(result[2]).slice(0, 10));
-    console.log('    - Has nodeType:', 'nodeType' in result[2]);
-    console.log('    - nodeType value:', result[2].nodeType);
-  }
-  console.log('========================================');
-
   return result;
 }

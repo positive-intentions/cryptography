@@ -85,8 +85,6 @@ const MLSDemoApp = () => {
       setStatus('Initialized - Ready to create group');
       addLog('🎉 All managers initialized successfully!', 'success');
     } catch (err) {
-      console.error('Initialization error:', err);
-      setError(`Initialization failed: ${err.message}`);
       addLog(`❌ Initialization failed: ${err.message}`, 'error');
     }
   };
@@ -140,8 +138,6 @@ const MLSDemoApp = () => {
       addLog(`🎉 Group setup complete! Current epoch: ${finalGroupInfo.epoch}`, 'success');
       addLog(`🔑 Tree Hash: ${finalGroupInfo.treeHash}`, 'info');
     } catch (err) {
-      console.error('Group creation error:', err);
-      setError(`Group creation failed: ${err.message}`);
       addLog(`❌ Group creation failed: ${err.message}`, 'error');
     }
   };
@@ -167,8 +163,6 @@ const MLSDemoApp = () => {
       addLog(`✅ Message delivered and decrypted by Bob and Charlie`, 'success');
       setAliceInput('');
     } catch (err) {
-      console.error('Send error:', err);
-      setError(`Send failed: ${err.message}`);
       addLog(`❌ Send failed: ${err.message}`, 'error');
     }
   };
@@ -192,8 +186,6 @@ const MLSDemoApp = () => {
       addLog(`✅ Message delivered and decrypted by Alice and Charlie`, 'success');
       setBobInput('');
     } catch (err) {
-      console.error('Send error:', err);
-      setError(`Send failed: ${err.message}`);
       addLog(`❌ Send failed: ${err.message}`, 'error');
     }
   };
@@ -217,8 +209,6 @@ const MLSDemoApp = () => {
       addLog(`✅ Message delivered and decrypted by Alice and Bob`, 'success');
       setCharlieInput('');
     } catch (err) {
-      console.error('Send error:', err);
-      setError(`Send failed: ${err.message}`);
       addLog(`❌ Send failed: ${err.message}`, 'error');
     }
   };
@@ -243,8 +233,6 @@ const MLSDemoApp = () => {
       addLog(`🔑 New Tree Hash: ${updatedInfo.treeHash}`, 'info');
       addLog('⚡ Forward secrecy maintained - old keys cannot decrypt new messages', 'success');
     } catch (err) {
-      console.error('Key rotation error:', err);
-      setError(`Key rotation failed: ${err.message}`);
       addLog(`❌ Key rotation failed: ${err.message}`, 'error');
     }
   };

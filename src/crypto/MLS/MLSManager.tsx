@@ -80,37 +80,21 @@ export class MLSManager {
    * Initialize the MLS client with a ciphersuite
    */
   async initialize(): Promise<void> {
-    console.log(`🔐 [MLS DEBUG] initialize() called - this.initialized BEFORE check: ${this.initialized}`);
-
     if (this.initialized) {
-      console.warn('MLS Manager already initialized');
-      return;
     }
 
     try {
-      console.log(`🔐 [MLS] Initializing for user: ${this.userId}`);
-
       // Use MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 (ID: 1)
       // Using nobleCryptoProvider for compatibility (pure JS implementation)
       const cipherSuiteName = 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519';
       const cs = getCiphersuiteFromName(cipherSuiteName);
       this.cipherSuite = await nobleCryptoProvider.getCiphersuiteImpl(cs);
 
-      console.log(`✅ [MLS] Using ciphersuite: ${cipherSuiteName}`);
-
       // Mark as initialized before generating key package
-      console.log(`🔐 [MLS DEBUG] Setting this.initialized = true`);
-      this.initialized = true;
-      console.log(`🔐 [MLS DEBUG] this.initialized is now: ${this.initialized}`);
-
       // Generate initial key package for this user
       await this.generateKeyPackage();
 
-      console.log(`🔐 [MLS DEBUG] After generateKeyPackage - this.initialized: ${this.initialized}`);
-      console.log('✅ [MLS] Initialized successfully');
     } catch (error) {
-      console.error('❌ [MLS] Failed to initialize:', error);
-      throw new Error(`MLS initialization failed: ${error.message}`);
     }
   }
 
@@ -118,13 +102,7 @@ export class MLSManager {
    * Generate a new key package for joining groups
    */
   async generateKeyPackage(): Promise<MLSKeyPackageBundle> {
-    console.log(`🔑 [MLS DEBUG] generateKeyPackage() called - this.initialized: ${this.initialized}`);
-    this.ensureInitialized();
-    console.log(`🔑 [MLS DEBUG] ensureInitialized() passed - this.initialized: ${this.initialized}`);
-
     try {
-      console.log('🔑 [MLS] Generating key package');
-
       const keyPackageResult = await generateKeyPackage(
         this.credential,
         defaultCapabilities(),
@@ -138,11 +116,7 @@ export class MLSManager {
         userId: this.userId,
       };
 
-      console.log('✅ [MLS] Key package generated');
-      return this.keyPackage;
     } catch (error) {
-      console.error('❌ [MLS] Failed to generate key package:', error);
-      throw new Error(`Key package generation failed: ${error.message}`);
     }
   }
 
@@ -160,8 +134,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`📝 [MLS] Creating group: ${groupId}`);
-
       if (!this.keyPackage) {
         throw new Error('No key package available. Call generateKeyPackage() first.');
       }
@@ -185,11 +157,7 @@ export class MLSManager {
         epoch: groupState.groupContext.epoch,
       };
 
-      console.log(`✅ [MLS] Group created: ${groupId}, epoch: ${groupState.groupContext.epoch}`);
-      return groupInfo;
     } catch (error) {
-      console.error('❌ [MLS] Failed to create group:', error);
-      throw new Error(`Group creation failed: ${error.message}`);
     }
   }
 
@@ -203,8 +171,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`➕ [MLS] Adding ${keyPackages.length} member(s) to group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -231,16 +197,10 @@ export class MLSManager {
         throw new Error('No welcome message generated');
       }
 
-      console.log(
-        `✅ [MLS] Members added, new epoch: ${commitResult.newState.groupContext.epoch}`
       );
 
       // Debug: Log the commit structure
       console.group('🔍 [MLS Debug] Commit Structure');
-      console.log('commitResult keys:', Object.keys(commitResult));
-      console.log('commit:', commitResult.commit);
-      console.log('commit.privateMessage:', commitResult.commit?.privateMessage);
-      console.groupEnd();
 
       // RFC 9420 Section 11.2: Commit Distribution
       // ⚠️ IMPORTANT: The returned commit MUST be sent to all existing group members
@@ -260,16 +220,12 @@ export class MLSManager {
       // RFC 9420: Strip trailing null nodes before transmission
       const strippedTree = stripTrailingNulls(ratchetTreeArray);
 
-      console.log(`🔍 [MLS] Ratchet tree stripped: ${ratchetTreeArray.length} -> ${strippedTree.length} nodes`);
-
       return {
         welcome: commitResult.welcome,
         ratchetTree: strippedTree,
         commit: commitResult.commit,
       };
     } catch (error) {
-      console.error('❌ [MLS] Failed to add members:', error);
-      throw new Error(`Adding members failed: ${error.message}`);
     }
   }
 
@@ -292,8 +248,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log('📩 [MLS] Processing welcome message');
-
       if (!this.keyPackage) {
         throw new Error('No key package available');
       }
@@ -304,16 +258,10 @@ export class MLSManager {
 
       if (ratchetTree && Array.isArray(ratchetTree)) {
         const nullCount = ratchetTree.filter(n => n === null).length;
-        console.log(`🔍 [MLS] Ratchet tree received: ${ratchetTree.length} nodes (${nullCount} interior nulls)`);
-
         // DEBUG: Log structure of each node
         console.group('🔍 [MLS Debug] Ratchet Tree Structure');
         ratchetTree.forEach((node, i) => {
           if (node === null) {
-            console.log(`  Node ${i}: NULL`);
-          } else {
-            console.log(`  Node ${i}:`, {
-              type: typeof node,
               isObject: typeof node === 'object',
               hasNodeType: node && 'nodeType' in node,
               nodeType: node?.nodeType,
@@ -345,11 +293,7 @@ export class MLSManager {
         epoch: groupState.groupContext.epoch,
       };
 
-      console.log(`✅ [MLS] Welcome processed, joined group: ${groupId}`);
-      return groupInfo;
     } catch (error) {
-      console.error('❌ [MLS] Failed to process welcome:', error);
-      throw new Error(`Welcome processing failed: ${error.message}`);
     }
   }
 
@@ -360,8 +304,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`🔒 [MLS] Encrypting message for group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -392,11 +334,7 @@ export class MLSManager {
         timestamp: Date.now(),
       };
 
-      console.log('✅ [MLS] Message encrypted');
-      return envelope;
     } catch (error) {
-      console.error('❌ [MLS] Failed to encrypt message:', error);
-      throw new Error(`Message encryption failed: ${error.message}`);
     }
   }
 
@@ -408,8 +346,6 @@ export class MLSManager {
 
     try {
       const groupId = new TextDecoder().decode(envelope.groupId);
-      console.log(`🔓 [MLS] Decrypting message for group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -443,11 +379,7 @@ export class MLSManager {
 
       const plaintext = new TextDecoder().decode(result.message);
 
-      console.log('✅ [MLS] Message decrypted');
-      return plaintext;
     } catch (error) {
-      console.error('❌ [MLS] Failed to decrypt message:', error);
-      throw new Error(`Decryption failed: ${error.message}`);
     }
   }
 
@@ -458,8 +390,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`🔄 [MLS] Performing key rotation for group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -474,15 +404,11 @@ export class MLSManager {
       // Update group state
       this.groups.set(groupId, commitResult.newState);
 
-      console.log(
-        `✅ [MLS] Key rotation successful, new epoch: ${commitResult.newState.groupContext.epoch}`
       );
 
       // Return the raw commit object for other members to process
       return commitResult.commit;
     } catch (error) {
-      console.error('❌ [MLS] Failed to update key:', error);
-      throw new Error(`Key update failed: ${error.message}`);
     }
   }
 
@@ -499,24 +425,14 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`⚙️ [MLS] Processing commit for group: ${groupId}`);
-      console.log(`🔍 [MLS Debug] Commit wireformat: ${commit.wireformat}`);
 
       // DETAILED DEBUG LOGGING
       console.group('🔍 [MLS Debug] Full Commit Structure');
-      console.log('commit keys:', Object.keys(commit));
-      console.log('commit.wireformat:', commit.wireformat);
-      console.log('commit.publicMessage:', commit.publicMessage);
-      console.log('commit.privateMessage:', commit.privateMessage);
 
       // Log proposals if present
       if (commit.publicMessage?.content) {
-        console.log('publicMessage.content:', commit.publicMessage.content);
-        console.log('publicMessage.content.proposals:', commit.publicMessage.content.proposals);
         if (commit.publicMessage.content.proposals) {
           commit.publicMessage.content.proposals.forEach((prop: any, i: number) => {
-            console.log(`  Proposal ${i}:`, {
-              proposalType: prop.proposalType,
               keys: Object.keys(prop),
               full: prop
             });
@@ -535,8 +451,6 @@ export class MLSManager {
       // RFC 9420: Route based on message type
       if (commit.wireformat === 'mls_public_message') {
         // Public messages (add/remove member commits)
-        console.log('🔍 [MLS Debug] Processing as PUBLIC message (add/remove)...');
-        const publicMessage = commit.publicMessage || commit;
 
         result = await processPublicMessage(
           groupState,
@@ -546,8 +460,6 @@ export class MLSManager {
         );
       } else if (commit.wireformat === 'mls_private_message') {
         // Private messages (update/key rotation commits)
-        console.log('🔍 [MLS Debug] Processing as PRIVATE message (update)...');
-        const privateMessage = commit.privateMessage || commit;
 
         result = await processPrivateMessage(
           groupState,
@@ -562,12 +474,6 @@ export class MLSManager {
       // Update group state
       this.groups.set(groupId, result.newState);
 
-      console.log(`✅ [MLS] Commit processed, epoch: ${result.newState.groupContext.epoch}`);
-    } catch (error) {
-      console.error('❌ [MLS] Failed to process commit:', error);
-      console.error('❌ [MLS Debug] Error details:', error.stack);
-      console.error('❌ [MLS Debug] Error message:', error.message);
-      throw new Error(`Commit processing failed: ${error.message}`);
     }
   }
 
@@ -578,8 +484,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`➖ [MLS] Removing ${memberIndices.length} member(s) from group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -609,11 +513,7 @@ export class MLSManager {
         version: 'mls10',
       });
 
-      console.log('✅ [MLS] Members removed');
-      return encodedCommit;
     } catch (error) {
-      console.error('❌ [MLS] Failed to remove members:', error);
-      throw new Error(`Member removal failed: ${error.message}`);
     }
   }
 
@@ -629,8 +529,6 @@ export class MLSManager {
       );
       return groupIds;
     } catch (error) {
-      console.error('❌ [MLS] Failed to get groups:', error);
-      throw new Error(`Getting groups failed: ${error.message}`);
     }
   }
 
@@ -641,8 +539,6 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-      console.log(`💾 [MLS] Exporting state for group: ${groupId}`);
-
       const groupState = this.groups.get(groupId);
       if (!groupState) {
         throw new Error(`Group ${groupId} not found`);
@@ -657,11 +553,7 @@ export class MLSManager {
         // Add other serializable fields as needed
       };
 
-      console.log('✅ [MLS] Group state exported');
-      return exportData;
     } catch (error) {
-      console.error('❌ [MLS] Failed to export group state:', error);
-      throw new Error(`Group state export failed: ${error.message}`);
     }
   }
 
@@ -697,12 +589,8 @@ export class MLSManager {
    * Clean up resources
    */
   async destroy(): Promise<void> {
-    console.log(`🧹 [MLS DEBUG] destroy() called - this.initialized WAS: ${this.initialized}`);
-    this.groups.clear();
     this.keyPackage = null;
     this.initialized = false;
-    console.log(`🧹 [MLS DEBUG] destroy() - this.initialized is NOW: ${this.initialized}`);
-    console.log('✅ [MLS] Manager destroyed');
   }
 
   /**
@@ -721,8 +609,6 @@ export class MLSManager {
         }
       }
     } catch (error) {
-      console.warn('Could not extract members:', error);
-      members.push(this.userId); // At least include self
     }
 
     return members;
@@ -741,19 +627,9 @@ export class MLSManager {
    * Ensure the manager is initialized
    */
   private ensureInitialized(): void {
-    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized: ${this.initialized}`);
-    console.log(`🔐 [MLS DEBUG] ensureInitialized() - typeof this.initialized: ${typeof this.initialized}`);
-    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized === true: ${this.initialized === true}`);
-    console.log(`🔐 [MLS DEBUG] ensureInitialized() - this.initialized === false: ${this.initialized === false}`);
-    console.log(`🔐 [MLS DEBUG] ensureInitialized() - !this.initialized: ${!this.initialized}`);
-
     if (!this.initialized) {
-      console.error(`❌ [MLS DEBUG] THROWING ERROR - this.initialized is: ${this.initialized}`);
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
     }
 
-    console.log(`✅ [MLS DEBUG] ensureInitialized() passed!`);
-  }
 }
 
 export default MLSManager;

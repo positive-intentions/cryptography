@@ -131,8 +131,6 @@ const MultiProtocolDemo = () => {
       setMlsInitialized(true);
       addLog('🎉 MLS setup complete!', 'success');
     } catch (err) {
-      console.error('MLS initialization error:', err);
-      setError(`MLS initialization failed: ${err.message}`);
       addLog(`❌ MLS init failed: ${err.message}`, 'error');
     }
   };
@@ -211,8 +209,6 @@ const MultiProtocolDemo = () => {
       setSignalInitialized(true);
       addLog('🎉 Signal Protocol setup complete!', 'success');
     } catch (err) {
-      console.error('Signal initialization error:', err);
-      setError(`Signal initialization failed: ${err.message}`);
       addLog(`❌ Signal init failed: ${err.message}`, 'error');
     }
   };
@@ -239,8 +235,6 @@ const MultiProtocolDemo = () => {
       setMlkemInitialized(true);
       addLog('🎉 ML-KEM setup complete!', 'success');
     } catch (err) {
-      console.error('ML-KEM initialization error:', err);
-      setError(`ML-KEM initialization failed: ${err.message}`);
       addLog(`❌ ML-KEM init failed: ${err.message}`, 'error');
     }
   };
@@ -277,8 +271,6 @@ const MultiProtocolDemo = () => {
       setDhInitialized(true);
       addLog('🎉 DH setup complete!', 'success');
     } catch (err) {
-      console.error('DH initialization error:', err);
-      setError(`DH initialization failed: ${err.message}`);
       addLog(`❌ DH init failed: ${err.message}`, 'error');
     }
   };
@@ -457,8 +449,6 @@ const MultiProtocolDemo = () => {
       setEncrypted(result);
       addLog('✅ Encryption complete!', 'success');
     } catch (err) {
-      console.error('Encryption error:', err);
-      setError(`Encryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);
@@ -570,8 +560,6 @@ const MultiProtocolDemo = () => {
         addLog('⚠️ Warning: Decrypted message does not match original', 'error');
       }
     } catch (err) {
-      console.error('Decryption error:', err);
-      setError(`Decryption failed: ${err.message}`);
       addLog(`❌ ${err.message}`, 'error');
     } finally {
       setProcessing(false);

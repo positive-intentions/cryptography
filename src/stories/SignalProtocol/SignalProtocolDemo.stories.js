@@ -31,19 +31,9 @@ const SignalProtocolFullDemo = () => {
     setError('');
     setActiveStep(0);
     
-    console.log('🚀 Starting Signal Protocol demonstration...');
-    console.log('Crypto object available:', !!crypto);
-    console.log('Available crypto methods:', crypto ? Object.keys(crypto).filter(k => k.startsWith('signal') || k.includes('Signal')) : 'None');
-    
     try {
       // Step 1: Initialize Users
-      console.log('📋 Step 1: Initializing users...');
-      setActiveStep(0);
       const alice = await crypto.initializeSignalUser("Alice");
-      console.log('✅ Alice initialized');
-      const bob = await crypto.initializeSignalUser("Bob");
-      console.log('✅ Bob initialized');
-      
       await new Promise(resolve => setTimeout(resolve, 500)); // Demo delay
       setActiveStep(1);
       
@@ -592,8 +582,6 @@ const IndividualOperationsDemo = () => {
       const publicKeyBytes = await crypto.exportSignalPublicKey(signingKeyPair.publicKey);
       setPublicKeyHex(crypto.bufferToSignalHex(publicKeyBytes));
     } catch (error) {
-      console.error('Key generation failed:', error);
-    }
   };
 
   const signData = async () => {
@@ -816,8 +804,6 @@ const identityKeyPair = await crypto.generateSignalSigningKeyPair();
 // - Private key: Only Alice keeps this (like keeping house key secret)
 // - Public key: Alice shares this with everyone (like her address)
 
-console.log("Alice's identity established!");`}
-                language="javascript"
                 maxHeight="150px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
@@ -877,8 +863,6 @@ for (let i = 0; i < 100; i++) {
 }
 
 // Each prekey gets used exactly once
-console.log("Bob created 100 one-time tickets");
-
 // When Alice wants to message Bob:
 const usedPrekey = oneTimePrekeys.pop(); // Take one ticket
 // This ticket is now "torn" and can never be used again`}
@@ -904,8 +888,6 @@ const usedPrekey = oneTimePrekeys.pop(); // Take one ticket
 // This happens fresh every time Alice wants to start a conversation
 const ephemeralKeyPair = await crypto.generateSignalKeyPair();
 
-console.log("Alice created lightning bolt key");
-
 // Alice uses this key for the X3DH calculation
 const sharedSecret = performMagicalCombination(
   ephemeralKeyPair.privateKey,  // Alice's lightning (disappears after use)
@@ -917,8 +899,6 @@ const sharedSecret = performMagicalCombination(
 // IMPORTANT: Alice immediately throws away the private key!
 delete ephemeralKeyPair.privateKey;
 
-console.log("Lightning key destroyed - conversation now has perfect forward secrecy!");`}
-                language="javascript"
                 maxHeight="250px"
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
@@ -980,8 +960,6 @@ const alice = await crypto.initializeSignalUser("Alice");
 // Alice creates a lightning bolt key for this conversation
 const aliceEphemeral = await crypto.generateSignalKeyPair();
 
-console.log("Alice is ready to send secure messages!");
-
 // What Alice has now:
 // 1. Identity key pair (her ID card + private signature)
 // 2. Ephemeral key pair (lightning bolt that will be destroyed)`}
@@ -1003,8 +981,6 @@ const bob = await crypto.initializeSignalUser("Bob");
 
 // Bob creates his "public bulletin board" (key bundle)
 const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
-
-console.log("Bob has posted his public keys for Alice to find!");
 
 // What Bob has prepared:
 // 1. Identity key pair (his ID card)
@@ -1035,8 +1011,6 @@ console.log("Bob has posted his public keys for Alice to find!");
             <CodeDisplay 
               code={`// Alice performs the X3DH magic spell
 const exchangeResult = await crypto.performSignalX3DHKeyExchange(alice, bobBundle);
-
-console.log("🎉 Alice created a shared secret!");
 
 // What just happened behind the scenes (the "magical math"):
 // 
@@ -1091,14 +1065,8 @@ const aliceSecretHex = crypto.bufferToSignalHex(aliceSecret);
 const bobSecretHex = crypto.bufferToSignalHex(bobSecret);
 
 const success = aliceSecretHex === bobSecretHex;
-console.log("Secrets match:", success);
-
 if (success) {
-  console.log("🎉 SUCCESS! Alice and Bob now share the same secret!");
-  console.log("🔒 They can now encrypt messages that only they can read!");
 } else {
-  console.log("❌ FAILED! Something went wrong in the key exchange!");
-}`}
               language="javascript"
               maxHeight="350px"
             />
@@ -1117,16 +1085,12 @@ delete aliceEphemeral.privateKey;
 // Bob consumes his one-time prekey (tears up the concert ticket)
 if (exchangeResult.usedOneTimePrekey) {
   crypto.consumeSignalOneTimePrekey(bob);
-  console.log("🎫 Bob's concert ticket has been torn up - can never be used again!");
-}
 
 // Now even if someone steals all the long-term keys:
 // - They can't decrypt this conversation (ephemeral key is gone)
 // - They can't replay this exchange (one-time key is consumed)
 // - Future conversations will use new ephemeral keys
 
-console.log("🛡️ Forward secrecy achieved!");
-console.log("🗑️ All temporary keys have been securely destroyed!");
 
 // What remains:
 // - Identity keys (still needed for future conversations)
@@ -1434,13 +1398,9 @@ class MyKeyFilingCabinet {
   constructor(myName) {
     this.myName = myName;
     this.cabinetLabel = \`\${myName}'s_Secret_Keys\`;
-    console.log(\`📁 Setting up filing cabinet for \${myName}\`);
-  }
 
   // STEP 1: Put all my important papers in the filing cabinet
   async saveMyImportantPapers(myKeys) {
-    console.log(\`🗂️ \${this.myName} is filing away important papers...\`);
-    
     // My filing system with clear labels:
     const myFilingSystem = {
       // DRAWER 1: My permanent identity documents
@@ -1475,31 +1435,17 @@ class MyKeyFilingCabinet {
     // Save to my secure filing cabinet (in real life: encrypted vault!)
     localStorage.setItem(this.cabinetLabel, JSON.stringify(myFilingSystem));
     
-    console.log(\`✅ \${this.myName}'s filing cabinet is all organized!\`);
-    console.log("📋 Filed papers:");
-    console.log("   🏠 Identity documents (permanent)");
-    console.log("   📝 Work badge (weekly renewal)"); 
-    console.log("   🎫 100 movie tickets (single use)");
-  }
 
   // STEP 2: Open my filing cabinet and get my papers when I need them
   async getMyPapersFromFilingCabinet() {
     const myFiledPapers = localStorage.getItem(this.cabinetLabel);
     
     if (!myFiledPapers) {
-      console.log(\`😰 \${this.myName}'s filing cabinet is empty! Need to set it up first.\`);
-      return null;
     }
 
     const myPapers = JSON.parse(myFiledPapers);
-    console.log(\`📂 \${this.myName} opened the filing cabinet\`);
-    console.log(\`📋 Found papers last organized: \${new Date(myPapers.lastOrganized).toLocaleDateString()}\`);
     
     // Check what papers I have available
-    console.log("📁 Available papers:");
-    console.log(\`   🏠 Identity: \${myPapers.myIdentityPapers.label}\`);
-    console.log(\`   📝 Work badge: \${myPapers.myWorkBadge.label}\`); 
-    console.log(\`   🎫 Tickets left: \${myPapers.myTicketStack.ticketsRemaining}\`);
     
     return myPapers;
   }
@@ -1514,12 +1460,8 @@ class MyKeyFilingCabinet {
     const timeSinceLastRenewal = Date.now() - papers.myWorkBadge.renewalDate;
     
     if (timeSinceLastRenewal > oneWeekInMs) {
-      console.log(\`⏰ \${this.myName}'s work badge expired! Time to renew.\`);
-      return true;
     }
     
-    console.log(\`✅ \${this.myName}'s work badge is still valid\`);
-    return false;
   }
 
   // STEP 4: Use one of my movie tickets (and throw it away)
@@ -1532,20 +1474,14 @@ class MyKeyFilingCabinet {
       
       localStorage.setItem(this.cabinetLabel, JSON.stringify(myPapers));
       
-      console.log(\`🎫 \${this.myName} used ticket #\${myPapers.myTicketStack.nextTicketNumber - 1}\`);
-      console.log(\`📊 Tickets remaining: \${myPapers.myTicketStack.ticketsRemaining}\`);
       
       return \`ticket_\${myPapers.myTicketStack.nextTicketNumber - 1}\`;
     } else {
-      console.log(\`😱 \${this.myName} ran out of movie tickets! Need to get more.\`);
-      return null;
     }
   }
 }
 
 // EXAMPLE: Alice sets up her personal filing cabinet
-console.log("🚀 Alice is setting up her key filing cabinet...");
-
 const aliceFilingCabinet = new MyKeyFilingCabinet("Alice");
 const aliceKeys = await crypto.initializeSignalUser("Alice");
 
@@ -1557,13 +1493,9 @@ const alicePapers = await aliceFilingCabinet.getMyPapersFromFilingCabinet();
 
 // Alice checks if she needs to renew her work badge
 if (aliceFilingCabinet.needToRenewWorkBadge()) {
-  console.log("🔄 Time to get a new work badge!");
-}
 
 // Alice uses one of her movie tickets
 const usedTicket = aliceFilingCabinet.useOneMovieTicket();
-console.log(\`🎬 Alice went to the movies with \${usedTicket}!\`);`}
-              language="javascript"
               maxHeight="800px"
             />
           </Paper>
@@ -1602,8 +1534,6 @@ class ConversationStore {
     };
 
     localStorage.setItem(this.storageKey, JSON.stringify(conversationState));
-    console.log(\`💬 Conversation state saved for \${this.conversationId}\`);
-  }
 
   // Load conversation state
   loadConversationState() {
@@ -1611,8 +1541,6 @@ class ConversationStore {
     if (!stored) return null;
     
     const state = JSON.parse(stored);
-    console.log(\`💬 Loaded conversation state for \${this.conversationId}\`);
-    return {
       ...state,
       sharedSecret: new Uint8Array(state.sharedSecret.match(/.{2}/g).map(byte => parseInt(byte, 16))).buffer
     };
@@ -1743,13 +1671,9 @@ class MySecretMessageMachine {
   constructor(mySharedSecretWithFriend) {
     this.mySharedSecret = mySharedSecretWithFriend;  // The magic spell we both know
     this.messageCounter = 0;  // Keeps track: message 1, 2, 3...
-    console.log("🤖 Alice's secret message machine is ready!");
-  }
 
   // STEP 1: Make a brand new key for this specific message
   async makeNewMessageKey(messageNumber) {
-    console.log(\`🔧 Making a brand new key for message #\${messageNumber}\`);
-    
     // ELI5: Mix the shared secret + message number = unique key
     const recipe = \`My shared secret + message number \${messageNumber}\`;
     const ingredientsToMix = new TextEncoder().encode(recipe);
@@ -1764,16 +1688,12 @@ class MySecretMessageMachine {
     // Put it in the special mixing machine (hash function)
     const mixedResult = await crypto.sha256Hash(combinedIngredients.buffer);
     
-    console.log(\`✅ Made fresh key for message #\${messageNumber}!\`);
-    return mixedResult;
   }
 
   // STEP 2: Encrypt Alice's secret message like wrapping a present
   async wrapMySecretMessage(myMessage) {
     this.messageCounter++;  // Count: 1, 2, 3, 4...
     
-    console.log(\`📝 Alice wants to send: "\${myMessage}"\`);
-    console.log(\`📊 This is message number: \${this.messageCounter}\`);
 
     // Make a fresh key just for this message
     const freshKeyIngredients = await this.makeNewMessageKey(this.messageCounter);
@@ -1782,8 +1702,6 @@ class MySecretMessageMachine {
     const wrappingKey = freshKeyIngredients.slice(0, 32);   // For wrapping (encryption)
     const securityStamp = freshKeyIngredients.slice(32, 64); // For security seal (MAC) 
     const uniqueLabel = freshKeyIngredients.slice(64, 80);   // For unique ID (IV)
-    
-    console.log("🎁 Alice is wrapping her message...");
     
     // Convert Alice's message to secret code
     const messageInSecretCode = new TextEncoder().encode(myMessage);
@@ -1804,23 +1722,15 @@ class MySecretMessageMachine {
       toBob: "This package is for Bob only"
     };
 
-    console.log(\`📦 Message #\${this.messageCounter} is wrapped and ready to mail!\`);
-    console.log("📮 Package label shows message number and timestamp (not secret)");
-    console.log("🔒 But the actual message inside is completely scrambled!");
-    
     return packageLabel;
   }
 
   // STEP 3: Bob unwraps Alice's secret message
   async unwrapSecretMessage(packageFromAlice) {
-    console.log(\`📬 Bob received package #\${packageFromAlice.messageNumber} from Alice\`);
-
     // Bob makes the same key Alice used (same recipe!)
     const sameKeyAliceUsed = await this.makeNewMessageKey(packageFromAlice.messageNumber);
     const sameWrappingKey = sameKeyAliceUsed.slice(0, 32);
     const sameUniqueLabel = sameKeyAliceUsed.slice(64, 80);
-
-    console.log("🔧 Bob is making the same unwrapping key Alice used...");
 
     // Unwrap the message with the matching key
     const wrappedMessage = new Uint8Array(packageFromAlice.wrappedMessage).buffer;
@@ -1833,21 +1743,15 @@ class MySecretMessageMachine {
       );
 
       const alicesOriginalMessage = new TextDecoder().decode(unwrappedMessage);
-      console.log(\`🎉 Bob unwrapped the message: "\${alicesOriginalMessage}"\`);
-      console.log("✅ SUCCESS! Bob can read Alice's secret message!");
       return alicesOriginalMessage;
       
     } catch (error) {
-      console.error("❌ Bob couldn't unwrap the message!");
-      console.error("🚫 Either the package was damaged or someone tried to tamper with it!");
       throw new Error("Message unwrapping failed - package might be damaged");
     }
   }
 
   // STEP 4: Update the conversation state (like turning pages in a book)
   updateConversationPage() {
-    console.log(\`📖 Conversation moved to page \${this.messageCounter + 1}\`);
-    console.log("🔄 Next message will use a completely different key!");
     
     // The shared secret stays the same, but message counter goes up
     return {
@@ -1859,8 +1763,6 @@ class MySecretMessageMachine {
 }
 
 // EXAMPLE: Alice and Bob's secret conversation
-console.log("🚀 Starting Alice and Bob's secret message exchange...");
-
 // Both Alice and Bob have the same shared secret (from X3DH key exchange)
 const sharedSecret = new TextEncoder().encode("AliceAndBobsSharedSecret123").buffer;
 
@@ -1871,21 +1773,15 @@ const bobsMessageMachine = new MySecretMessageMachine(sharedSecret);
 const alicesMessage = "Hey Bob! 🤫 This is our secret chat!";
 const wrappedPackage = await alicesMessageMachine.wrapMySecretMessage(alicesMessage);
 
-console.log("\\n📨 Package ready to send:", {
-  messageNumber: wrappedPackage.messageNumber,
   timestamp: new Date(wrappedPackage.timeStamp).toLocaleTimeString(),
   packageSize: wrappedPackage.wrappedMessage.length + " bytes",
   actualMessage: "🔒 ENCRYPTED - Can't see without the key!"
 });
 
 // Bob receives and unwraps the package
-console.log("\\n📬 Bob is opening the package...");
-const bobsDecryptedMessage = await bobsMessageMachine.unwrapSecretMessage(wrappedPackage);
 
 // Update conversation state
 const conversationStatus = alicesMessageMachine.updateConversationPage();
-console.log("\\n📊 Conversation Status:", conversationStatus);`}
-              language="javascript"
               maxHeight="1000px"
             />
           </Paper>
@@ -1975,11 +1871,7 @@ console.log("\\n📊 Conversation Status:", conversationStatus);`}
             <CodeDisplay 
               code={`// Complete example: From key exchange to encrypted chat
 async function completeSignalDemo() {
-  console.log("🚀 Starting complete Signal Protocol demonstration...");
-  
   // === PHASE 1: SETUP AND KEY EXCHANGE ===
-  console.log("\\n📋 Phase 1: User Setup & Key Exchange");
-  
   // Initialize users
   const alice = await crypto.initializeSignalUser("Alice");
   const bob = await crypto.initializeSignalUser("Bob");
@@ -2004,11 +1896,7 @@ async function completeSignalDemo() {
     exchangeResult.usedOneTimePrekey
   );
   
-  console.log("✅ Key exchange complete - shared secret established!");
-  
   // === PHASE 2: ENCRYPTED MESSAGING ===
-  console.log("\\n💬 Phase 2: Encrypted Messaging");
-  
   const conversationState = conversation.loadConversationState();
   const messaging = new SignalMessaging(conversationState);
   
@@ -2025,12 +1913,8 @@ async function completeSignalDemo() {
   for (let i = 0; i < messages.length; i++) {
     const envelope = await messaging.encryptMessage(messages[i]);
     encryptedMessages.push(envelope);
-    console.log(\`📤 Message \${i + 1} encrypted and ready to send\`);
-  }
   
   // === PHASE 3: BOB RECEIVES AND DECRYPTS ===
-  console.log("\\n📥 Phase 3: Bob Receives Messages");
-  
   // Bob loads his conversation state
   const bobConversation = new ConversationStore("Bob", "Alice"); // Note: reversed for Bob's perspective
   await bobConversation.saveSharedSecret(
@@ -2042,24 +1926,12 @@ async function completeSignalDemo() {
   const bobConversationState = bobConversation.loadConversationState();
   const bobMessaging = new SignalMessaging(bobConversationState);
   
-  console.log("\\n🔓 Decrypting all messages:");
-  for (let i = 0; i < encryptedMessages.length; i++) {
     const decrypted = await bobMessaging.decryptMessage(encryptedMessages[i]);
-    console.log(\`Message \${i + 1}: "\${decrypted}"\`);
-  }
   
   // === PHASE 4: CLEANUP FOR FORWARD SECRECY ===
-  console.log("\\n🧹 Phase 4: Security Cleanup");
-  
   // Consume one-time prekey
   if (exchangeResult.usedOneTimePrekey) {
     crypto.consumeSignalOneTimePrekey(bob);
-    console.log("🎫 One-time prekey consumed - perfect forward secrecy maintained");
-  }
-  
-  console.log("\\n🎉 Complete Signal Protocol demonstration finished!");
-  console.log("🔒 All messages encrypted and decrypted successfully!");
-  console.log("🛡️ Forward secrecy and authentication achieved!");
   
   return {
     success: true,
@@ -2071,8 +1943,6 @@ async function completeSignalDemo() {
 
 // Run the complete demo
 const demoResult = await completeSignalDemo();
-console.log("Demo completed:", demoResult.success);`}
-              language="javascript"
               maxHeight="800px"
             />
           </Paper>
@@ -2273,22 +2143,14 @@ if (receivedMessageFromNewDHKey) {
             <CodeDisplay 
               code={`// 🏦 STEP 0: After X3DH handshake, both have the same shared secret
 const sharedSecret = "AliceAndBobsX3DHSecret123";
-console.log("🤝 Both Alice and Bob now have the same starting point!");
-
 // 🔄 STEP 1: Initialize Double Ratchet (like setting up the magic lock system)
 const aliceRatchet = initializeDoubleRatchet(sharedSecret, true);  // Alice starts
 const bobRatchet = initializeDoubleRatchet(sharedSecret, false);   // Bob waits
 
-console.log("🎩 Double Ratchet magic systems are ready!");
-
 // 💬 STEP 2: Alice sends first message
-console.log("👩 Alice: I want to send 'Hello Bob! 👋'");
-
 // Alice's ratchet creates a unique key just for this message
 const aliceChainKey1 = aliceRatchet.sendingChainKey;
 const messageKey1 = deriveMessageKey(aliceChainKey1);
-console.log("🔑 Alice created message key:", messageKey1.slice(0, 8) + "...");
-
 // Alice encrypts and updates her chain
 const encryptedMsg1 = encryptMessage("Hello Bob! 👋", messageKey1);
 aliceRatchet.sendingChainKey = updateChainKey(aliceChainKey1);
@@ -2296,19 +2158,11 @@ aliceRatchet.sendingMessageNumber++;
 
 // CRITICAL: Alice deletes the message key after using it!
 delete messageKey1;
-console.log("🗑️ Alice destroyed message key - it's gone forever!");
-
 // 📨 Message travels to Bob
-console.log("📨 Encrypted message sent to Bob:", encryptedMsg1.slice(0, 20) + "...");
-
 // 👨 STEP 3: Bob receives and decrypts
-console.log("👨 Bob: I received Alice's encrypted message");
-
 // Bob derives the SAME message key (magic of cryptography!)
 const bobChainKey1 = bobRatchet.receivingChainKey; 
 const bobMessageKey1 = deriveMessageKey(bobChainKey1);
-console.log("🔑 Bob created same key:", bobMessageKey1.slice(0, 8) + "...");
-
 // Bob decrypts and updates his chain
 const decryptedMsg1 = decryptMessage(encryptedMsg1, bobMessageKey1);
 bobRatchet.receivingChainKey = updateChainKey(bobChainKey1);
@@ -2316,12 +2170,8 @@ bobRatchet.receivingMessageNumber++;
 
 // Bob also deletes his copy of the message key!
 delete bobMessageKey1;
-console.log("👨 Bob decrypted:", decryptedMsg1);
-console.log("🗑️ Bob destroyed message key too - completely gone!");
 
 // 🔄 STEP 4: Bob replies (now HE becomes the sender)
-console.log("👨 Bob: Now I'll reply with 'Hi Alice! 😊'");
-
 // Bob needs to do DH ratchet step (create new sending chain)
 const bobNewDHKeyPair = generateSignalKeyPair(); // Bob makes fresh DH keys
 const dhSecret = performDH(bobNewDHKeyPair.private, aliceRatchet.dhPublicKey);
@@ -2332,8 +2182,6 @@ bobRatchet.rootKey = newRootKey;
 bobRatchet.sendingChainKey = bobSendingChain;
 bobRatchet.sendingMessageNumber = 0; // Fresh start!
 
-console.log("🔄 Bob performed DH ratchet - completely new sending system!");
-
 // Now Bob can encrypt his reply
 const messageKey2 = deriveMessageKey(bobRatchet.sendingChainKey);
 const encryptedMsg2 = encryptMessage("Hi Alice! 😊", messageKey2);
@@ -2341,11 +2189,7 @@ bobRatchet.sendingChainKey = updateChainKey(bobRatchet.sendingChainKey);
 bobRatchet.sendingMessageNumber++;
 
 delete messageKey2;
-console.log("👨 Bob sent reply and destroyed key!");
-
 // 👩 STEP 5: Alice receives Bob's reply
-console.log("👩 Alice: I got Bob's reply!");
-
 // Alice needs to do DH ratchet step too (new receiving chain)
 const aliceNewDHKeyPair = generateSignalKeyPair();
 const dhSecret2 = performDH(aliceNewDHKeyPair.private, bobNewDHKeyPair.public);
@@ -2355,41 +2199,21 @@ aliceRatchet.rootKey = aliceNewRootKey;
 aliceRatchet.receivingChainKey = aliceReceivingChain;
 aliceRatchet.receivingMessageNumber = 0;
 
-console.log("🔄 Alice performed DH ratchet - fresh receiving system!");
-
 // Alice decrypts Bob's message
 const aliceMessageKey2 = deriveMessageKey(aliceRatchet.receivingChainKey);
 const decryptedMsg2 = decryptMessage(encryptedMsg2, aliceMessageKey2);
 aliceRatchet.receivingChainKey = updateChainKey(aliceRatchet.receivingChainKey);
 
 delete aliceMessageKey2;
-console.log("👩 Alice decrypted:", decryptedMsg2);
-
 // 🎉 RESULT: Perfect conversation with amazing security!
-console.log("🎉 SUCCESS! Here's what just happened:");
-console.log("• Each message used a completely unique key");
-console.log("• All message keys were destroyed after use");
-console.log("• Both users have fresh key systems (self-healing)");
-console.log("• Even if someone steals keys now, past messages stay secure!");
-console.log("• Future messages will use even newer keys!");
 
 // 🛡️ SECURITY PROOF: Even if hacker steals everything now...
-console.log("💻 HACKER STEALS ALL CURRENT KEYS!");
-const stolenKeys = {
   aliceChain: aliceRatchet.sendingChainKey,
   bobChain: bobRatchet.receivingChainKey,
   rootKeys: [aliceRatchet.rootKey, bobRatchet.rootKey]
 };
-console.log("😈 Hacker has:", Object.keys(stolenKeys));
-
 // But the old messages are still safe!
-console.log("🛡️ BUT: Past message keys were destroyed!");
-console.log("🛡️ Hacker CANNOT decrypt 'Hello Bob!' or 'Hi Alice!'");
-console.log("🛡️ This is Forward Secrecy in action!");
-
 // And future messages will create new keys that heal the compromise
-console.log("✨ Next DH ratchet will create fresh keys, making current stolen keys useless!");
-console.log("✨ This is the Self-Healing property!");`}
               language="javascript"
               maxHeight="800px"
             />

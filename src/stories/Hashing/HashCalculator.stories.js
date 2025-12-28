@@ -80,8 +80,6 @@ const HashCalculatorDemo = () => {
       });
       setTimings(newTimings);
     } catch (error) {
-      console.error('Error calculating hashes:', error);
-    } finally {
       setLoading(false);
     }
   }, [input, sha256Hash, sha512Hash, sha3_512Hash]);
@@ -253,8 +251,6 @@ const FileHashDemo = () => {
         sha3_512: hash3_512
       });
     } catch (error) {
-      console.error('Error hashing file:', error);
-    } finally {
       setLoading(false);
     }
   }, [fileContent, sha256Hash, sha512Hash, sha3_512Hash]);
@@ -386,8 +382,6 @@ const HashVerificationDemo = () => {
         provided: knownHash
       });
     } catch (error) {
-      console.error('Error verifying hash:', error);
-    } finally {
       setLoading(false);
     }
   };

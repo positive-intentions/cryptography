@@ -41,8 +41,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 setSalt(newSalt);
                 setChance(new Chance(newSalt));
             } catch (error) {
-                console.error('Error updating states:', error);
-                // Keep existing values on error
             }
         };
         
@@ -131,8 +129,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 privateKey: privateKeyJWK,
             };
         } catch (error) {
-            console.error("Error generating key pair:", error);
-            throw error;
         }
     };
 
@@ -160,8 +156,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
             return publicKey;
         } catch (error) {
-            console.error("Error deserializing public key:", error);
-            throw error;
         }
     };
 
@@ -189,8 +183,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
             return privateKey;
         } catch (error) {
-            console.error("Error deserializing private key:", error);
-            throw error;
         }
     };
 
@@ -206,14 +198,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 encodedMessage,
             )
             .catch((error) => {
-                console.log("error", error);
-            });
-
-        return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
-    };
-
-    const decrypt = async (encryptedMessage, privateKey, passphrase) => {
-        const buffer = Uint8Array.from(atob(encryptedMessage), (c) =>
             c.charCodeAt(0),
         );
         try {
@@ -228,11 +212,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             const message = new TextDecoder().decode(decrypted);
             return message;
         } catch (error) {
-            console.log("error", error);
-            throw new Error(
-                "Unable to decrypt message. Incorrect passphrase.",
-                error,
-            );
         }
     };
 
@@ -280,8 +259,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
             return deSerializedSymmetricKey;
         } catch (error) {
-            console.error("Error deserializing symmetric key:", error);
-            throw error;
         }
     };
 
@@ -299,22 +276,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 encodedMessage,
             )
             .catch((error) => {
-                console.log("error", error);
-            });
-
-        return {
-            ciphertext: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-            iv: btoa(String.fromCharCode(...new Uint8Array(iv))),
-        };
-    };
-
-    const decryptWithSymmetricKey = async (encryptedData, key) => {
-        const { ciphertext, iv } = encryptedData;
-        const buffer = Uint8Array.from(atob(ciphertext), (c) => c.charCodeAt(0));
-        const ivBuffer = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
-
-        try {
-            const decrypted = await window.crypto.subtle.decrypt(
                 {
                     name: "AES-GCM",
                     iv: ivBuffer,
@@ -465,8 +426,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 originalSize: dataToEncrypt.byteLength
             };
         } catch (error) {
-            console.error('Error encrypting file:', error);
-            throw error;
         }
     };
 
@@ -499,8 +458,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 decryptedSize: decryptedData.byteLength
             };
         } catch (error) {
-            console.error('Error decrypting file:', error);
-            throw new Error('Failed to decrypt file. Check password and try again.');
         }
     };
 
@@ -634,8 +591,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 textContent: metadata.type === 'text' ? new TextDecoder().decode(decryptedResult.data) : null
             };
         } catch (error) {
-            console.error('Error decrypting uploaded file:', error);
-            throw new Error(`Failed to decrypt uploaded file: ${error.message}`);
         }
     };
 
@@ -663,8 +618,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 throw error;
             }
             // Fallback for testing when crypto API is mocked
-            console.warn('generateSignalKeyPair failed, using fallback:', error.message);
-            return {
                 publicKey: { algorithm: { name: 'X25519' }, type: 'public', usages: [] },
                 privateKey: { algorithm: { name: 'X25519' }, type: 'private', usages: ['deriveBits'] }
             };
@@ -686,8 +639,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 throw error;
             }
             // Fallback for testing when crypto API is mocked
-            console.warn('generateSignalSigningKeyPair failed, using fallback:', error.message);
-            return {
                 publicKey: { algorithm: { name: 'Ed25519' }, type: 'public', usages: ['verify'] },
                 privateKey: { algorithm: { name: 'Ed25519' }, type: 'private', usages: ['sign'] }
             };
@@ -726,12 +677,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const performSignalDH = async (privateKey, publicKey) => {
-        console.log('🔄 Performing X25519 key agreement...');
-        console.log('Private key algorithm:', privateKey?.algorithm?.name || 'X25519');
-        console.log('Public key algorithm:', publicKey?.algorithm?.name || 'X25519');
-        console.log('Private key usages:', privateKey?.usages || ['deriveKey']);
-        console.log('Public key usages:', publicKey?.usages || ['deriveBits']);
-        
         try {
             const result = await crypto.subtle.deriveBits(
                 {
@@ -741,11 +686,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 privateKey,
                 256  // X25519 always produces 256 bits (32 bytes)
             );
-            console.log('✓ X25519 key agreement successful, output length:', result.byteLength);
-            return result;
         } catch (error) {
-            console.error('❌ X25519 key agreement failed:', error);
-            throw error;
         }
     };
 
@@ -760,12 +701,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const verifySignalSignature = async (publicKey, signature, data) => {
-        console.log('🔍 Verifying Ed25519 signature...');
-        console.log('Public key algorithm:', publicKey?.algorithm?.name || 'X25519');
-        console.log('Public key usages:', publicKey?.usages || ['verify']);
-        console.log('Signature length:', signature.byteLength);
-        console.log('Data length:', data.byteLength);
-        
         try {
             const result = await crypto.subtle.verify(
                 {
@@ -775,11 +710,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 signature,
                 data
             );
-            console.log('✓ Signature verification result:', result);
-            return result;
         } catch (error) {
-            console.error('❌ Signature verification failed:', error);
-            throw error;
         }
     };
 
@@ -829,15 +760,9 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const initializeSignalUser = async (name) => {
-        console.log(`🔐 [${name}] Starting user initialization...`);
-        
         try {
             // Generate identity key pairs (separate for X25519 and Ed25519)
-            console.log(`🔑 [${name}] Generating identity signing key pair (Ed25519)...`);
-            const identitySigningKeyPair = await generateSignalSigningKeyPair();
             if (!identitySigningKeyPair) {
-                console.warn(`Failed to generate identity signing key pair for ${name}, creating minimal fallback user`);
-                // Create minimal fallback user for testing
                 return {
                     name,
                     identityKeyPair: { 
@@ -856,16 +781,10 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                     oneTimePrekeyPairs: []
                 };
             }
-            console.log(`✓ [${name}] Identity signing key pair generated:`, {
-                publicKeyAlgorithm: identitySigningKeyPair.publicKey?.algorithm?.name || 'Ed25519',
                 privateKeyAlgorithm: identitySigningKeyPair.privateKey?.algorithm?.name || 'Ed25519'
             });
             
-            console.log(`🔑 [${name}] Generating identity X25519 key pair...`);
-            const identityKeyPair = await generateSignalKeyPair();
             if (!identityKeyPair) {
-                console.warn(`Failed to generate identity X25519 key pair for ${name}, creating minimal fallback user`);
-                // Create minimal fallback user for testing (same as above)
                 return {
                     name,
                     identityKeyPair: { 
@@ -884,39 +803,16 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                     oneTimePrekeyPairs: []
                 };
             }
-            console.log(`✓ [${name}] Identity X25519 key pair generated:`, {
-                publicKeyAlgorithm: identityKeyPair.publicKey?.algorithm?.name || 'X25519',
                 privateKeyAlgorithm: identityKeyPair.privateKey?.algorithm?.name || 'X25519'
             });
             
             // Generate signed prekey pair
-            console.log(`🔑 [${name}] Generating signed prekey pair...`);
-            const signedPrekeyPair = await generateSignalKeyPair();
-            console.log(`✓ [${name}] Signed prekey pair generated`);
-            
             // Sign the prekey with identity signing key
-            console.log(`📝 [${name}] Exporting signed prekey for signing...`);
-            const prekeyBytes = await exportSignalPublicKey(signedPrekeyPair.publicKey);
-            console.log(`📝 [${name}] Prekey bytes length:`, prekeyBytes.byteLength);
-            
-            console.log(`✍️ [${name}] Signing prekey with identity signing key...`);
-            const signedPrekeySignature = await signSignalData(
-                identitySigningKeyPair.privateKey,
-                prekeyBytes
-            );
-            console.log(`✓ [${name}] Prekey signature generated, length:`, signedPrekeySignature.byteLength);
-
             // Generate one-time prekeys
-            console.log(`🔑 [${name}] Generating one-time prekeys...`);
-            const oneTimePrekeyPairs: CryptoKeyPair[] = [];
             for (let i = 0; i < 3; i++) {
                 const oneTimeKey = await generateSignalKeyPair();
                 oneTimePrekeyPairs.push(oneTimeKey);
-                console.log(`✓ [${name}] One-time prekey ${i + 1}/3 generated`);
-            }
 
-            console.log(`✅ [${name}] User initialization completed successfully`);
-            return {
                 name,
                 identityKeyPair, // X25519 key pair
                 identitySigningKeyPair, // Ed25519 key pair
@@ -925,34 +821,14 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 oneTimePrekeyPairs
             };
         } catch (error) {
-            console.error(`❌ [${name}] User initialization failed:`, error);
-            throw error;
         }
     };
 
     const getSignalPublicKeyBundle = async (user) => {
-        console.log(`📦 Creating public key bundle for ${user.name}...`);
-        
         try {
-            console.log('Exporting identity X25519 key...');
-            const identityKey = await exportSignalPublicKey(user.identityKeyPair.publicKey);
-            console.log('✓ Identity X25519 key exported, length:', identityKey.byteLength);
-            
-            console.log('Exporting identity signing key...');
-            const identitySigningKey = await exportSignalPublicKey(user.identitySigningKeyPair.publicKey);
-            console.log('✓ Identity signing key exported, length:', identitySigningKey.byteLength);
-            
-            console.log('Exporting signed prekey...');
-            const signedPrekey = await exportSignalPublicKey(user.signedPrekeyPair.publicKey);
-            console.log('✓ Signed prekey exported, length:', signedPrekey.byteLength);
-            
             const oneTimePrekey = user.oneTimePrekeyPairs.length > 0 ? 
                 await exportSignalPublicKey(user.oneTimePrekeyPairs[0].publicKey) : null;
             if (oneTimePrekey) {
-                console.log('✓ One-time prekey exported, length:', oneTimePrekey.byteLength);
-            } else {
-                console.log('⚠️ No one-time prekey available');
-            }
 
             const bundle = {
                 identityKey, // X25519 key
@@ -962,11 +838,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 oneTimePrekey
             };
             
-            console.log(`✅ Public key bundle created for ${user.name}`);
-            return bundle;
         } catch (error) {
-            console.error(`❌ Failed to create public key bundle for ${user.name}:`, error);
-            throw error;
         }
     };
 
@@ -975,133 +847,44 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const performSignalX3DHKeyExchange = async (alice, bobBundle) => {
-        console.log(`🤝 Starting X3DH key exchange between ${alice.name} and Bob...`);
-        console.log('📦 Bob bundle keys available:', {
-            hasIdentityKey: !!bobBundle.identityKey,
-            hasIdentitySigningKey: !!bobBundle.identitySigningKey,
-            hasSignedPrekey: !!bobBundle.signedPrekey,
-            hasSignedPrekeySignature: !!bobBundle.signedPrekeySignature,
-            hasOneTimePrekey: !!bobBundle.oneTimePrekey
-        });
 
         try {
             // Step 1: Verify Bob's signed prekey signature using his signing key
-            console.log('📝 Step 1: Importing Bob\'s identity signing key...');
-            const bobIdentitySigningKey = await importSignalSigningPublicKey(bobBundle.identitySigningKey);
-            console.log('✓ Bob\'s signing key imported, algorithm:', bobIdentitySigningKey?.algorithm?.name || 'Ed25519');
-            
-            console.log('🔍 Verifying Bob\'s signed prekey signature...');
-            console.log('Signature length:', bobBundle.signedPrekeySignature.byteLength);
-            console.log('Prekey data length:', bobBundle.signedPrekey.byteLength);
-            
             const isValidSignature = await verifySignalSignature(
                 bobIdentitySigningKey,
                 bobBundle.signedPrekeySignature,
                 bobBundle.signedPrekey
             );
             
-            console.log('✓ Signature verification result:', isValidSignature);
-            
             if (!isValidSignature) {
                 throw new Error("Invalid signed prekey signature!");
             }
 
             // Step 2: Generate ephemeral key pair
-            console.log('🔑 Step 2: Generating Alice\'s ephemeral key pair...');
-            const aliceEphemeralPair = await generateSignalKeyPair();
-            console.log('✓ Ephemeral key pair generated:', {
-                publicAlgorithm: aliceEphemeralPair.publicKey?.algorithm?.name || 'X25519',
                 privateAlgorithm: aliceEphemeralPair.privateKey?.algorithm?.name || 'X25519'
             });
 
             // Step 3: Import Bob's public keys for DH operations
-            console.log('🔄 Step 3: Importing Bob\'s keys for DH operations...');
-            
-            console.log('Importing Bob\'s signed prekey...');
-            const bobSignedPrekey = await importSignalPublicKey(bobBundle.signedPrekey);
-            console.log('✓ Bob signed prekey imported:', bobSignedPrekey?.algorithm?.name || 'X25519');
-            
-            console.log('Importing Bob\'s identity key for DH...');
-            const bobIdentityKeyDH = await importSignalPublicKey(bobBundle.identityKey);
-            console.log('✓ Bob identity DH key imported:', bobIdentityKeyDH?.algorithm?.name || 'X25519');
-            
             const bobOneTimePrekey = bobBundle.oneTimePrekey ? 
                 await importSignalPublicKey(bobBundle.oneTimePrekey) : null;
             if (bobOneTimePrekey) {
-                console.log('✓ Bob one-time prekey imported:', bobOneTimePrekey?.algorithm?.name || 'X25519');
-            } else {
-                console.log('⚠️ No one-time prekey available');
-            }
 
             // Step 4: Perform the Triple (or Quadruple) Diffie-Hellman computation
-            console.log('🔄 Step 4: Performing DH computations...');
-            
-            console.log('DH1: Alice_Identity_Private × Bob_SignedPrekey_Public');
-            console.log('Alice identity private algorithm:', alice.identityKeyPair.privateKey?.algorithm?.name || 'X25519');
-            console.log('Bob signed prekey public algorithm:', bobSignedPrekey?.algorithm?.name || 'X25519');
-            const dh1 = await performSignalDH(
-                alice.identityKeyPair.privateKey,
-                bobSignedPrekey
-            );
-            console.log('✓ DH1 completed, output length:', dh1.byteLength);
-
-            console.log('DH2: Alice_Ephemeral_Private × Bob_Identity_Public');
-            console.log('Alice ephemeral private algorithm:', aliceEphemeralPair.privateKey?.algorithm?.name || 'X25519');
-            console.log('Bob identity public algorithm:', bobIdentityKeyDH?.algorithm?.name || 'X25519');
-            const dh2 = await performSignalDH(
-                aliceEphemeralPair.privateKey,
-                bobIdentityKeyDH
-            );
-            console.log('✓ DH2 completed, output length:', dh2.byteLength);
-
-            console.log('DH3: Alice_Ephemeral_Private × Bob_SignedPrekey_Public');
-            const dh3 = await performSignalDH(
-                aliceEphemeralPair.privateKey,
-                bobSignedPrekey
-            );
-            console.log('✓ DH3 completed, output length:', dh3.byteLength);
-
             // DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public (if available)
             let dh4: ArrayBuffer | null = null;
             if (bobOneTimePrekey) {
-                console.log('DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public');
-                dh4 = await performSignalDH(
-                    aliceEphemeralPair.privateKey,
-                    bobOneTimePrekey
-                );
-                console.log('✓ DH4 completed, output length:', dh4.byteLength);
-            } else {
-                console.log('⚠️ Skipping DH4 (no one-time prekey)');
-            }
 
             // Step 5: Combine all DH outputs
-            console.log('🔗 Step 5: Combining DH outputs...');
-            
             // Log the individual DH outputs for comparison
-            console.log('Alice DH outputs (hex):');
-            console.log('  DH1:', bufferToSignalHex(dh1));
-            console.log('  DH2:', bufferToSignalHex(dh2));
-            console.log('  DH3:', bufferToSignalHex(dh3));
-            if (dh4) console.log('  DH4:', bufferToSignalHex(dh4));
             
             const dhOutputs = dh4 ? 
                 concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
                 concatSignalArrayBuffers(dh1, dh2, dh3);
-            console.log('✓ Combined DH outputs, total length:', dhOutputs.byteLength);
-
             // Step 6: Derive the master secret using HKDF
-            console.log('🔑 Step 6: Deriving master secret using HKDF...');
-            const salt = new ArrayBuffer(32); // 32 zero bytes
             const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
-            console.log('Salt length:', salt.byteLength);
-            console.log('Info string:', new TextDecoder().decode(info));
             
             const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
-            console.log('✓ Master secret derived');
-            
             const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
-            console.log('✓ Master secret exported, length:', secretBytes.byteLength);
-            console.log('🔐 Alice final secret:', bufferToSignalHex(secretBytes));
 
             const result = {
                 masterSecret: secretBytes,
@@ -1109,65 +892,24 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 usedOneTimePrekey: bobBundle.oneTimePrekey !== null
             };
             
-            console.log('✅ X3DH key exchange completed successfully!');
-            return result;
             
         } catch (error) {
-            console.error('❌ X3DH key exchange failed:', error);
-            console.error('Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
             throw error;
         }
     };
 
     const deriveSignalSharedSecret = async (bob, aliceEphemeralPublic, aliceIdentityPublic, usedOneTimePrekey, oneTimePrekeyBytes = null) => {
-        console.log(`🔄 Bob deriving shared secret from Alice's message...`);
-        console.log('Alice ephemeral public length:', aliceEphemeralPublic.byteLength);
-        console.log('Alice identity public length:', aliceIdentityPublic.byteLength);
-        console.log('Used one-time prekey:', usedOneTimePrekey);
         
         try {
             // Import Alice's public keys
-            console.log('📥 Importing Alice\'s public keys...');
-            const aliceEphemeral = await importSignalPublicKey(aliceEphemeralPublic);
             const aliceIdentity = await importSignalPublicKey(aliceIdentityPublic);
-            console.log('✓ Alice\'s keys imported');
-
             // Perform the same DH computations (but from Bob's perspective)
-            console.log('🔄 Bob performing DH computations...');
-            
             // DH1: Bob_SignedPrekey_Private × Alice_Identity_Public
-            console.log('Bob DH1: Bob_SignedPrekey_Private × Alice_Identity_Public');
-            const dh1 = await performSignalDH(
-                bob.signedPrekeyPair.privateKey,
-                aliceIdentity
-            );
-            console.log('✓ Bob DH1 completed, output length:', dh1.byteLength);
-
             // DH2: Bob_Identity_Private × Alice_Ephemeral_Public  
-            console.log('Bob DH2: Bob_Identity_Private × Alice_Ephemeral_Public');
-            const dh2 = await performSignalDH(
-                bob.identityKeyPair.privateKey,
-                aliceEphemeral
-            );
-            console.log('✓ Bob DH2 completed, output length:', dh2.byteLength);
-
             // DH3: Bob_SignedPrekey_Private × Alice_Ephemeral_Public
-            console.log('Bob DH3: Bob_SignedPrekey_Private × Alice_Ephemeral_Public');
-            const dh3 = await performSignalDH(
-                bob.signedPrekeyPair.privateKey,
-                aliceEphemeral
-            );
-            console.log('✓ Bob DH3 completed, output length:', dh3.byteLength);
-
             // DH4: Bob_OneTimePrekey_Private × Alice_Ephemeral_Public (if used)
             let dh4: ArrayBuffer | null = null;
             if (usedOneTimePrekey && oneTimePrekeyBytes && bob.oneTimePrekeyPairs.length > 0) {
-                console.log('Bob DH4: Bob_OneTimePrekey_Private × Alice_Ephemeral_Public');
-                console.log('Using provided one-time prekey bytes, length:', oneTimePrekeyBytes.byteLength);
                 
                 // Find the matching one-time prekey in Bob's collection
                 let matchingKeyPair: CryptoKeyPair | null = null;
@@ -1176,14 +918,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                     const publicKeyHex = bufferToSignalHex(publicKeyBytes);
                     const providedKeyHex = bufferToSignalHex(oneTimePrekeyBytes);
                     
-                    console.log('Comparing keys:');
-                    console.log('  Bob key:', publicKeyHex.substring(0, 32) + '...');
-                    console.log('  Used key:', providedKeyHex.substring(0, 32) + '...');
-                    
                     if (publicKeyHex === providedKeyHex) {
                         matchingKeyPair = keyPair;
-                        console.log('✓ Found matching one-time prekey in Bob\'s collection');
-                        break;
                     }
                 }
                 
@@ -1192,56 +928,25 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                         matchingKeyPair.privateKey,
                         aliceEphemeral
                     );
-                    console.log('✓ Bob DH4 completed, output length:', dh4.byteLength);
-                } else {
-                    console.error('❌ Could not find matching one-time prekey in Bob\'s collection!');
-                    console.log('Bob has', bob.oneTimePrekeyPairs.length, 'one-time prekeys available');
-                    console.log('Looking for key:', bufferToSignalHex(oneTimePrekeyBytes));
-                    for (let i = 0; i < bob.oneTimePrekeyPairs.length; i++) {
                         const keyBytes = await exportSignalPublicKey(bob.oneTimePrekeyPairs[i].publicKey);
-                        console.log(`Bob key ${i}:`, bufferToSignalHex(keyBytes));
-                    }
                     throw new Error('One-time prekey mismatch');
                 }
             } else {
-                console.log('⚠️ Bob skipping DH4 (no one-time prekey used, no prekey bytes provided, or no keys available)');
-                console.log('  usedOneTimePrekey:', usedOneTimePrekey);
-                console.log('  oneTimePrekeyBytes:', !!oneTimePrekeyBytes);
-                console.log('  bob.oneTimePrekeyPairs.length:', bob.oneTimePrekeyPairs.length);
             }
 
             // Combine DH outputs in the same order
-            console.log('🔗 Bob combining DH outputs...');
-            const dhOutputs = dh4 ? 
                 concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
                 concatSignalArrayBuffers(dh1, dh2, dh3);
-            console.log('✓ Bob combined DH outputs, total length:', dhOutputs.byteLength);
-
             // Log the individual DH outputs for comparison
-            console.log('Bob DH outputs (hex):');
-            console.log('  DH1:', bufferToSignalHex(dh1));
-            console.log('  DH2:', bufferToSignalHex(dh2));
-            console.log('  DH3:', bufferToSignalHex(dh3));
-            if (dh4) console.log('  DH4:', bufferToSignalHex(dh4));
 
             // Derive the same master secret
-            console.log('🔑 Bob deriving master secret using HKDF...');
-            const salt = new ArrayBuffer(32);
             const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
-            console.log('Bob salt length:', salt.byteLength);
-            console.log('Bob info string:', new TextDecoder().decode(info));
             
             const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
-            console.log('✓ Bob master secret derived');
-            
             const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
-            console.log('✓ Bob master secret exported, length:', secretBytes.byteLength);
-            console.log('🔐 Bob final secret:', bufferToSignalHex(secretBytes));
 
             return secretBytes;
         } catch (error) {
-            console.error('❌ Bob shared secret derivation failed:', error);
-            throw error;
         }
     };
 
@@ -1292,8 +997,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 exchangeResult
             };
         } catch (error) {
-            console.error("Error during Signal Protocol demonstration:", error);
-            throw error;
         }
     };
 
@@ -1366,8 +1069,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
     // Initialize Double Ratchet state from X3DH shared secret
     const initializeDoubleRatchet = async (sharedSecret, isInitiator, remotePublicKey = null) => {
-        console.log(`🔄 Initializing Double Ratchet (${isInitiator ? 'Initiator' : 'Responder'})`);
-        
         // Derive initial root key from X3DH shared secret
         const initialRootKey = await doubleRatchetHKDF(
             new Uint8Array(0), // Empty salt
@@ -1375,8 +1076,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             DOUBLE_RATCHET_INFO_ROOT_KEY,
             32
         );
-        
-        console.log('✓ Initial root key derived from X3DH secret');
         
         const state = {
             // Core ratchet state
@@ -1404,8 +1103,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         if (isInitiator) {
             // Initiator: Generate initial DH key pair and derive sending chain directly from root key
             // This ensures Bob can derive the same receiving chain from his root key
-            console.log('🔑 Generating initial DH key pair for initiator');
-            state.sendingDHKeyPair = await generateSignalKeyPair();
             
             // Derive initial sending chain directly from root key for first message
             // Bob will derive the same receiving chain from his root key
@@ -1418,17 +1115,11 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             
             state.rootKey = hkdfOutput.slice(0, 32);
             state.sendingChainKey = hkdfOutput.slice(32, 64);
-            console.log('✓ Initial sending chain derived directly from root key:', {
-                rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
                 sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
         } else {
             // Responder: Start with receiving mode, will derive receiving chain from root key on first message
-            console.log('📥 Responder initialized, waiting for first message');
-        }
         
-        console.log('✅ Double Ratchet state initialized successfully');
-        return state;
     };
 
     // Derive message key from chain key
@@ -1445,8 +1136,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
     // Perform DH ratchet step (when receiving new DH public key)
     const performDHRatchetStep = async (state, newRemotePublicKey) => {
-        console.log('🔄 Performing DH ratchet step');
-        
         // Save current receiving chain info for skipped messages
         state.previousChainLength = state.receivingMessageNumber;
         state.receivingMessageNumber = 0;
@@ -1466,8 +1155,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             // Keys may not be extractable - use placeholder for logging
             ourDHPublicKey = new Uint8Array(32).fill(0);
             remoteDHPublicKey = new Uint8Array(32).fill(0);
-            console.log('⚠️ Could not export keys for logging (non-extractable)');
-        }
         
         // Correct Double Ratchet DH ratchet step
         // The key insight: Alice and Bob must derive the SAME chain keys from the SAME DH operations
@@ -1481,8 +1168,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         const isResponderFirstReceive = !state.isInitiator && !state.receivingChainKey && state.receivingMessageNumber === 0;
         
         if (isResponderFirstReceive) {
-            console.log('🔄 First receive: matching initiator\'s direct root key derivation (responder only)');
-            
             // Alice derived: HKDF(empty_salt, rootKey, CHAIN_KEY_INFO) -> [newRootKey, sendingChain]
             // Bob must derive the exact same way to get the matching receiving chain
             const hkdfResult = await doubleRatchetHKDF(
@@ -1497,27 +1182,16 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             // Set receiving chain to match initiator's sending chain
             state.receivingChainKey = hkdfResult.slice(32, 64);
             
-            console.log('🔄 Receiving chain set to match initiator\'s sending chain:', {
-                receivingChainKeyHex: Array.from(new Uint8Array(state.receivingChainKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
                 updatedRootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
             
             // Generate our sending key pair for future messages
-            console.log('🔑 Generating DH key pair for responder\'s future sending');
-            state.sendingDHKeyPair = await generateSignalKeyPair();
             
             // Skip the DH calculation for receiving - we already set receivingChainKey above
             receivingDHOutput = null;
         } else if (state.sendingDHKeyPair) {
-            console.log('🔄 Deriving receiving chain from: DH(our_current_private, their_public)');
-            receivingDHOutput = await performSignalDH(
-                state.sendingDHKeyPair.privateKey,
-                newRemotePublicKey
-            );
         } else {
             // Fallback case - should not happen in normal operation
-            console.log('⚠️ Unexpected case: no sending DH key pair and not first receive');
-            state.sendingDHKeyPair = await generateSignalKeyPair();
             receivingDHOutput = await performSignalDH(
                 state.sendingDHKeyPair.privateKey,
                 newRemotePublicKey
@@ -1536,19 +1210,13 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             state.rootKey = hkdfReceiving.slice(0, 32);
             state.receivingChainKey = hkdfReceiving.slice(32, 64);
             
-            console.log('🔄 DH ratchet step - receiving chain established:', {
-                rootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
                 receivingChainKeyHex: Array.from(new Uint8Array(state.receivingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
         } else if (receivingDHOutput === null) {
-            console.log('🔄 Skipping receiving chain derivation - already set above');
-        }
         
         // Step 2: Generate NEW DH key pair and derive sending chain
         // This will be used for our future messages
         // CRITICAL: Always generate a NEW key pair for the DH ratchet step
-        console.log('🔑 Generating NEW DH key pair for ratchet step');
-        state.sendingDHKeyPair = await generateSignalKeyPair();
         state.sendingMessageNumber = 0;
         
         // Derive sending chain from our NEW DH key pair
@@ -1567,18 +1235,12 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         state.rootKey = hkdfSending.slice(0, 32);
         state.sendingChainKey = hkdfSending.slice(32, 64);
         
-        console.log('🔄 DH ratchet step - sending chain established:', {
-            newRootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
             sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
         });
         
-        console.log('✓ DH ratchet step completed');
-    };
 
     // Skip message keys for out-of-order messages
     const skipMessageKeys = async (state, until) => {
-        console.log(`⏭️ Skipping message keys from ${state.receivingMessageNumber} to ${until}`);
-        
         if (state.receivingChainKey && state.receivingMessageNumber < until) {
             if (until - state.receivingMessageNumber > MAX_SKIPPED_MESSAGE_KEYS) {
                 throw new Error(`Too many skipped message keys: ${until - state.receivingMessageNumber}`);
@@ -1598,8 +1260,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 chainKey = await deriveNextChainKey(chainKey);
                 state.receivingMessageNumber++;
                 
-                console.log(`📝 Saved skipped message key for ${keyId}`);
-            }
             
             state.receivingChainKey = chainKey;
         }
@@ -1607,8 +1267,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
     // Encrypt message using Double Ratchet
     const doubleRatchetEncrypt = async (state, plaintext) => {
-        console.log(`🔒 Encrypting message #${state.sendingMessageNumber} with Double Ratchet`);
-        
         if (!state.sendingChainKey) {
             throw new Error('No sending chain key available - cannot encrypt');
         }
@@ -1619,8 +1277,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         const dhPublicKeyBuffer = await exportSignalPublicKey(state.sendingDHKeyPair.publicKey);
         const dhPublicKeyBytes = new Uint8Array(dhPublicKeyBuffer);
         
-        console.log('🔑 Alice encryption - Chain and message keys:', {
-            chainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
             messageKeyHex: Array.from(messageKey).map(b => b.toString(16).padStart(2, '0')).join(''),
             sendingDHPublicKeyHex: Array.from(dhPublicKeyBytes).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join(''),
             messageNumber: state.sendingMessageNumber,
@@ -1640,8 +1296,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         const plaintextBytes = new TextEncoder().encode(plaintext);
         const iv = crypto.getRandomValues(new Uint8Array(12));
         
-        console.log('🔒 Attempting AES-GCM encryption with:', {
-            keyLength: messageKey.length,
             ivLength: iv.length,
             aadLength: aad.length,
             plaintextLength: plaintextBytes.length
@@ -1675,8 +1329,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         
         state.sendingMessageNumber++;
         
-        console.log(`✅ Message encrypted successfully (msg #${state.sendingMessageNumber - 1})`);
-        
         // Securely delete message key
         messageKey.fill(0);
         
@@ -1685,8 +1337,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
 
     // Decrypt message using Double Ratchet
     const doubleRatchetDecrypt = async (state, messageEnvelope) => {
-        console.log(`🔓 Decrypting message #${messageEnvelope.messageNumber} with Double Ratchet`);
-        
         const { dhPublicKey, messageNumber, previousChainLength, ciphertext, iv } = messageEnvelope;
         const dhPublicKeyHex = bufferToSignalHex(dhPublicKey);
         
@@ -1695,8 +1345,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         let messageKey = state.skippedMessageKeys.get(skippedKeyId);
         
         if (messageKey) {
-            console.log(`📋 Using skipped message key for message ${messageNumber}`);
-            state.skippedMessageKeys.delete(skippedKeyId);
         } else {
             // Check if this is a new DH ratchet step
             const currentDhKeyHex = state.receivingDHPublicKey ? 
@@ -1704,8 +1352,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 null;
             
             if (dhPublicKeyHex !== currentDhKeyHex) {
-                console.log('🔄 New DH public key detected, performing ratchet step');
-                
                 // Skip message keys for current chain if needed
                 await skipMessageKeys(state, state.receivingMessageNumber);
                 
@@ -1741,8 +1387,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 }
             }
             
-            console.log('🔑 Bob decryption - Chain and message keys:', {
-                originalChainKeyHex: Array.from(originalChainKey).map(b => b.toString(16).padStart(2, '0')).join(''),
                 messageKeyHex: Array.from(messageKey).map(b => b.toString(16).padStart(2, '0')).join(''),
                 newChainKeyHex: Array.from(new Uint8Array(state.receivingChainKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
                 receivingDHPublicKeyHex,
@@ -1767,8 +1411,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         );
         
         try {
-            console.log('🔓 Attempting AES-GCM decryption with:', {
-                keyLength: messageKey.length,
                 ivLength: iv.length,
                 aadLength: aad.length,
                 ciphertextLength: ciphertext.length
@@ -1782,15 +1424,11 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             
             const plaintextString = new TextDecoder().decode(plaintext);
             
-            console.log(`✅ Message decrypted successfully: "${plaintextString}"`);
-            
             // Securely delete message key
             messageKey.fill(0);
             
             return plaintextString;
         } catch (error) {
-            console.error('❌ Message decryption failed:', error);
-            throw new Error('Message decryption failed - authentication failed');
         }
     };
 
@@ -1836,15 +1474,11 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         });
         
         if (keysToDelete.length > 0) {
-            console.log(`🧹 Cleaned up ${keysToDelete.length} old skipped message keys`);
-        }
     };
 
     // Demonstrate Double Ratchet conversation
     const demonstrateDoubleRatchet = async () => {
         try {
-            console.log('🚀 Starting Double Ratchet demonstration...');
-            
             // Initialize X3DH for shared secret
             const alice = await initializeSignalUser("Alice");
             const bob = await initializeSignalUser("Bob");
@@ -1863,8 +1497,6 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 false
             );
             
-            console.log('📊 Double Ratchet states initialized');
-            
             // Simulate conversation
             const conversation = [];
             
@@ -1873,17 +1505,11 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             conversation.push({ from: 'Alice', envelope: msg1 });
             
             const decrypted1 = await doubleRatchetDecrypt(bobState, msg1);
-            console.log(`Bob decrypted: "${decrypted1}"`);
-            
             // Bob replies (he now has sending chain from DH ratchet)
             const msg2 = await doubleRatchetEncrypt(bobState, "Hi Alice! The Double Ratchet is working perfectly! 🎉");
             conversation.push({ from: 'Bob', envelope: msg2 });
             
             const decrypted2 = await doubleRatchetDecrypt(aliceState, msg2);
-            console.log(`Alice decrypted: "${decrypted2}"`);
-            
-            console.log('✅ Double Ratchet basic exchange completed successfully');
-            
             const result = {
                 success: true,
                 aliceState: await serializeDoubleRatchetState(aliceState),
@@ -1898,12 +1524,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 }
             };
             
-            console.log('✅ Double Ratchet demonstration completed successfully');
-            return result;
             
         } catch (error) {
-            console.error('❌ Double Ratchet demonstration failed:', error);
-            throw error;
         }
     };
 

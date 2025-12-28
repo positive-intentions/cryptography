@@ -57,8 +57,6 @@ const RSAKeyGenerationDemo = () => {
       setKeyPair(keys);
       setGenerationTime((endTime - startTime).toFixed(2));
     } catch (error) {
-      console.error('Error generating keys:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -180,8 +178,6 @@ const RSAEncryptionDemo = () => {
       setBob(prev => ({ ...prev, keyPair: bobKeys }));
       setStep(1);
     } catch (error) {
-      console.error('Error generating keys:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -197,8 +193,6 @@ const RSAEncryptionDemo = () => {
       setAlice(prev => ({ ...prev, encrypted }));
       setStep(2);
     } catch (error) {
-      console.error('Error encrypting message:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -213,8 +207,6 @@ const RSAEncryptionDemo = () => {
       
       setBob(prev => ({ ...prev, decrypted }));
     } catch (error) {
-      console.error('Error decrypting message:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -392,8 +384,6 @@ const RSALimitationsDemo = () => {
       const keys = await generateKeyPair();
       setKeyPair(keys);
     } catch (error) {
-      console.error('Error generating keys:', error);
-    } finally {
       setLoading(false);
     }
   };

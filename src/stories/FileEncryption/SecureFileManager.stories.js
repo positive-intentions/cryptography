@@ -780,8 +780,6 @@ const DragDropFileEncryptionDemo = () => {
         setProgress(((i + 1) / fileList.length) * 100);
       }
     } catch (error) {
-      console.error('Encryption error:', error);
-    } finally {
       setLoading(false);
       setProgress(0);
     }

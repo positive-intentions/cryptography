@@ -270,8 +270,6 @@ if (preKeyStore.count() < 50) {
   preKeyStore.storePreKeys(newPreKeys)
   server.uploadPreKeys(newPreKeys.map(k => k.public))
   
-  console.log("Pre-key pool replenished")
-}`}
                                         language="javascript"
                                     />
                                     <List dense sx={{ mt: 1 }}>

@@ -39,8 +39,6 @@ const RandomStringDemo = () => {
       const random = await randomString(length, customSalt || undefined);
       setResult(random);
     } catch (error) {
-      console.error('Error generating random string:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -147,8 +145,6 @@ const MultipleRandomDemo = () => {
       }
       setResults(newResults);
     } catch (error) {
-      console.error('Error generating random strings:', error);
-    } finally {
       setLoading(false);
     }
   };

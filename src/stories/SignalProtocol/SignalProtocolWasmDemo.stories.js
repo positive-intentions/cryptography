@@ -240,10 +240,6 @@ const SignalProtocolWasmDemo = () => {
             
             setWasmInstance(wasmWrapper);
             setWasmAvailable(true);
-            console.log('Real WASM module loaded successfully!');
-        } catch (error) {
-            console.warn('Real WASM module failed to load, falling back to mock:', error);
-            // Fall back to mock implementation
             const wasmModule = mockWasmImplementation;
             await wasmModule.initialize();
             setWasmInstance(wasmModule);
@@ -272,89 +268,15 @@ const SignalProtocolWasmDemo = () => {
     };
 
     const runWasmDemo = async () => {
-        console.log('🦀 Running WASM-based Signal Protocol demonstration...');
-
         try {
             // Generate keys using WASM
-            console.log('🔑 Step 1: Generating Alice identity key...');
-            const aliceIdentity = await wasmInstance.generateIdentityKeyPair();
-            console.log('✅ Alice identity generated:', aliceIdentity);
-            
-            console.log('🔑 Step 2: Generating Bob identity key...');
-            const bobIdentity = await wasmInstance.generateIdentityKeyPair();
-            console.log('✅ Bob identity generated:', bobIdentity);
-            
-            console.log('🔑 Step 3: Generating Bob signed prekey...');
-            const bobSignedPrekey = await wasmInstance.generateSignedPrekey();
-            console.log('✅ Bob signed prekey generated:', bobSignedPrekey);
-            
-            console.log('🔑 Step 4: Generating Bob one-time prekey...');
-            const bobOneTimePrekey = await wasmInstance.generateOneTimePrekey();
-            console.log('✅ Bob one-time prekey generated:', bobOneTimePrekey);
-            
-            console.log('🔑 Step 5: Generating Alice ephemeral key...');
-            const aliceEphemeral = await wasmInstance.generateEphemeralKeyPair();
-            console.log('✅ Alice ephemeral key generated:', aliceEphemeral);
-
             // Create signature
-            console.log('✍️ Step 6: Creating signature...');
-            const signedPrekeySignature = await wasmInstance.signData(
-                bobIdentity.privateKey,
-                bobSignedPrekey.publicKey
-            );
-            console.log('✅ Signature created, length:', signedPrekeySignature.length);
-
             // Perform X3DH
-            console.log('🤝 Step 7: Alice initiating X3DH...');
-            const aliceResult = await wasmInstance.x3dhInitiate(
-                aliceIdentity.privateKey,
-                aliceEphemeral.privateKey,
-                bobIdentity.publicKey,
-                bobSignedPrekey.publicKey,
-                bobOneTimePrekey.publicKey
-            );
-            console.log('✅ Alice X3DH result:', aliceResult);
-
-            console.log('🤝 Step 8: Bob responding to X3DH...');
-            const bobResult = await wasmInstance.x3dhRespond(
-                bobIdentity.privateKey,
-                bobSignedPrekey.privateKey,
-                bobOneTimePrekey.privateKey,
-                aliceIdentity.publicKey,
-                aliceEphemeral.publicKey
-            );
-            console.log('✅ Bob X3DH result:', bobResult);
-
             // Test message encryption
-            console.log('📝 Step 9: Preparing message encryption...');
-            const message = 'Hello from WASM Signal Protocol! 🦀';
             const plaintextBytes = new TextEncoder().encode(message);
-            console.log('📝 Message to encrypt:', message, 'bytes:', plaintextBytes);
-            
-            console.log('🔒 Step 10: Encrypting message...');
-            const encrypted = await wasmInstance.encryptMessage(aliceResult.sharedSecret, plaintextBytes, 1);
-            console.log('✅ Message encrypted:', encrypted);
-            
-            console.log('🔓 Step 11: Decrypting message...');
-            const decrypted = await wasmInstance.decryptMessage(
-                bobResult.sharedSecret,
-                encrypted.ciphertext,
-                encrypted.messageKey,
-                1
-            );
-            console.log('✅ Message decrypted:', decrypted);
-            console.log('✅ Decrypted text:', new TextDecoder().decode(decrypted));
 
-            console.log('🔍 Step 12: Comparing shared secrets...');
-            const aliceSecretHex = wasmInstance.bufferToHex(aliceResult.sharedSecret);
             const bobSecretHex = wasmInstance.bufferToHex(bobResult.sharedSecret);
             const success = aliceSecretHex === bobSecretHex;
-            console.log('Alice secret:', aliceSecretHex);
-            console.log('Bob secret:', bobSecretHex);
-            console.log('Secrets match:', success);
-
-            console.log('🎯 Step 13: Setting results...');
-            const results = {
                 success,
                 implementation: 'WASM',
                 aliceSecret: aliceSecretHex,
@@ -366,21 +288,13 @@ const SignalProtocolWasmDemo = () => {
                 encrypted: encrypted.ciphertext.length,
                 signature: signedPrekeySignature.length
             };
-            console.log('Results to set:', results);
-            
             setResults(results);
-            console.log('✅ Results set successfully!');
-            
         } catch (error) {
-            console.error('❌ WASM Demo Failed at some step:', error);
-            console.error('Error stack:', error.stack);
             throw error; // Re-throw to trigger the error handling in handleBasicDemo
         }
     };
 
     const runJavaScriptDemo = async () => {
-        console.log('🟨 Running JavaScript-based Signal Protocol demonstration...');
-
         // Use existing JavaScript implementation
         const alice = await crypto.initializeSignalUser("Alice");
         const bob = await crypto.initializeSignalUser("Bob");
@@ -432,16 +346,12 @@ const SignalProtocolWasmDemo = () => {
             };
 
             // Test JavaScript performance
-            console.log('📊 Testing JavaScript performance...');
-            const jsStartTime = performance.now();
             await runJavaScriptDemo();
             const jsEndTime = performance.now();
             results.javascript.totalTime = jsEndTime - jsStartTime;
 
             // Test WASM performance (if available)
             if (wasmAvailable && wasmInstance) {
-                console.log('📊 Testing WASM performance...');
-                const wasmStartTime = performance.now();
                 await runWasmDemo();
                 const wasmEndTime = performance.now();
                 results.wasm.totalTime = wasmEndTime - wasmStartTime;
@@ -1112,8 +1022,6 @@ const PerformanceFocusDemo = () => {
             setWasmInstance(wasmWrapper);
             setWasmAvailable(true);
         } catch (error) {
-            console.warn('Real WASM module failed to load, using mock:', error);
-            setWasmInstance(mockWasmImplementation);
             setWasmAvailable(false);
         }
     };
@@ -1132,12 +1040,8 @@ const PerformanceFocusDemo = () => {
             };
 
             const iterations = 10;
-            console.log(`🔬 Running ${iterations} iterations of each benchmark...`);
-
             // Benchmark JavaScript Implementation
             if (crypto) {
-                console.log('📊 Benchmarking JavaScript operations...');
-                
                 // Key Generation Benchmark
                 let start = performance.now();
                 for (let i = 0; i < iterations; i++) {
@@ -1191,13 +1095,9 @@ const PerformanceFocusDemo = () => {
                 }
                 benchmarkResults.doubleRatchet.js = (performance.now() - start) / iterations;
 
-                console.log('✅ JavaScript benchmarks completed');
-            }
 
             // Benchmark WASM Implementation
             if (wasmInstance) {
-                console.log('📊 Benchmarking WASM operations...');
-
                 // Key Generation Benchmark
                 let start = performance.now();
                 for (let i = 0; i < iterations; i++) {
@@ -1254,8 +1154,6 @@ const PerformanceFocusDemo = () => {
                     benchmarkResults.doubleRatchet.wasm = (performance.now() - start) / iterations;
                 }
 
-                console.log('✅ WASM benchmarks completed');
-            }
 
             setResults({
                 ...benchmarkResults,
@@ -1265,8 +1163,6 @@ const PerformanceFocusDemo = () => {
             });
             
         } catch (err) {
-            console.error('Benchmark error:', err);
-            setError(err.message);
         } finally {
             setLoading(false);
         }

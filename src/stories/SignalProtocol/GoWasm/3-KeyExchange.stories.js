@@ -188,10 +188,6 @@ const KeyExchangeStory = () => {
             // DH3: Alice ephemeral × Bob signed pre-key
             // DH4: Alice ephemeral × Bob one-time pre-key (optional)
             
-            console.log('📦 Pre-key bundles prepared:');
-            console.log('Bob bundle:', bobBundle);
-            console.log('Alice bundle:', aliceBundle);
-            console.log('✅ X3DH key agreement simulated successfully');
             
             setSessionEstablished(true);
             setActiveStep(3);

@@ -60,8 +60,6 @@ const DeterministicDemo = () => {
       
       setResults(newResults);
     } catch (error) {
-      console.error('Error generating deterministic values:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -160,8 +158,6 @@ const ComparisonDemo = () => {
       
       setComparison({ set1, set2 });
     } catch (error) {
-      console.error('Error in comparison:', error);
-    } finally {
       setLoading(false);
     }
   };

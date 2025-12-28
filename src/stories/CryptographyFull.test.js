@@ -862,8 +862,6 @@ describe("Cryptography Story-like Tests", () => {
               
               expect(protocolResult).toBeDefined();
             } catch (error) {
-              console.error("Signal test error:", error);
-            }
           };
           
           runSignalTests();
@@ -885,8 +883,6 @@ describe("Cryptography Story-like Tests", () => {
     
     // Verify all Signal functions were called with correct algorithms
     const generateKeyCalls = globalThis.crypto.subtle.generateKey.mock.calls;
-    console.log('All generateKey calls:', generateKeyCalls.map(call => ({
-      algorithm: call[0]?.name,
       extractable: call[1],
       usages: call[2]
     })));
@@ -963,8 +959,6 @@ describe("Cryptography Story-like Tests", () => {
               crypto.createSecureFileDownload(blobLike, "test.dat");
               
             } catch (error) {
-              console.error("File test error:", error);
-            }
           };
           
           runTests();
@@ -1049,8 +1043,6 @@ describe("Cryptography Story-like Tests", () => {
               );
               
             } catch (error) {
-              console.error("Test error:", error);
-            }
           };
           
           runTests();
@@ -1370,12 +1362,8 @@ describe("Cryptography Story-like Tests", () => {
                 expect(result.messages).toBeDefined();
               } catch (error) {
                 // If it still fails, that's OK - log but don't fail test
-                console.log("demonstrateSignalProtocol test skipped:", error.message);
-              }
               
             } catch (error) {
-              console.error("Signal edge case test error:", error);
-            }
           };
           
           runTests();

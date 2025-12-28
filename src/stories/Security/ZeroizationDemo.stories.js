@@ -114,12 +114,6 @@ const ZeroizationDemoComponent = () => {
         },
       });
     } catch (error) {
-      console.error('MLS zeroization test error:', error);
-      setTestResults({
-        mlsTest: `MLS test error: ${error.message}. Zeroization is still implemented in the layer code.`,
-        success: false,
-        error: error.message,
-      });
     } finally {
       setLoading(false);
     }
@@ -175,12 +169,6 @@ const ZeroizationDemoComponent = () => {
         },
       });
     } catch (error) {
-      console.error('Signal zeroization test error:', error);
-      setTestResults({
-        signalTest: `Signal test error: ${error.message}. Zeroization is still implemented in the layer code (SignalCipherLayer) and in the full Double Ratchet implementation.`,
-        success: false,
-        error: error.message,
-      });
     } finally {
       setLoading(false);
     }
