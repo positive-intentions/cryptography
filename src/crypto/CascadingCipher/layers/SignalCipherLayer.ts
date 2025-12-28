@@ -5,12 +5,8 @@
  * Uses Web Crypto API by default, with optional WASM fallback for performance.
  */
 
-import {
-  CipherLayer,
-  EncryptedPayload,
-  CipherLayerError,
-} from '../types';
-import { Zeroization } from '../../utils/zeroization';
+import { CipherLayer, EncryptedPayload, CipherLayerError } from "../types";
+import { Zeroization } from "../../utils/zeroization";
 
 /**
  * Keys for Signal encryption
@@ -30,8 +26,8 @@ export interface SignalKeys {
  * Optionally uses WASM module for potential performance improvements.
  */
 export class SignalCipherLayer implements CipherLayer {
-  readonly name = 'X3DH-DoubleRatchet';
-  readonly version = '1.0.0';
+  readonly name = "X3DH-DoubleRatchet";
+  readonly version = "1.0.0";
 
   private wasmModule: any = null;
   private doubleRatchetState: any = null;
@@ -81,12 +77,16 @@ export class SignalCipherLayer implements CipherLayer {
       if (!this.wasmModule && config?.preferWasm !== false) {
         try {
           // Load WASM bindings from federated signal_protocol module
-          const wasmBindings = await import('signal_protocol/WasmBindings').catch(() => null);
+          const wasmBindings = await import(
+            "signal_protocol/WasmBindings"
+          ).catch(() => null);
 
           if (wasmBindings) {
             // Load the WASM module using the federated bindings
-            const wasmModule = await wasmBindings.loadWasmModule().catch(() => null);
-            
+            const wasmModule = await wasmBindings
+              .loadWasmModule()
+              .catch(() => null);
+
             if (wasmModule) {
               this.wasmModule = wasmModule;
               this.useWasm = true;
@@ -119,25 +119,25 @@ export class SignalCipherLayer implements CipherLayer {
     key: Uint8Array,
     nonce: Uint8Array,
     data: Uint8Array,
-    aad: Uint8Array
+    aad: Uint8Array,
   ): Promise<Uint8Array> {
     let keyCopy: Uint8Array | null = null;
     try {
       // Create a copy of key for zeroization (key may be reused)
       keyCopy = new Uint8Array(key);
-      
+
       const cryptoKey = await crypto.subtle.importKey(
-        'raw',
+        "raw",
         keyCopy,
-        { name: 'AES-GCM' },
+        { name: "AES-GCM" },
         false,
-        ['encrypt']
+        ["encrypt"],
       );
 
       const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: nonce, additionalData: aad },
+        { name: "AES-GCM", iv: nonce, additionalData: aad },
         cryptoKey,
-        data
+        data,
       );
 
       return new Uint8Array(encrypted);
@@ -156,25 +156,25 @@ export class SignalCipherLayer implements CipherLayer {
     key: Uint8Array,
     nonce: Uint8Array,
     data: Uint8Array,
-    aad: Uint8Array
+    aad: Uint8Array,
   ): Promise<Uint8Array> {
     let keyCopy: Uint8Array | null = null;
     try {
       // Create a copy of key for zeroization (key may be reused)
       keyCopy = new Uint8Array(key);
-      
+
       const cryptoKey = await crypto.subtle.importKey(
-        'raw',
+        "raw",
         keyCopy,
-        { name: 'AES-GCM' },
+        { name: "AES-GCM" },
         false,
-        ['decrypt']
+        ["decrypt"],
       );
 
       const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: nonce, additionalData: aad },
+        { name: "AES-GCM", iv: nonce, additionalData: aad },
         cryptoKey,
-        data
+        data,
       );
 
       return new Uint8Array(decrypted);
@@ -200,9 +200,9 @@ export class SignalCipherLayer implements CipherLayer {
 
       if (!state) {
         throw new CipherLayerError(
-          'Double Ratchet state is required',
+          "Double Ratchet state is required",
           this.name,
-          'encrypt'
+          "encrypt",
         );
       }
 
@@ -222,7 +222,7 @@ export class SignalCipherLayer implements CipherLayer {
             processingTime: endTime - startTime,
             metadata: {
               messageNumber: result.message_number(),
-              sessionId: keys.sessionId || 'default',
+              sessionId: keys.sessionId || "default",
             },
           },
           parameters: {
@@ -246,7 +246,9 @@ export class SignalCipherLayer implements CipherLayer {
       const previousChainLength = state.previousChainLength || 0;
 
       // Generate message key (simplified - real implementation uses HKDF)
-      messageKey = state.sendingChainKey ? new Uint8Array(state.sendingChainKey) : crypto.getRandomValues(new Uint8Array(32));
+      messageKey = state.sendingChainKey
+        ? new Uint8Array(state.sendingChainKey)
+        : crypto.getRandomValues(new Uint8Array(32));
       nonce = crypto.getRandomValues(new Uint8Array(12));
 
       // Create AAD
@@ -257,7 +259,12 @@ export class SignalCipherLayer implements CipherLayer {
       ]);
 
       // Encrypt
-      const encrypted = await this.webCryptoEncrypt(messageKey, nonce, data, aad);
+      const encrypted = await this.webCryptoEncrypt(
+        messageKey,
+        nonce,
+        data,
+        aad,
+      );
 
       // Prepend nonce to ciphertext
       const ciphertext = new Uint8Array(nonce.length + encrypted.length);
@@ -280,7 +287,7 @@ export class SignalCipherLayer implements CipherLayer {
           processingTime: endTime - startTime,
           metadata: {
             messageNumber,
-            sessionId: keys.sessionId || 'default',
+            sessionId: keys.sessionId || "default",
           },
         },
         parameters: {
@@ -295,29 +302,30 @@ export class SignalCipherLayer implements CipherLayer {
       Zeroization.zeroizeAll(messageKey, nonce, aad);
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       // Check for sensitive data (sessionId, state info) in error message
       const sessionId = keys.sessionId;
-      const hasSensitiveData = 
+      const hasSensitiveData =
         (sessionId && errorMessage.includes(sessionId)) ||
-        errorMessage.includes('sessionId') ||
-        errorMessage.includes('state') ||
-        errorMessage.includes('ratchet');
+        errorMessage.includes("sessionId") ||
+        errorMessage.includes("state") ||
+        errorMessage.includes("ratchet");
 
       if (hasSensitiveData) {
         throw new CipherLayerError(
-          'Signal encryption failed',
+          "Signal encryption failed",
           this.name,
-          'encrypt',
-          error as Error
+          "encrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `Signal encryption failed: ${errorMessage}`,
         this.name,
-        'encrypt',
-        error as Error
+        "encrypt",
+        error as Error,
       );
     } finally {
       // Always zeroize sensitive data
@@ -328,7 +336,10 @@ export class SignalCipherLayer implements CipherLayer {
   /**
    * Decrypt data using Signal Protocol Double Ratchet
    */
-  async decrypt(payload: EncryptedPayload, keys: SignalKeys): Promise<Uint8Array> {
+  async decrypt(
+    payload: EncryptedPayload,
+    keys: SignalKeys,
+  ): Promise<Uint8Array> {
     let messageKey: Uint8Array | null = null;
     let nonce: Uint8Array | null = null;
     let aad: Uint8Array | null = null;
@@ -339,9 +350,9 @@ export class SignalCipherLayer implements CipherLayer {
 
       if (!state) {
         throw new CipherLayerError(
-          'Double Ratchet state is required',
+          "Double Ratchet state is required",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -352,11 +363,14 @@ export class SignalCipherLayer implements CipherLayer {
           payload.parameters.publicKey,
           payload.parameters.messageNumber,
           payload.parameters.previousChainLength,
-          payload.ciphertext
+          payload.ciphertext,
         );
 
         // Decrypt using Double Ratchet
-        const plaintext = this.wasmModule.double_ratchet_decrypt(state, message);
+        const plaintext = this.wasmModule.double_ratchet_decrypt(
+          state,
+          message,
+        );
         return plaintext;
       }
 
@@ -371,9 +385,9 @@ export class SignalCipherLayer implements CipherLayer {
       // Extract nonce and encrypted data
       if (ciphertext.length < 12) {
         throw new CipherLayerError(
-          'Ciphertext too short',
+          "Ciphertext too short",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -382,7 +396,9 @@ export class SignalCipherLayer implements CipherLayer {
 
       // Get message key (simplified - real implementation uses HKDF chain)
       const chainKey = state.receivingChainKey || state.sendingChainKey;
-      messageKey = chainKey ? new Uint8Array(chainKey) : crypto.getRandomValues(new Uint8Array(32));
+      messageKey = chainKey
+        ? new Uint8Array(chainKey)
+        : crypto.getRandomValues(new Uint8Array(32));
 
       // Recreate AAD
       aad = new Uint8Array([
@@ -392,7 +408,12 @@ export class SignalCipherLayer implements CipherLayer {
       ]);
 
       // Decrypt
-      const plaintext = await this.webCryptoDecrypt(messageKey, nonce, encryptedData, aad);
+      const plaintext = await this.webCryptoDecrypt(
+        messageKey,
+        nonce,
+        encryptedData,
+        aad,
+      );
 
       // Create a copy for return (before zeroization)
       const plaintextCopy = new Uint8Array(plaintext);
@@ -402,29 +423,30 @@ export class SignalCipherLayer implements CipherLayer {
       Zeroization.zeroizeAll(messageKey, nonce, aad, encryptedData);
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       // Check for sensitive data (sessionId, state info) in error message
       const sessionId = keys.sessionId;
-      const hasSensitiveData = 
+      const hasSensitiveData =
         (sessionId && errorMessage.includes(sessionId)) ||
-        errorMessage.includes('sessionId') ||
-        errorMessage.includes('state') ||
-        errorMessage.includes('ratchet');
+        errorMessage.includes("sessionId") ||
+        errorMessage.includes("state") ||
+        errorMessage.includes("ratchet");
 
       if (hasSensitiveData) {
         throw new CipherLayerError(
-          'Signal decryption failed',
+          "Signal decryption failed",
           this.name,
-          'decrypt',
-          error as Error
+          "decrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `Signal decryption failed: ${errorMessage}`,
         this.name,
-        'decrypt',
-        error as Error
+        "decrypt",
+        error as Error,
       );
     } finally {
       // Always zeroize sensitive data

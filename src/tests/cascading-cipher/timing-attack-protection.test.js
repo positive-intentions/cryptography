@@ -10,7 +10,7 @@
  * Uses statistical analysis to verify timing consistency.
  */
 
-describe('Timing Attack Protection', () => {
+describe("Timing Attack Protection", () => {
   let AESCipherLayer;
   let DHCipherLayer;
   let MLSCipherLayer;
@@ -19,24 +19,28 @@ describe('Timing Attack Protection', () => {
 
   beforeEach(async () => {
     // Setup REAL Web Crypto API
-    const { webcrypto } = await import('crypto');
+    const { webcrypto } = await import("crypto");
     global.crypto = webcrypto;
     globalThis.crypto = webcrypto;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.crypto = webcrypto;
     }
     crypto = webcrypto;
 
     // Dynamic imports
     try {
-      const aesModule = await import('../../crypto/CascadingCipher/layers/AESCipherLayer.ts');
+      const aesModule = await import(
+        "../../crypto/CascadingCipher/layers/AESCipherLayer.ts"
+      );
       AESCipherLayer = aesModule.AESCipherLayer;
     } catch (e) {
       AESCipherLayer = null;
     }
 
     try {
-      const dhModule = await import('../../crypto/CascadingCipher/layers/DHCipherLayer.ts');
+      const dhModule = await import(
+        "../../crypto/CascadingCipher/layers/DHCipherLayer.ts"
+      );
       DHCipherLayer = dhModule.DHCipherLayer;
     } catch (e) {
       DHCipherLayer = null;
@@ -46,7 +50,9 @@ describe('Timing Attack Protection', () => {
     // Import happens in the test where it's needed
 
     try {
-      const signalModule = await import('../../crypto/CascadingCipher/layers/SignalCipherLayer.ts');
+      const signalModule = await import(
+        "../../crypto/CascadingCipher/layers/SignalCipherLayer.ts"
+      );
       SignalCipherLayer = signalModule.SignalCipherLayer;
     } catch (e) {
       SignalCipherLayer = null;
@@ -62,7 +68,7 @@ describe('Timing Attack Protection', () => {
     for (let i = 0; i < warmupRuns; i++) {
       try {
         const result = operation();
-        if (result && typeof result.then === 'function') {
+        if (result && typeof result.then === "function") {
           await result;
         }
       } catch (e) {
@@ -77,7 +83,7 @@ describe('Timing Attack Protection', () => {
       try {
         // If operation returns a promise, await it; otherwise call it directly
         const result = operation();
-        if (result && typeof result.then === 'function') {
+        if (result && typeof result.then === "function") {
           await result;
         }
       } catch (e) {
@@ -109,21 +115,21 @@ describe('Timing Attack Protection', () => {
   function calculateRobustCV(timings) {
     const sorted = [...timings].sort((a, b) => a - b);
     const q1 = sorted[Math.floor(sorted.length / 4)];
-    const q3 = sorted[Math.floor(sorted.length * 3 / 4)];
+    const q3 = sorted[Math.floor((sorted.length * 3) / 4)];
     const median = sorted[Math.floor(sorted.length / 2)];
     const iqr = q3 - q1;
     return iqr / median; // IQR-based coefficient of variation
   }
 
-  describe('AESCipherLayer timing consistency', () => {
-    test('should have consistent decryption timing for valid vs invalid ciphertext', async () => {
+  describe("AESCipherLayer timing consistency", () => {
+    test("should have consistent decryption timing for valid vs invalid ciphertext", async () => {
       if (!AESCipherLayer) {
-        throw new Error('AESCipherLayer not available - test cannot run');
+        throw new Error("AESCipherLayer not available - test cannot run");
       }
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'test-password' };
-      const plaintext = new TextEncoder().encode('Test message');
+      const keys = { password: "test-password" };
+      const plaintext = new TextEncoder().encode("Test message");
 
       // Encrypt valid data
       const encrypted = await layer.encrypt(plaintext, keys);
@@ -138,7 +144,7 @@ describe('Timing Attack Protection', () => {
       });
 
       // Create invalid ciphertext (wrong password)
-      const invalidKeys = { password: 'wrong-password' };
+      const invalidKeys = { password: "wrong-password" };
 
       // Measure invalid decryption timing
       const invalidTimings = await measureTiming(async () => {
@@ -158,21 +164,24 @@ describe('Timing Attack Protection', () => {
       expect(variance).toBeLessThan(0.75); // 75% variance threshold (more lenient for JS timing)
     });
 
-    test('should have consistent encryption timing', async () => {
+    test("should have consistent encryption timing", async () => {
       if (!AESCipherLayer) {
-        throw new Error('AESCipherLayer not available - test cannot run');
+        throw new Error("AESCipherLayer not available - test cannot run");
       }
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'test-password' };
+      const keys = { password: "test-password" };
 
       // Measure timing for different plaintexts
       const timings1 = await measureTiming(async () => {
-        await layer.encrypt(new TextEncoder().encode('Short'), keys);
+        await layer.encrypt(new TextEncoder().encode("Short"), keys);
       });
 
       const timings2 = await measureTiming(async () => {
-        await layer.encrypt(new TextEncoder().encode('Much longer plaintext message'), keys);
+        await layer.encrypt(
+          new TextEncoder().encode("Much longer plaintext message"),
+          keys,
+        );
       });
 
       // Timing may vary with data size, but should be relatively consistent
@@ -182,21 +191,23 @@ describe('Timing Attack Protection', () => {
     }, 120000); // 2 minute timeout (increased sample size requires more time)
   });
 
-  describe('DHCipherLayer timing consistency', () => {
-    test('should have consistent decryption timing', async () => {
+  describe("DHCipherLayer timing consistency", () => {
+    test("should have consistent decryption timing", async () => {
       if (!DHCipherLayer) {
-        throw new Error('DHCipherLayer not available - test cannot run');
+        throw new Error("DHCipherLayer not available - test cannot run");
       }
 
       // Generate DH key pair
       const keyPair = await crypto.subtle.generateKey(
-        { name: 'ECDH', namedCurve: 'P-256' },
+        { name: "ECDH", namedCurve: "P-256" },
         true,
-        ['deriveKey', 'deriveBits']
+        ["deriveKey", "deriveBits"],
       );
 
       // Export public key as Uint8Array (not ArrayBuffer)
-      const publicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', keyPair.publicKey));
+      const publicKeyRaw = new Uint8Array(
+        await crypto.subtle.exportKey("raw", keyPair.publicKey),
+      );
 
       const layer = new DHCipherLayer();
       const keys = {
@@ -204,7 +215,7 @@ describe('Timing Attack Protection', () => {
         publicKey: publicKeyRaw,
       };
 
-      const plaintext = new TextEncoder().encode('Test message');
+      const plaintext = new TextEncoder().encode("Test message");
 
       // Encrypt
       const encrypted = await layer.encrypt(plaintext, keys);
@@ -220,11 +231,13 @@ describe('Timing Attack Protection', () => {
 
       // Create invalid keys
       const invalidKeyPair = await crypto.subtle.generateKey(
-        { name: 'ECDH', namedCurve: 'P-256' },
+        { name: "ECDH", namedCurve: "P-256" },
         true,
-        ['deriveKey', 'deriveBits']
+        ["deriveKey", "deriveBits"],
       );
-      const invalidPublicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', invalidKeyPair.publicKey));
+      const invalidPublicKeyRaw = new Uint8Array(
+        await crypto.subtle.exportKey("raw", invalidKeyPair.publicKey),
+      );
 
       const invalidKeys = {
         privateKey: invalidKeyPair.privateKey,
@@ -245,18 +258,18 @@ describe('Timing Attack Protection', () => {
     });
   });
 
-  describe('Key derivation timing consistency', () => {
-    test('should have consistent Scrypt timing', async () => {
+  describe("Key derivation timing consistency", () => {
+    test("should have consistent Scrypt timing", async () => {
       if (!AESCipherLayer) {
-        throw new Error('AESCipherLayer not available - test cannot run');
+        throw new Error("AESCipherLayer not available - test cannot run");
       }
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'test-password' };
+      const keys = { password: "test-password" };
 
       // Measure timing for key derivation (happens during encrypt)
       const timings = await measureTiming(async () => {
-        await layer.encrypt(new TextEncoder().encode('Test'), keys);
+        await layer.encrypt(new TextEncoder().encode("Test"), keys);
       });
 
       // Calculate standard deviation
@@ -265,9 +278,9 @@ describe('Timing Attack Protection', () => {
       const sorted = [...timings].sort((a, b) => a - b);
       const median = sorted[Math.floor(sorted.length / 2)];
       const q1 = sorted[Math.floor(sorted.length / 4)];
-      const q3 = sorted[Math.floor(sorted.length * 3 / 4)];
+      const q3 = sorted[Math.floor((sorted.length * 3) / 4)];
       const iqr = q3 - q1;
-      
+
       // Coefficient of variation using IQR instead of std dev (more robust)
       // IQR is less sensitive to outliers than standard deviation
       // Scrypt timing can vary significantly due to CPU load and system resources
@@ -277,38 +290,42 @@ describe('Timing Attack Protection', () => {
     });
   });
 
-  describe('MLSCipherLayer timing consistency', () => {
-    test('should have consistent encryption/decryption timing', async () => {
+  describe("MLSCipherLayer timing consistency", () => {
+    test("should have consistent encryption/decryption timing", async () => {
       // Import MLS components using exact same pattern as mls-cipher-layer.test.js
       // This test verifies timing consistency for MLS encryption/decryption
       let MLSCipherLayerLocal;
       let MLSManager;
 
       // Import MLSManager first (will be mocked by Jest moduleNameMapper)
-      const mlsManagerModule = await import('../../crypto/MLS/MLSManager.tsx');
+      const mlsManagerModule = await import("../../crypto/MLS/MLSManager.tsx");
       MLSManager = mlsManagerModule.MLSManager;
 
       if (!MLSManager) {
-        throw new Error('MLSManager mock not available - check jest.config.js moduleNameMapper');
+        throw new Error(
+          "MLSManager mock not available - check jest.config.js moduleNameMapper",
+        );
       }
 
       // Import MLSCipherLayer (depends on MLSManager)
-      const layerModule = await import('../../crypto/CascadingCipher/layers/MLSCipherLayer.ts');
+      const layerModule = await import(
+        "../../crypto/CascadingCipher/layers/MLSCipherLayer.ts"
+      );
       MLSCipherLayerLocal = layerModule.MLSCipherLayer;
 
       if (!MLSCipherLayerLocal) {
-        throw new Error('MLSCipherLayer not available - import failed');
+        throw new Error("MLSCipherLayer not available - import failed");
       }
 
       // Setup MLS group using mock
-      const manager = new MLSManager('test@example.com');
+      const manager = new MLSManager("test@example.com");
       await manager.initialize();
-      const groupId = 'test-group';
+      const groupId = "test-group";
       await manager.createGroup(groupId);
 
       const layer = new MLSCipherLayerLocal(manager, groupId);
       const keys = { mlsManager: manager, groupId };
-      const plaintext = new TextEncoder().encode('Test message');
+      const plaintext = new TextEncoder().encode("Test message");
 
       // Encrypt
       const encrypted = await layer.encrypt(plaintext, keys);
@@ -321,7 +338,7 @@ describe('Timing Attack Protection', () => {
       // Create invalid encrypted payload (wrong group)
       const invalidEncrypted = {
         ...encrypted,
-        parameters: { ...encrypted.parameters, groupId: 'wrong-group' }
+        parameters: { ...encrypted.parameters, groupId: "wrong-group" },
       };
 
       // Measure invalid decryption timing
@@ -341,10 +358,10 @@ describe('Timing Attack Protection', () => {
     });
   });
 
-  describe('SignalCipherLayer timing consistency', () => {
-    test('should have consistent encryption/decryption timing', async () => {
+  describe("SignalCipherLayer timing consistency", () => {
+    test("should have consistent encryption/decryption timing", async () => {
       if (!SignalCipherLayer) {
-        throw new Error('SignalCipherLayer not available - test cannot run');
+        throw new Error("SignalCipherLayer not available - test cannot run");
       }
 
       // Signal requires mock state for Jest, but we can still verify the layer exists
@@ -352,73 +369,77 @@ describe('Timing Attack Protection', () => {
       // This test verifies the layer is available for timing tests
       const layer = new SignalCipherLayer();
       expect(layer).toBeDefined();
-      expect(layer.name).toBe('X3DH-DoubleRatchet');
+      expect(layer.name).toBe("X3DH-DoubleRatchet");
 
       // Note: Full timing tests require Signal WASM/state mock which is tested separately
       // This test ensures the layer is available for timing analysis
     });
   });
 
-  describe('Statistical analysis', () => {
-    test('should demonstrate timing measurements are statistically valid', async () => {
+  describe("Statistical analysis", () => {
+    test("should demonstrate timing measurements are statistically valid", async () => {
       if (!AESCipherLayer) {
-        throw new Error('AESCipherLayer not available - test cannot run');
+        throw new Error("AESCipherLayer not available - test cannot run");
       }
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'test-password' };
+      const keys = { password: "test-password" };
 
       // Measure timing with sufficient samples
       const timings = await measureTiming(async () => {
-        await layer.encrypt(new TextEncoder().encode('Test'), keys);
+        await layer.encrypt(new TextEncoder().encode("Test"), keys);
       }, 100);
 
       // Should have enough samples
       expect(timings.length).toBe(100);
 
       // Should have reasonable timing values (not zero, not infinite)
-      const validTimings = timings.filter(t => t > 0 && t < 10000);
+      const validTimings = timings.filter((t) => t > 0 && t < 10000);
       expect(validTimings.length).toBeGreaterThan(90); // At least 90% valid
     });
   });
 
-  describe('Constant-Time Comparison', () => {
+  describe("Constant-Time Comparison", () => {
     let ConstantTime;
     let KeyAuthentication;
     let crypto;
 
     beforeEach(async () => {
-      const { webcrypto } = await import('crypto');
+      const { webcrypto } = await import("crypto");
       global.crypto = webcrypto;
       globalThis.crypto = webcrypto;
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.crypto = webcrypto;
       }
       crypto = webcrypto;
 
       try {
-        const constantTimeModule = await import('../../crypto/utils/constantTime.ts');
+        const constantTimeModule = await import(
+          "../../crypto/utils/constantTime.ts"
+        );
         ConstantTime = constantTimeModule.ConstantTime;
       } catch (e) {
         ConstantTime = null;
       }
 
       try {
-        const keyAuthModule = await import('../../crypto/utils/keyAuthentication.ts');
+        const keyAuthModule = await import(
+          "../../crypto/utils/keyAuthentication.ts"
+        );
         KeyAuthentication = keyAuthModule.KeyAuthentication;
       } catch (e) {
         KeyAuthentication = null;
       }
     });
 
-    test('should have consistent timing for constant-time string comparison', async () => {
+    test("should have consistent timing for constant-time string comparison", async () => {
       if (!ConstantTime) {
-        throw new Error('ConstantTime not available - test cannot run');
+        throw new Error("ConstantTime not available - test cannot run");
       }
 
-      const str1 = 'x'.repeat(100);
-      const str2 = 'x'.repeat(100);
-      const str3 = 'y'.repeat(100);
+      const str1 = "x".repeat(100);
+      const str2 = "x".repeat(100);
+      const str3 = "y".repeat(100);
 
       // Measure timing for matching strings (use 100 runs for synchronous operations)
       const matchTimings = await measureTiming(() => {
@@ -434,24 +455,27 @@ describe('Timing Attack Protection', () => {
       const sortedMatch = [...matchTimings].sort((a, b) => a - b);
       const sortedMismatch = [...mismatchTimings].sort((a, b) => a - b);
       const medianMatch = sortedMatch[Math.floor(sortedMatch.length / 2)];
-      const medianMismatch = sortedMismatch[Math.floor(sortedMismatch.length / 2)];
-      
-      const variance = Math.abs(medianMatch - medianMismatch) / Math.max(medianMatch, medianMismatch);
+      const medianMismatch =
+        sortedMismatch[Math.floor(sortedMismatch.length / 2)];
+
+      const variance =
+        Math.abs(medianMatch - medianMismatch) /
+        Math.max(medianMatch, medianMismatch);
 
       // Timing should be consistent regardless of match/mismatch
       // Use 50% threshold with median-based statistics (more robust)
       expect(variance).toBeLessThan(0.5);
     });
 
-    test('should have consistent timing regardless of difference position', async () => {
+    test("should have consistent timing regardless of difference position", async () => {
       if (!ConstantTime) {
-        throw new Error('ConstantTime not available - test cannot run');
+        throw new Error("ConstantTime not available - test cannot run");
       }
 
-      const baseStr = 'x'.repeat(100);
-      const strStart = 'a' + baseStr.slice(1);
-      const strMiddle = baseStr.slice(0, 50) + 'a' + baseStr.slice(51);
-      const strEnd = baseStr.slice(0, -1) + 'a';
+      const baseStr = "x".repeat(100);
+      const strStart = "a" + baseStr.slice(1);
+      const strMiddle = baseStr.slice(0, 50) + "a" + baseStr.slice(51);
+      const strEnd = baseStr.slice(0, -1) + "a";
 
       // Use more runs (100) for synchronous operations to get better statistics
       const timingsStart = await measureTiming(() => {
@@ -474,9 +498,12 @@ describe('Timing Attack Protection', () => {
       const medianStart = sortedStart[Math.floor(sortedStart.length / 2)];
       const medianMiddle = sortedMiddle[Math.floor(sortedMiddle.length / 2)];
       const medianEnd = sortedEnd[Math.floor(sortedEnd.length / 2)];
-      
-      const varianceStartMiddle = Math.abs(medianStart - medianMiddle) / Math.max(medianStart, medianMiddle);
-      const varianceStartEnd = Math.abs(medianStart - medianEnd) / Math.max(medianStart, medianEnd);
+
+      const varianceStartMiddle =
+        Math.abs(medianStart - medianMiddle) /
+        Math.max(medianStart, medianMiddle);
+      const varianceStartEnd =
+        Math.abs(medianStart - medianEnd) / Math.max(medianStart, medianEnd);
 
       // Use 1.0 (100%) threshold with median-based statistics for improved constant-time implementation
       // The improved implementation always processes max length, which adds slight overhead
@@ -485,30 +512,40 @@ describe('Timing Attack Protection', () => {
       expect(varianceStartEnd).toBeLessThan(1.0);
     });
 
-    test('should have consistent timing for fingerprint verification', async () => {
+    test("should have consistent timing for fingerprint verification", async () => {
       if (!ConstantTime || !KeyAuthentication) {
-        throw new Error('ConstantTime or KeyAuthentication not available - test cannot run');
+        throw new Error(
+          "ConstantTime or KeyAuthentication not available - test cannot run",
+        );
       }
 
       // Generate a key pair
       const keyPair = await crypto.subtle.generateKey(
-        { name: 'ECDH', namedCurve: 'P-256' },
+        { name: "ECDH", namedCurve: "P-256" },
         true,
-        ['deriveKey', 'deriveBits']
+        ["deriveKey", "deriveBits"],
       );
 
-      const fingerprint = await KeyAuthentication.generateFingerprint(keyPair.publicKey);
-      const wrongFingerprint = fingerprint.slice(0, -2) + '99';
+      const fingerprint = await KeyAuthentication.generateFingerprint(
+        keyPair.publicKey,
+      );
+      const wrongFingerprint = fingerprint.slice(0, -2) + "99";
 
       // Measure timing for valid fingerprint verification
       const validTimings = await measureTiming(async () => {
-        await KeyAuthentication.verifyFingerprint(keyPair.publicKey, fingerprint);
+        await KeyAuthentication.verifyFingerprint(
+          keyPair.publicKey,
+          fingerprint,
+        );
       });
 
       // Measure timing for invalid fingerprint verification
       const invalidTimings = await measureTiming(async () => {
         try {
-          await KeyAuthentication.verifyFingerprint(keyPair.publicKey, wrongFingerprint);
+          await KeyAuthentication.verifyFingerprint(
+            keyPair.publicKey,
+            wrongFingerprint,
+          );
         } catch (e) {
           // Ignore errors
         }
@@ -519,22 +556,24 @@ describe('Timing Attack Protection', () => {
       const sortedInvalid = [...invalidTimings].sort((a, b) => a - b);
       const medianValid = sortedValid[Math.floor(sortedValid.length / 2)];
       const medianInvalid = sortedInvalid[Math.floor(sortedInvalid.length / 2)];
-      
-      const variance = Math.abs(medianValid - medianInvalid) / Math.max(medianValid, medianInvalid);
+
+      const variance =
+        Math.abs(medianValid - medianInvalid) /
+        Math.max(medianValid, medianInvalid);
 
       // Timing should be consistent to prevent timing attacks
       // Use 75% threshold with median-based statistics (fingerprint verification involves crypto operations)
       expect(variance).toBeLessThan(0.75);
     });
 
-    test('should have better timing consistency than regular string comparison', async () => {
+    test("should have better timing consistency than regular string comparison", async () => {
       if (!ConstantTime) {
-        throw new Error('ConstantTime not available - test cannot run');
+        throw new Error("ConstantTime not available - test cannot run");
       }
 
-      const str1 = 'x'.repeat(100);
-      const str2 = 'x'.repeat(100);
-      const str3 = 'a' + 'x'.repeat(99); // Different at start
+      const str1 = "x".repeat(100);
+      const str2 = "x".repeat(100);
+      const str3 = "a" + "x".repeat(99); // Different at start
 
       // Use larger sample size and warm-up for more reliable statistics
       const sampleSize = 200;
@@ -544,12 +583,12 @@ describe('Timing Attack Protection', () => {
       const constantTimeMatch = await measureTiming(
         () => ConstantTime.constantTimeCompareStrings(str1, str2),
         sampleSize,
-        warmupRuns
+        warmupRuns,
       );
       const constantTimeMismatch = await measureTiming(
         () => ConstantTime.constantTimeCompareStrings(str1, str3),
         sampleSize,
-        warmupRuns
+        warmupRuns,
       );
 
       // Measure regular comparison (matching vs non-matching)
@@ -559,7 +598,7 @@ describe('Timing Attack Protection', () => {
           return str1 == str2;
         },
         sampleSize,
-        warmupRuns
+        warmupRuns,
       );
       const regularMismatch = await measureTiming(
         () => {
@@ -567,11 +606,14 @@ describe('Timing Attack Protection', () => {
           return str1 == str3;
         },
         sampleSize,
-        warmupRuns
+        warmupRuns,
       );
 
       // Calculate variance using median (more robust to outliers)
-      const constantTimeVariance = calculateVariance(constantTimeMatch, constantTimeMismatch);
+      const constantTimeVariance = calculateVariance(
+        constantTimeMatch,
+        constantTimeMismatch,
+      );
       const regularVariance = calculateVariance(regularMatch, regularMismatch);
 
       // Calculate robust coefficient of variation for each
@@ -600,4 +642,3 @@ describe('Timing Attack Protection', () => {
     }, 60000); // 60 second timeout for larger sample size
   });
 });
-

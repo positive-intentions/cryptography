@@ -7,13 +7,15 @@
 // but the actual browser/production code uses @noble/hashes/scrypt
 // which is a pure JavaScript implementation that works in browsers
 
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 function scrypt(password, salt, options) {
   const { N, r, p, dkLen } = options;
 
   // Convert Uint8Array to Buffer if needed
-  const passwordBuf = Buffer.isBuffer(password) ? password : Buffer.from(password);
+  const passwordBuf = Buffer.isBuffer(password)
+    ? password
+    : Buffer.from(password);
   const saltBuf = Buffer.isBuffer(salt) ? salt : Buffer.from(salt);
 
   // For testing, use a simplified approach that works with Node's scryptSync
@@ -28,7 +30,7 @@ function scrypt(password, salt, options) {
       N: testN,
       r: r,
       p: p,
-      maxmem: Math.max(maxmem, 32 * 1024 * 1024) // At least 32MB
+      maxmem: Math.max(maxmem, 32 * 1024 * 1024), // At least 32MB
     });
     return new Uint8Array(result);
   } catch (error) {

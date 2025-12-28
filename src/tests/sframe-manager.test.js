@@ -6,13 +6,13 @@
  * The real implementation is tested in Storybook (browser environment).
  */
 
-describe('SFrame Manager - Real Implementation Tests', () => {
+describe("SFrame Manager - Real Implementation Tests", () => {
   let SFrameManager;
   let manager;
 
   beforeAll(() => {
     // Import the real SFrameManager directly (mock is substituted by Jest config)
-    const actualModule = require('../crypto/SFrame/SFrameManager.tsx');
+    const actualModule = require("../crypto/SFrame/SFrameManager.tsx");
     SFrameManager = actualModule.SFrameManager;
   });
 
@@ -29,8 +29,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 1: Initialization & Key Generation
    */
-  describe('1. Initialization & Key Generation', () => {
-    test('should initialize SFrame manager successfully', async () => {
+  describe("1. Initialization & Key Generation", () => {
+    test("should initialize SFrame manager successfully", async () => {
       await manager.initialize();
 
       const stats = manager.getStats();
@@ -40,7 +40,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.frameCounter).toBe(0);
     });
 
-    test('should not re-initialize if already initialized', async () => {
+    test("should not re-initialize if already initialized", async () => {
       await manager.initialize();
       const statsAfterFirst = manager.getStats();
 
@@ -52,7 +52,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(statsAfterSecond).toEqual(statsAfterFirst);
     });
 
-    test('should generate valid encryption keys', async () => {
+    test("should generate valid encryption keys", async () => {
       await manager.initialize();
 
       const key1 = await manager.generateKey(1);
@@ -65,11 +65,11 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.keyCount).toBe(2); // Initial key + key1
     });
 
-    test('should throw error when using manager before initialization', async () => {
-      const frameData = new TextEncoder().encode('test data').buffer;
+    test("should throw error when using manager before initialization", async () => {
+      const frameData = new TextEncoder().encode("test data").buffer;
 
       await expect(manager.encryptFrame(frameData)).rejects.toThrow(
-        'SFrame Manager not initialized'
+        "SFrame Manager not initialized",
       );
     });
   });
@@ -77,13 +77,13 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 2: Frame Encryption & Decryption
    */
-  describe('2. Frame Encryption & Decryption', () => {
+  describe("2. Frame Encryption & Decryption", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should encrypt a media frame', async () => {
-      const plaintext = 'Hello, SFrame!';
+    test("should encrypt a media frame", async () => {
+      const plaintext = "Hello, SFrame!";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       const encrypted = await manager.encryptFrame(frameData);
@@ -93,8 +93,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(encrypted.length).toBeGreaterThan(frameData.byteLength); // Has header + IV
     });
 
-    test('should decrypt an encrypted frame', async () => {
-      const plaintext = 'Test frame data';
+    test("should decrypt an encrypted frame", async () => {
+      const plaintext = "Test frame data";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       const encrypted = await manager.encryptFrame(frameData);
@@ -104,13 +104,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(decryptedText).toBe(plaintext);
     });
 
-    test('should handle multiple consecutive frames', async () => {
-      const frames = [
-        'Frame 1',
-        'Frame 2',
-        'Frame 3',
-        'Frame 4',
-      ];
+    test("should handle multiple consecutive frames", async () => {
+      const frames = ["Frame 1", "Frame 2", "Frame 3", "Frame 4"];
 
       for (const frameText of frames) {
         const frameData = new TextEncoder().encode(frameText).buffer;
@@ -122,7 +117,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       }
     });
 
-    test('should increment frame counter on each encryption', async () => {
+    test("should increment frame counter on each encryption", async () => {
       const initialCounter = manager.getFrameCounter();
       expect(initialCounter).toBe(0);
 
@@ -135,8 +130,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(finalCounter).toBe(5);
     });
 
-    test('should verify encrypted frames differ even with same plaintext', async () => {
-      const plaintext = 'Same content';
+    test("should verify encrypted frames differ even with same plaintext", async () => {
+      const plaintext = "Same content";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       const encrypted1 = await manager.encryptFrame(frameData);
@@ -146,8 +141,12 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(encrypted1).not.toEqual(encrypted2);
 
       // But both should decrypt correctly
-      const decrypted1 = new TextDecoder().decode(await manager.decryptFrame(encrypted1));
-      const decrypted2 = new TextDecoder().decode(await manager.decryptFrame(encrypted2));
+      const decrypted1 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted1),
+      );
+      const decrypted2 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted2),
+      );
 
       expect(decrypted1).toBe(plaintext);
       expect(decrypted2).toBe(plaintext);
@@ -157,20 +156,20 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 3: Key Management & RFC 9605 Compliance
    */
-  describe('3. Key Management & RFC 9605 Compliance', () => {
+  describe("3. Key Management & RFC 9605 Compliance", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should set active key', async () => {
+    test("should set active key", async () => {
       await manager.generateKey(1);
       manager.setActiveKey(1);
 
       expect(manager.getCurrentKeyId()).toBe(1);
     });
 
-    test('RFC 9605 Section 5.2: should derive key with correct labels', async () => {
-      const mlsSecret = new TextEncoder().encode('test-mls-secret').buffer;
+    test("RFC 9605 Section 5.2: should derive key with correct labels", async () => {
+      const mlsSecret = new TextEncoder().encode("test-mls-secret").buffer;
       const keyId = 100;
 
       const derivedKey = await manager.deriveKeyFromMLSSecret(mlsSecret, keyId);
@@ -185,11 +184,13 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.keyCount).toBe(2); // Initial key + derived key
     });
 
-    test('should throw error when setting non-existent key', () => {
-      expect(() => manager.setActiveKey(999)).toThrow('SFrame key 999 not found');
+    test("should throw error when setting non-existent key", () => {
+      expect(() => manager.setActiveKey(999)).toThrow(
+        "SFrame key 999 not found",
+      );
     });
 
-    test('should rotate keys successfully', async () => {
+    test("should rotate keys successfully", async () => {
       const initialKeyId = manager.getCurrentKeyId();
       expect(initialKeyId).toBe(0);
 
@@ -202,7 +203,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.keyCount).toBe(2); // Old key + new key
     });
 
-    test('RFC 9605: should reset frame counter on key rotation', async () => {
+    test("RFC 9605: should reset frame counter on key rotation", async () => {
       // Encrypt some frames to increment counter
       for (let i = 0; i < 5; i++) {
         const frameData = new TextEncoder().encode(`Frame ${i}`).buffer;
@@ -219,8 +220,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(manager.getCurrentKeyId()).toBe(1);
     });
 
-    test('should encrypt with new key after rotation', async () => {
-      const plaintext = 'Test with rotated key';
+    test("should encrypt with new key after rotation", async () => {
+      const plaintext = "Test with rotated key";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       // Encrypt with initial key
@@ -233,8 +234,12 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       const encrypted2 = await manager.encryptFrame(frameData);
 
       // Both should decrypt correctly
-      const decrypted1 = new TextDecoder().decode(await manager.decryptFrame(encrypted1));
-      const decrypted2 = new TextDecoder().decode(await manager.decryptFrame(encrypted2));
+      const decrypted1 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted1),
+      );
+      const decrypted2 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted2),
+      );
 
       expect(decrypted1).toBe(plaintext);
       expect(decrypted2).toBe(plaintext);
@@ -244,7 +249,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(encrypted2[0]).toBe(1); // Key ID 1
     });
 
-    test('should cleanup old keys', async () => {
+    test("should cleanup old keys", async () => {
       // Generate multiple keys
       await manager.generateKey(1);
       await manager.generateKey(2);
@@ -263,11 +268,15 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.keyCount).toBe(2); // Only keys 3, 4 remain
     });
 
-    test('should derive key from MLS secret', async () => {
-      const mlsSecret = new TextEncoder().encode('mock-mls-secret').buffer;
+    test("should derive key from MLS secret", async () => {
+      const mlsSecret = new TextEncoder().encode("mock-mls-secret").buffer;
       const keyId = 10;
 
-      const derivedKey = await manager.deriveKeyFromMLSSecret(mlsSecret, keyId, 'TestContext');
+      const derivedKey = await manager.deriveKeyFromMLSSecret(
+        mlsSecret,
+        keyId,
+        "TestContext",
+      );
 
       expect(derivedKey).toBeDefined();
       expect(derivedKey.keyId).toBe(keyId);
@@ -280,12 +289,12 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 4: Frame Counter Management
    */
-  describe('4. Frame Counter Management', () => {
+  describe("4. Frame Counter Management", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should track frame counter correctly', async () => {
+    test("should track frame counter correctly", async () => {
       expect(manager.getFrameCounter()).toBe(0);
 
       for (let i = 0; i < 10; i++) {
@@ -296,7 +305,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(manager.getFrameCounter()).toBe(10);
     });
 
-    test('should reset frame counter', async () => {
+    test("should reset frame counter", async () => {
       // Encrypt some frames
       for (let i = 0; i < 5; i++) {
         const frameData = new TextEncoder().encode(`Frame ${i}`).buffer;
@@ -311,7 +320,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(manager.getFrameCounter()).toBe(0);
     });
 
-    test('should use reset counter after key rotation', async () => {
+    test("should use reset counter after key rotation", async () => {
       // Encrypt frames
       for (let i = 0; i < 3; i++) {
         const frameData = new TextEncoder().encode(`Frame ${i}`).buffer;
@@ -329,7 +338,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(manager.getFrameCounter()).toBe(0);
 
       // Encrypt more frames with new key
-      const frameData = new TextEncoder().encode('New frame').buffer;
+      const frameData = new TextEncoder().encode("New frame").buffer;
       await manager.encryptFrame(frameData);
 
       expect(manager.getFrameCounter()).toBe(1);
@@ -339,28 +348,28 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 5: Transform Streams
    */
-  describe('5. Transform Streams', () => {
+  describe("5. Transform Streams", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should create encrypt transform', () => {
+    test("should create encrypt transform", () => {
       const transform = manager.createEncryptTransform();
       expect(transform).toBeDefined();
       expect(transform.transform).toBeDefined();
     });
 
-    test('should create decrypt transform', () => {
+    test("should create decrypt transform", () => {
       const transform = manager.createDecryptTransform();
       expect(transform).toBeDefined();
       expect(transform.transform).toBeDefined();
     });
 
-    test('should process frame through encrypt transform', async () => {
+    test("should process frame through encrypt transform", async () => {
       const transform = manager.createEncryptTransform();
 
       const mockFrame = {
-        data: new TextEncoder().encode('Video frame').buffer,
+        data: new TextEncoder().encode("Video frame").buffer,
       };
 
       const mockController = {
@@ -373,8 +382,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(mockFrame.data.byteLength).toBeGreaterThan(0);
     });
 
-    test('should process frame through decrypt transform', async () => {
-      const plaintext = 'Audio frame';
+    test("should process frame through decrypt transform", async () => {
+      const plaintext = "Audio frame";
       const frameData = new TextEncoder().encode(plaintext).buffer;
       const encrypted = await manager.encryptFrame(frameData);
 
@@ -400,18 +409,18 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 6: Statistics & Monitoring
    */
-  describe('6. Statistics & Monitoring', () => {
+  describe("6. Statistics & Monitoring", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should provide accurate statistics', async () => {
+    test("should provide accurate statistics", async () => {
       const stats = manager.getStats();
 
-      expect(stats).toHaveProperty('keyCount');
-      expect(stats).toHaveProperty('currentKeyId');
-      expect(stats).toHaveProperty('frameCounter');
-      expect(stats).toHaveProperty('initialized');
+      expect(stats).toHaveProperty("keyCount");
+      expect(stats).toHaveProperty("currentKeyId");
+      expect(stats).toHaveProperty("frameCounter");
+      expect(stats).toHaveProperty("initialized");
 
       expect(stats.initialized).toBe(true);
       expect(stats.keyCount).toBe(1);
@@ -419,7 +428,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.frameCounter).toBe(0);
     });
 
-    test('should update statistics after operations', async () => {
+    test("should update statistics after operations", async () => {
       // Generate keys
       await manager.generateKey(1);
       await manager.generateKey(2);
@@ -445,17 +454,17 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 7: Resource Cleanup
    */
-  describe('7. Resource Cleanup', () => {
+  describe("7. Resource Cleanup", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should cleanup resources on destroy', async () => {
+    test("should cleanup resources on destroy", async () => {
       // Generate some keys and encrypt frames
       await manager.generateKey(1);
       await manager.generateKey(2);
 
-      const frameData = new TextEncoder().encode('Frame').buffer;
+      const frameData = new TextEncoder().encode("Frame").buffer;
       await manager.encryptFrame(frameData);
 
       let stats = manager.getStats();
@@ -471,16 +480,16 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(stats.initialized).toBe(false);
     });
 
-    test('should throw error after destroy when encrypting', async () => {
+    test("should throw error after destroy when encrypting", async () => {
       manager.destroy();
 
-      const frameData = new TextEncoder().encode('Frame').buffer;
+      const frameData = new TextEncoder().encode("Frame").buffer;
       await expect(manager.encryptFrame(frameData)).rejects.toThrow(
-        'SFrame Manager not initialized'
+        "SFrame Manager not initialized",
       );
     });
 
-    test('should be reinitializable after destroy', async () => {
+    test("should be reinitializable after destroy", async () => {
       manager.destroy();
 
       // Reinitialize
@@ -495,13 +504,13 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 8: RFC 9605 Security Compliance
    */
-  describe('8. RFC 9605 Security Compliance', () => {
+  describe("8. RFC 9605 Security Compliance", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('RFC 9605 Section 4.3: IV must be derived via salt XOR counter', async () => {
-      const plaintext = 'Test IV derivation';
+    test("RFC 9605 Section 4.3: IV must be derived via salt XOR counter", async () => {
+      const plaintext = "Test IV derivation";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       // Encrypt a frame
@@ -510,14 +519,17 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       // Extract header (first 5 bytes)
       const header = encrypted.slice(0, 5);
       const keyId = header[0];
-      const frameCount = new DataView(header.buffer, header.byteOffset).getUint32(1, false);
+      const frameCount = new DataView(
+        header.buffer,
+        header.byteOffset,
+      ).getUint32(1, false);
 
       // Extract IV (next 12 bytes)
       const iv = encrypted.slice(5, 17);
 
       // Verify IV is not all zeros (basic sanity check)
       const ivArray = Array.from(iv);
-      expect(ivArray.some(byte => byte !== 0)).toBe(true);
+      expect(ivArray.some((byte) => byte !== 0)).toBe(true);
 
       // Decrypt should work (proves IV derivation is consistent)
       const decrypted = await manager.decryptFrame(encrypted);
@@ -525,8 +537,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(decryptedText).toBe(plaintext);
     });
 
-    test('RFC 9605 Section 4.3: Header must be authenticated (AAD)', async () => {
-      const plaintext = 'Test header authentication';
+    test("RFC 9605 Section 4.3: Header must be authenticated (AAD)", async () => {
+      const plaintext = "Test header authentication";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       // Encrypt a frame
@@ -541,8 +553,8 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       await expect(manager.decryptFrame(tamperedFrame)).rejects.toThrow();
     });
 
-    test('RFC 9605: Different frames with same plaintext must have different ciphertexts', async () => {
-      const plaintext = 'Same content';
+    test("RFC 9605: Different frames with same plaintext must have different ciphertexts", async () => {
+      const plaintext = "Same content";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       const encrypted1 = await manager.encryptFrame(frameData);
@@ -552,14 +564,18 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(encrypted1).not.toEqual(encrypted2);
 
       // But both decrypt to same plaintext
-      const decrypted1 = new TextDecoder().decode(await manager.decryptFrame(encrypted1));
-      const decrypted2 = new TextDecoder().decode(await manager.decryptFrame(encrypted2));
+      const decrypted1 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted1),
+      );
+      const decrypted2 = new TextDecoder().decode(
+        await manager.decryptFrame(encrypted2),
+      );
 
       expect(decrypted1).toBe(plaintext);
       expect(decrypted2).toBe(plaintext);
     });
 
-    test('RFC 9605 Section 5.2: MLS-derived keys use correct labels', async () => {
+    test("RFC 9605 Section 5.2: MLS-derived keys use correct labels", async () => {
       // This test verifies the labels are used by ensuring derivation works
       const mlsSecret = crypto.getRandomValues(new Uint8Array(32)).buffer;
       const keyId = 50;
@@ -572,7 +588,9 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       const key2 = await manager2.deriveKeyFromMLSSecret(mlsSecret, keyId);
 
       // Both should derive same key (verified by encryption/decryption)
-      const testData = new TextEncoder().encode('Test cross-manager encryption').buffer;
+      const testData = new TextEncoder().encode(
+        "Test cross-manager encryption",
+      ).buffer;
 
       manager.setActiveKey(keyId);
       const encrypted = await manager.encryptFrame(testData);
@@ -580,7 +598,9 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       manager2.setActiveKey(keyId);
       const decrypted = await manager2.decryptFrame(encrypted);
 
-      expect(new TextDecoder().decode(decrypted)).toBe('Test cross-manager encryption');
+      expect(new TextDecoder().decode(decrypted)).toBe(
+        "Test cross-manager encryption",
+      );
 
       manager2.destroy();
     });
@@ -589,13 +609,13 @@ describe('SFrame Manager - Real Implementation Tests', () => {
   /**
    * Test 9: Error Handling
    */
-  describe('9. Error Handling', () => {
+  describe("9. Error Handling", () => {
     beforeEach(async () => {
       await manager.initialize();
     });
 
-    test('should throw error when decrypting with missing key', async () => {
-      const plaintext = 'Test data';
+    test("should throw error when decrypting with missing key", async () => {
+      const plaintext = "Test data";
       const frameData = new TextEncoder().encode(plaintext).buffer;
 
       // Encrypt with key 0
@@ -609,10 +629,12 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       manager.cleanupOldKeys(1);
 
       // Try to decrypt (requires key 0)
-      await expect(manager.decryptFrame(encrypted)).rejects.toThrow('SFrame key 0 not found');
+      await expect(manager.decryptFrame(encrypted)).rejects.toThrow(
+        "SFrame key 0 not found",
+      );
     });
 
-    test('should handle empty frame data', async () => {
+    test("should handle empty frame data", async () => {
       const emptyFrame = new ArrayBuffer(0);
 
       const encrypted = await manager.encryptFrame(emptyFrame);
@@ -622,7 +644,7 @@ describe('SFrame Manager - Real Implementation Tests', () => {
       expect(decrypted.byteLength).toBe(0);
     });
 
-    test('should handle large frame data', async () => {
+    test("should handle large frame data", async () => {
       // Simulate a large video frame (1MB)
       const largeFrame = new Uint8Array(1024 * 1024).fill(42).buffer;
 

@@ -5,14 +5,14 @@
  * Shows how to daisy-chain MLS, Signal, DH, and AES encryption algorithms.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   CascadingCipherManager,
   AESCipherLayer,
   DHCipherLayer,
   MLKEMCipherLayer,
-} from '../../crypto/CascadingCipher';
-import { MlKem768 } from '@hpke/ml-kem';
+} from "../../crypto/CascadingCipher";
+import { MlKem768 } from "@hpke/ml-kem";
 import {
   ThemeProvider,
   Container,
@@ -32,20 +32,20 @@ import {
   ListItemText,
   Switch,
   FormControlLabel,
-} from 'ui';
+} from "ui";
 
 export default {
-  title: 'Cascading Cipher/Interactive Demo',
+  title: "Cascading Cipher/Interactive Demo",
   parameters: {
-    layout: 'fullscreen',
+    layout: "fullscreen",
   },
 };
 
 const CascadingCipherDemo = () => {
-  const [message, setMessage] = useState('Hello, Cascading Cipher!');
-  const [password1, setPassword1] = useState('password-layer-1');
-  const [password2, setPassword2] = useState('password-layer-2');
-  const [password3, setPassword3] = useState('password-layer-3');
+  const [message, setMessage] = useState("Hello, Cascading Cipher!");
+  const [password1, setPassword1] = useState("password-layer-1");
+  const [password2, setPassword2] = useState("password-layer-2");
+  const [password3, setPassword3] = useState("password-layer-3");
 
   const [useDH, setUseDH] = useState(true);
   const [dhKeyPair, setDhKeyPair] = useState(null);
@@ -56,48 +56,56 @@ const CascadingCipherDemo = () => {
   const [mlkemPublicKey, setMlkemPublicKey] = useState(null);
 
   const [encrypted, setEncrypted] = useState(null);
-  const [decrypted, setDecrypted] = useState('');
+  const [decrypted, setDecrypted] = useState("");
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
 
-  const addLog = (msg, type = 'info') => {
+  const addLog = (msg, type = "info") => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, { time: timestamp, message: msg, type }]);
+    setLogs((prev) => [...prev, { time: timestamp, message: msg, type }]);
   };
 
   // Generate DH key pair
   const generateDHKeys = async () => {
     try {
-      addLog('🔑 Generating Diffie-Hellman key pair...', 'info');
+      addLog("🔑 Generating Diffie-Hellman key pair...", "info");
 
       const keyPair = await crypto.subtle.generateKey(
         {
-          name: 'ECDH',
-          namedCurve: 'P-256',
+          name: "ECDH",
+          namedCurve: "P-256",
         },
         true,
-        ['deriveKey', 'deriveBits']
+        ["deriveKey", "deriveBits"],
       );
 
       // Export public key
-      const publicKeyRaw = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+      const publicKeyRaw = await crypto.subtle.exportKey(
+        "raw",
+        keyPair.publicKey,
+      );
 
       setDhKeyPair(keyPair);
       setDhPublicKey(new Uint8Array(publicKeyRaw));
 
-      addLog('✅ DH key pair generated', 'success');
-      addLog(`📤 Public key: ${Array.from(new Uint8Array(publicKeyRaw).slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('')}...`, 'info');
+      addLog("✅ DH key pair generated", "success");
+      addLog(
+        `📤 Public key: ${Array.from(new Uint8Array(publicKeyRaw).slice(0, 8))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")}...`,
+        "info",
+      );
     } catch (err) {
       setError(`DH key generation failed: ${err.message}`);
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     }
   };
 
   // Generate ML-KEM key pair
   const generateMLKEMKeys = async () => {
     try {
-      addLog('🔑 Generating ML-KEM key pair...', 'info');
+      addLog("🔑 Generating ML-KEM key pair...", "info");
 
       const kem = new MlKem768();
       const keyPair = await kem.generateKeyPair();
@@ -108,12 +116,17 @@ const CascadingCipherDemo = () => {
       setMlkemKeyPair(keyPair);
       setMlkemPublicKey(publicKeyBytes);
 
-      addLog('✅ ML-KEM key pair generated', 'success');
-      addLog(`📤 Public key: ${Array.from(publicKeyBytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('')}...`, 'info');
-      addLog(`📊 Public key size: ${publicKeyBytes.length} bytes`, 'info');
+      addLog("✅ ML-KEM key pair generated", "success");
+      addLog(
+        `📤 Public key: ${Array.from(publicKeyBytes.slice(0, 8))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")}...`,
+        "info",
+      );
+      addLog(`📊 Public key size: ${publicKeyBytes.length} bytes`, "info");
     } catch (err) {
       setError(`ML-KEM key generation failed: ${err.message}`);
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     }
   };
 
@@ -124,7 +137,7 @@ const CascadingCipherDemo = () => {
     setLogs([]);
 
     try {
-      addLog('🔒 Starting cascading encryption...', 'info');
+      addLog("🔒 Starting cascading encryption...", "info");
 
       // Create cascading cipher manager
       const manager = new CascadingCipherManager();
@@ -132,56 +145,60 @@ const CascadingCipherDemo = () => {
       // Add layers based on configuration
       if (useMLKEM) {
         if (!mlkemKeyPair) {
-          throw new Error('ML-KEM keys not generated. Click "Generate ML-KEM Keys" first.');
+          throw new Error(
+            'ML-KEM keys not generated. Click "Generate ML-KEM Keys" first.',
+          );
         }
         const mlkemLayer = new MLKEMCipherLayer();
         manager.addLayer(mlkemLayer);
-        addLog('✅ Added ML-KEM-768 layer (quantum-resistant)', 'success');
+        addLog("✅ Added ML-KEM-768 layer (quantum-resistant)", "success");
       }
 
       if (useDH) {
         if (!dhKeyPair) {
-          throw new Error('DH keys not generated. Click "Generate DH Keys" first.');
+          throw new Error(
+            'DH keys not generated. Click "Generate DH Keys" first.',
+          );
         }
         const dhLayer = new DHCipherLayer();
         manager.addLayer(dhLayer);
-        addLog('✅ Added DH-AES-GCM layer', 'success');
+        addLog("✅ Added DH-AES-GCM layer", "success");
       }
 
       // Add AES layers
       const aesLayer1 = new AESCipherLayer();
-      Object.defineProperty(aesLayer1, 'name', { value: 'AES-Layer-1' });
+      Object.defineProperty(aesLayer1, "name", { value: "AES-Layer-1" });
       manager.addLayer(aesLayer1);
-      addLog('✅ Added AES Layer 1', 'success');
+      addLog("✅ Added AES Layer 1", "success");
 
       const aesLayer2 = new AESCipherLayer();
-      Object.defineProperty(aesLayer2, 'name', { value: 'AES-Layer-2' });
+      Object.defineProperty(aesLayer2, "name", { value: "AES-Layer-2" });
       manager.addLayer(aesLayer2);
-      addLog('✅ Added AES Layer 2', 'success');
+      addLog("✅ Added AES Layer 2", "success");
 
       const aesLayer3 = new AESCipherLayer();
-      Object.defineProperty(aesLayer3, 'name', { value: 'AES-Layer-3' });
+      Object.defineProperty(aesLayer3, "name", { value: "AES-Layer-3" });
       manager.addLayer(aesLayer3);
-      addLog('✅ Added AES Layer 3', 'success');
+      addLog("✅ Added AES Layer 3", "success");
 
-      addLog(`📊 Total layers: ${manager.layerCount}`, 'info');
+      addLog(`📊 Total layers: ${manager.layerCount}`, "info");
 
       // Prepare keys
       const keys = {
-        'AES-Layer-1': { password: password1 },
-        'AES-Layer-2': { password: password2 },
-        'AES-Layer-3': { password: password3 },
+        "AES-Layer-1": { password: password1 },
+        "AES-Layer-2": { password: password2 },
+        "AES-Layer-3": { password: password3 },
       };
 
       if (useMLKEM) {
-        keys['ML-KEM-768'] = {
+        keys["ML-KEM-768"] = {
           publicKey: mlkemKeyPair.publicKey,
         };
       }
 
       if (useDH) {
         // For DH, use same key pair (simulating key exchange with self)
-        keys['DH-AES-GCM'] = {
+        keys["DH-AES-GCM"] = {
           privateKey: dhKeyPair.privateKey,
           publicKey: dhKeyPair.publicKey,
         };
@@ -189,25 +206,28 @@ const CascadingCipherDemo = () => {
 
       // Encrypt
       const plaintext = new TextEncoder().encode(message);
-      addLog(`📝 Original size: ${plaintext.length} bytes`, 'info');
+      addLog(`📝 Original size: ${plaintext.length} bytes`, "info");
 
       const result = await manager.encrypt(plaintext, keys);
 
-      addLog(`🔐 Encrypted size: ${result.finalSize} bytes`, 'info');
-      addLog(`⏱️ Total time: ${result.totalProcessingTime.toFixed(2)}ms`, 'info');
-      addLog('📊 Layer breakdown:', 'info');
+      addLog(`🔐 Encrypted size: ${result.finalSize} bytes`, "info");
+      addLog(
+        `⏱️ Total time: ${result.totalProcessingTime.toFixed(2)}ms`,
+        "info",
+      );
+      addLog("📊 Layer breakdown:", "info");
 
       result.layers.forEach((layer, i) => {
         addLog(
           `  ${i + 1}. ${layer.algorithm}: ${layer.inputSize}B → ${layer.outputSize}B (${layer.processingTime.toFixed(2)}ms)`,
-          'info'
+          "info",
         );
       });
 
       setEncrypted(result);
-      addLog('✅ Encryption complete!', 'success');
+      addLog("✅ Encryption complete!", "success");
     } catch (err) {
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     } finally {
       setProcessing(false);
     }
@@ -216,7 +236,7 @@ const CascadingCipherDemo = () => {
   // Decrypt cascaded payload
   const handleDecrypt = async () => {
     if (!encrypted) {
-      setError('No encrypted data. Encrypt first!');
+      setError("No encrypted data. Encrypt first!");
       return;
     }
 
@@ -224,7 +244,7 @@ const CascadingCipherDemo = () => {
     setError(null);
 
     try {
-      addLog('🔓 Starting cascading decryption...', 'info');
+      addLog("🔓 Starting cascading decryption...", "info");
 
       // Create manager with same layers
       const manager = new CascadingCipherManager();
@@ -240,32 +260,32 @@ const CascadingCipherDemo = () => {
       }
 
       const aesLayer1 = new AESCipherLayer();
-      Object.defineProperty(aesLayer1, 'name', { value: 'AES-Layer-1' });
+      Object.defineProperty(aesLayer1, "name", { value: "AES-Layer-1" });
       manager.addLayer(aesLayer1);
 
       const aesLayer2 = new AESCipherLayer();
-      Object.defineProperty(aesLayer2, 'name', { value: 'AES-Layer-2' });
+      Object.defineProperty(aesLayer2, "name", { value: "AES-Layer-2" });
       manager.addLayer(aesLayer2);
 
       const aesLayer3 = new AESCipherLayer();
-      Object.defineProperty(aesLayer3, 'name', { value: 'AES-Layer-3' });
+      Object.defineProperty(aesLayer3, "name", { value: "AES-Layer-3" });
       manager.addLayer(aesLayer3);
 
       // Prepare keys
       const keys = {
-        'AES-Layer-1': { password: password1 },
-        'AES-Layer-2': { password: password2 },
-        'AES-Layer-3': { password: password3 },
+        "AES-Layer-1": { password: password1 },
+        "AES-Layer-2": { password: password2 },
+        "AES-Layer-3": { password: password3 },
       };
 
       if (useMLKEM) {
-        keys['ML-KEM-768'] = {
+        keys["ML-KEM-768"] = {
           privateKey: mlkemKeyPair.privateKey,
         };
       }
 
       if (useDH) {
-        keys['DH-AES-GCM'] = {
+        keys["DH-AES-GCM"] = {
           privateKey: dhKeyPair.privateKey,
           publicKey: dhKeyPair.publicKey,
         };
@@ -276,10 +296,10 @@ const CascadingCipherDemo = () => {
       const plaintextStr = new TextDecoder().decode(plaintextBytes);
 
       setDecrypted(plaintextStr);
-      addLog('✅ Decryption complete!', 'success');
-      addLog(`📝 Recovered message: "${plaintextStr}"`, 'success');
+      addLog("✅ Decryption complete!", "success");
+      addLog(`📝 Recovered message: "${plaintextStr}"`, "success");
     } catch (err) {
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     } finally {
       setProcessing(false);
     }
@@ -287,7 +307,7 @@ const CascadingCipherDemo = () => {
 
   const reset = () => {
     setEncrypted(null);
-    setDecrypted('');
+    setDecrypted("");
     setLogs([]);
     setError(null);
   };
@@ -298,8 +318,9 @@ const CascadingCipherDemo = () => {
         🔐 Cascading Cipher Demo
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Interactive demonstration of daisy-chained encryption layers.
-        Configure multiple cipher layers and watch data cascade through each encryption algorithm.
+        Interactive demonstration of daisy-chained encryption layers. Configure
+        multiple cipher layers and watch data cascade through each encryption
+        algorithm.
       </Typography>
 
       <Stack spacing={3}>
@@ -312,14 +333,23 @@ const CascadingCipherDemo = () => {
 
             <Box sx={{ mb: 2 }}>
               <FormControlLabel
-                control={<Switch checked={useMLKEM} onChange={(e) => setUseMLKEM(e.target.checked)} />}
+                control={
+                  <Switch
+                    checked={useMLKEM}
+                    onChange={(e) => setUseMLKEM(e.target.checked)}
+                  />
+                }
                 label="Include ML-KEM Layer (Quantum-Resistant)"
               />
             </Box>
 
             {useMLKEM && (
               <Box sx={{ mb: 2 }}>
-                <Button variant="outlined" onClick={generateMLKEMKeys} disabled={processing}>
+                <Button
+                  variant="outlined"
+                  onClick={generateMLKEMKeys}
+                  disabled={processing}
+                >
                   Generate ML-KEM Keys
                 </Button>
                 {mlkemPublicKey && (
@@ -335,14 +365,23 @@ const CascadingCipherDemo = () => {
 
             <Box sx={{ mb: 2 }}>
               <FormControlLabel
-                control={<Switch checked={useDH} onChange={(e) => setUseDH(e.target.checked)} />}
+                control={
+                  <Switch
+                    checked={useDH}
+                    onChange={(e) => setUseDH(e.target.checked)}
+                  />
+                }
                 label="Include Diffie-Hellman Layer"
               />
             </Box>
 
             {useDH && (
               <Box sx={{ mb: 2 }}>
-                <Button variant="outlined" onClick={generateDHKeys} disabled={processing}>
+                <Button
+                  variant="outlined"
+                  onClick={generateDHKeys}
+                  disabled={processing}
+                >
                   Generate DH Keys
                 </Button>
                 {dhPublicKey && (
@@ -408,7 +447,11 @@ const CascadingCipherDemo = () => {
               variant="contained"
               color="primary"
               onClick={handleEncrypt}
-              disabled={processing || (useDH && !dhKeyPair) || (useMLKEM && !mlkemKeyPair)}
+              disabled={
+                processing ||
+                (useDH && !dhKeyPair) ||
+                (useMLKEM && !mlkemKeyPair)
+              }
             >
               🔒 Encrypt
             </Button>
@@ -446,19 +489,19 @@ const CascadingCipherDemo = () => {
               <Box
                 sx={{
                   p: 2,
-                  bgcolor: 'grey.100',
+                  bgcolor: "grey.100",
                   borderRadius: 1,
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  wordBreak: 'break-all',
+                  fontFamily: "monospace",
+                  fontSize: "0.875rem",
+                  wordBreak: "break-all",
                   maxHeight: 100,
-                  overflow: 'auto',
+                  overflow: "auto",
                 }}
               >
                 {Array.from(encrypted.finalCiphertext.slice(0, 200))
-                  .map(b => b.toString(16).padStart(2, '0'))
-                  .join(' ')}
-                {encrypted.finalCiphertext.length > 200 && '...'}
+                  .map((b) => b.toString(16).padStart(2, "0"))
+                  .join(" ")}
+                {encrypted.finalCiphertext.length > 200 && "..."}
               </Box>
 
               <Typography variant="subtitle2" sx={{ mt: 2 }}>
@@ -481,7 +524,7 @@ const CascadingCipherDemo = () => {
         {decrypted && (
           <Alert severity="success">
             <Typography variant="subtitle2">Decrypted Message:</Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
               {decrypted}
             </Typography>
           </Alert>
@@ -496,8 +539,8 @@ const CascadingCipherDemo = () => {
             <Box
               sx={{
                 maxHeight: 300,
-                overflow: 'auto',
-                bgcolor: 'grey.50',
+                overflow: "auto",
+                bgcolor: "grey.50",
                 p: 2,
                 borderRadius: 1,
               }}
@@ -512,9 +555,14 @@ const CascadingCipherDemo = () => {
                     key={i}
                     variant="body2"
                     sx={{
-                      fontFamily: 'monospace',
-                      fontSize: '0.8rem',
-                      color: log.type === 'error' ? 'error.main' : log.type === 'success' ? 'success.main' : 'text.primary',
+                      fontFamily: "monospace",
+                      fontSize: "0.8rem",
+                      color:
+                        log.type === "error"
+                          ? "error.main"
+                          : log.type === "success"
+                            ? "success.main"
+                            : "text.primary",
                     }}
                   >
                     [{log.time}] {log.message}
@@ -531,4 +579,4 @@ const CascadingCipherDemo = () => {
 
 export const Interactive = () => <CascadingCipherDemo />;
 
-Interactive.storyName = 'Interactive Demo';
+Interactive.storyName = "Interactive Demo";

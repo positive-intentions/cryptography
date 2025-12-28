@@ -13,7 +13,7 @@
  * - Edge cases: empty Map, single entry, at limit, over limit
  */
 
-describe('AESCipherLayer Memory Management', () => {
+describe("AESCipherLayer Memory Management", () => {
   let AESCipherLayer;
   let crypto;
   let originalCrypto;
@@ -21,16 +21,18 @@ describe('AESCipherLayer Memory Management', () => {
   beforeEach(async () => {
     originalCrypto = global.crypto;
 
-    const { webcrypto } = await import('crypto');
+    const { webcrypto } = await import("crypto");
     global.crypto = webcrypto;
     globalThis.crypto = webcrypto;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.crypto = webcrypto;
     }
     crypto = webcrypto;
 
     try {
-      const aesModule = await import('../../crypto/CascadingCipher/layers/AESCipherLayer.ts');
+      const aesModule = await import(
+        "../../crypto/CascadingCipher/layers/AESCipherLayer.ts"
+      );
       AESCipherLayer = aesModule.AESCipherLayer;
     } catch (e) {
       AESCipherLayer = null;
@@ -40,13 +42,13 @@ describe('AESCipherLayer Memory Management', () => {
   afterEach(() => {
     global.crypto = originalCrypto;
     globalThis.crypto = originalCrypto;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.crypto = originalCrypto;
     }
   });
 
-  describe('Global IV Tracking Limit', () => {
-    test('should enforce global limit on number of IV tracking entries', async () => {
+  describe("Global IV Tracking Limit", () => {
+    test("should enforce global limit on number of IV tracking entries", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
@@ -68,14 +70,14 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify that encryption still works
-      const testKeys = { password: 'test-password-final' };
-      const testData = new TextEncoder().encode('final-test');
+      const testKeys = { password: "test-password-final" };
+      const testData = new TextEncoder().encode("final-test");
       const encrypted = await layer.encrypt(testData, testKeys);
       expect(encrypted).toBeDefined();
       expect(encrypted.ciphertext).toBeDefined();
     }, 30000); // Increase timeout for this test
 
-    test('should use LRU eviction when global limit exceeded', async () => {
+    test("should use LRU eviction when global limit exceeded", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
@@ -84,7 +86,7 @@ describe('AESCipherLayer Memory Management', () => {
       const testCount = 50;
 
       // Fill up with different passwords
-      const firstPassword = 'first-password';
+      const firstPassword = "first-password";
       for (let i = 0; i < testCount; i++) {
         const password = `password-${i}`;
         const plaintext = new TextEncoder().encode(`data-${i}`);
@@ -93,7 +95,7 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Encrypt with first password again
-      const firstData = new TextEncoder().encode('first-data');
+      const firstData = new TextEncoder().encode("first-data");
       const firstKeys = { password: firstPassword };
       const firstEncrypted = await layer.encrypt(firstData, firstKeys);
       expect(firstEncrypted).toBeDefined();
@@ -107,17 +109,17 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify encryption still works
-      const testKeys = { password: 'test-after-eviction' };
-      const testData = new TextEncoder().encode('test');
+      const testKeys = { password: "test-after-eviction" };
+      const testData = new TextEncoder().encode("test");
       const encrypted = await layer.encrypt(testData, testKeys);
       expect(encrypted).toBeDefined();
     }, 30000); // Increase timeout
 
-    test('should maintain per-key limit of 10000 IVs', async () => {
+    test("should maintain per-key limit of 10000 IVs", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
-      const password = 'same-password';
+      const password = "same-password";
       const keys = { password };
       const MAX_IV_TRACKING = 10000; // Per-key limit
 
@@ -125,7 +127,7 @@ describe('AESCipherLayer Memory Management', () => {
       // Note: This will take a while, so we'll test a smaller number
       // but verify the limit is enforced
       const testCount = 100; // Test with smaller number for speed
-      
+
       for (let i = 0; i < testCount; i++) {
         const plaintext = new TextEncoder().encode(`data-${i}`);
         const encrypted = await layer.encrypt(plaintext, keys);
@@ -133,14 +135,14 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify encryption still works after many uses
-      const finalData = new TextEncoder().encode('final');
+      const finalData = new TextEncoder().encode("final");
       const finalEncrypted = await layer.encrypt(finalData, keys);
       expect(finalEncrypted).toBeDefined();
     });
   });
 
-  describe('Memory Cleanup', () => {
-    test('should clean up evicted entries properly', async () => {
+  describe("Memory Cleanup", () => {
+    test("should clean up evicted entries properly", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
@@ -164,32 +166,32 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify encryption still works (memory was cleaned up)
-      const testKeys = { password: 'cleanup-test' };
-      const testData = new TextEncoder().encode('test');
+      const testKeys = { password: "cleanup-test" };
+      const testData = new TextEncoder().encode("test");
       const encrypted = await layer.encrypt(testData, testKeys);
       expect(encrypted).toBeDefined();
     }, 30000); // Increase timeout
   });
 
-  describe('Edge Cases', () => {
-    test('should handle empty Map initially', async () => {
+  describe("Edge Cases", () => {
+    test("should handle empty Map initially", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'test' };
-      const data = new TextEncoder().encode('test');
+      const keys = { password: "test" };
+      const data = new TextEncoder().encode("test");
 
       // First encryption should work with empty Map
       const encrypted = await layer.encrypt(data, keys);
       expect(encrypted).toBeDefined();
     });
 
-    test('should handle single entry', async () => {
+    test("should handle single entry", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
-      const keys = { password: 'single' };
-      const data = new TextEncoder().encode('test');
+      const keys = { password: "single" };
+      const data = new TextEncoder().encode("test");
 
       const encrypted1 = await layer.encrypt(data, keys);
       expect(encrypted1).toBeDefined();
@@ -198,10 +200,12 @@ describe('AESCipherLayer Memory Management', () => {
       const encrypted2 = await layer.encrypt(data, keys);
       expect(encrypted2).toBeDefined();
       // IVs should be different
-      expect(Array.from(encrypted1.parameters.iv)).not.toEqual(Array.from(encrypted2.parameters.iv));
+      expect(Array.from(encrypted1.parameters.iv)).not.toEqual(
+        Array.from(encrypted2.parameters.iv),
+      );
     });
 
-    test('should handle exactly at global limit', async () => {
+    test("should handle exactly at global limit", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
@@ -217,13 +221,13 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify encryption still works
-      const testKeys = { password: 'at-limit-test' };
-      const testData = new TextEncoder().encode('test');
+      const testKeys = { password: "at-limit-test" };
+      const testData = new TextEncoder().encode("test");
       const encrypted = await layer.encrypt(testData, testKeys);
       expect(encrypted).toBeDefined();
     }, 30000); // Increase timeout
 
-    test('should handle over global limit with eviction', async () => {
+    test("should handle over global limit with eviction", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
@@ -247,19 +251,19 @@ describe('AESCipherLayer Memory Management', () => {
       }
 
       // Verify encryption still works after eviction
-      const testKeys = { password: 'over-limit-test' };
-      const testData = new TextEncoder().encode('test');
+      const testKeys = { password: "over-limit-test" };
+      const testData = new TextEncoder().encode("test");
       const encrypted = await layer.encrypt(testData, testKeys);
       expect(encrypted).toBeDefined();
     }, 30000); // Increase timeout
   });
 
-  describe('Integration with IV Reuse Protection', () => {
-    test('should prevent IV reuse even with global limit', async () => {
+  describe("Integration with IV Reuse Protection", () => {
+    test("should prevent IV reuse even with global limit", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
-      const password = 'reuse-test';
+      const password = "reuse-test";
       const keys = { password };
 
       // Encrypt many times with same password
@@ -268,20 +272,20 @@ describe('AESCipherLayer Memory Management', () => {
         const plaintext = new TextEncoder().encode(`data-${i}`);
         const encrypted = await layer.encrypt(plaintext, keys);
         const ivHex = Array.from(encrypted.parameters.iv)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-        
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+
         // Verify no IV reuse
         expect(ivs.has(ivHex)).toBe(false);
         ivs.add(ivHex);
       }
     });
 
-    test('should maintain IV uniqueness across different passwords', async () => {
+    test("should maintain IV uniqueness across different passwords", async () => {
       if (!AESCipherLayer) return;
 
       const layer = new AESCipherLayer();
-      const data = new TextEncoder().encode('test');
+      const data = new TextEncoder().encode("test");
 
       // Encrypt with many different passwords
       for (let i = 0; i < 100; i++) {
@@ -294,4 +298,3 @@ describe('AESCipherLayer Memory Management', () => {
     });
   });
 });
-

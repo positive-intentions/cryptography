@@ -5,9 +5,9 @@
  * Shows key generation, encryption, decryption, and performance metrics.
  */
 
-import React, { useState } from 'react';
-import { MLKEMCipherLayer } from '../../crypto/CascadingCipher';
-import { MlKem768 } from '@hpke/ml-kem';
+import React, { useState } from "react";
+import { MLKEMCipherLayer } from "../../crypto/CascadingCipher";
+import { MlKem768 } from "@hpke/ml-kem";
 import {
   ThemeProvider,
   Container,
@@ -27,30 +27,30 @@ import {
   ListItemText,
   Grid,
   LinearProgress,
-} from 'ui';
+} from "ui";
 
 export default {
-  title: 'Cascading Cipher/ML-KEM Demo',
+  title: "Cascading Cipher/ML-KEM Demo",
   parameters: {
-    layout: 'fullscreen',
+    layout: "fullscreen",
   },
 };
 
 const MLKEMDemo = () => {
-  const [message, setMessage] = useState('Hello, Quantum-Resistant World!');
+  const [message, setMessage] = useState("Hello, Quantum-Resistant World!");
   const [keyPair, setKeyPair] = useState(null);
-  const [publicKeyHex, setPublicKeyHex] = useState('');
-  const [privateKeyHex, setPrivateKeyHex] = useState('');
+  const [publicKeyHex, setPublicKeyHex] = useState("");
+  const [privateKeyHex, setPrivateKeyHex] = useState("");
   const [encrypted, setEncrypted] = useState(null);
-  const [decrypted, setDecrypted] = useState('');
+  const [decrypted, setDecrypted] = useState("");
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [metrics, setMetrics] = useState(null);
 
-  const addLog = (msg, type = 'info') => {
+  const addLog = (msg, type = "info") => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, { time: timestamp, message: msg, type }]);
+    setLogs((prev) => [...prev, { time: timestamp, message: msg, type }]);
   };
 
   // Generate ML-KEM key pair
@@ -59,13 +59,13 @@ const MLKEMDemo = () => {
     setError(null);
     setLogs([]);
     setKeyPair(null);
-    setPublicKeyHex('');
-    setPrivateKeyHex('');
+    setPublicKeyHex("");
+    setPrivateKeyHex("");
     setEncrypted(null);
-    setDecrypted('');
+    setDecrypted("");
 
     try {
-      addLog('🔑 Generating ML-KEM-768 key pair...', 'info');
+      addLog("🔑 Generating ML-KEM-768 key pair...", "info");
       const startTime = performance.now();
 
       const kem = new MlKem768();
@@ -75,18 +75,18 @@ const MLKEMDemo = () => {
       const keyGenTime = endTime - startTime;
 
       setKeyPair(pair);
-      
+
       // Get key bytes
       const publicKeyBytes = pair.publicKey.key;
       const privateKeyBytes = pair.privateKey.key;
 
       // Display first 16 bytes as hex
       const pubHex = Array.from(publicKeyBytes.slice(0, 16))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join(' ');
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ");
       const privHex = Array.from(privateKeyBytes.slice(0, 16))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join(' ');
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ");
 
       setPublicKeyHex(pubHex);
       setPrivateKeyHex(privHex);
@@ -97,12 +97,12 @@ const MLKEMDemo = () => {
         privateKeySize: privateKeyBytes.length,
       });
 
-      addLog(`✅ Key pair generated in ${keyGenTime.toFixed(2)}ms`, 'success');
-      addLog(`📊 Public key size: ${publicKeyBytes.length} bytes`, 'info');
-      addLog(`📊 Private key size: ${privateKeyBytes.length} bytes`, 'info');
-      addLog(`📤 Public key (first 16 bytes): ${pubHex}...`, 'info');
+      addLog(`✅ Key pair generated in ${keyGenTime.toFixed(2)}ms`, "success");
+      addLog(`📊 Public key size: ${publicKeyBytes.length} bytes`, "info");
+      addLog(`📊 Private key size: ${privateKeyBytes.length} bytes`, "info");
+      addLog(`📤 Public key (first 16 bytes): ${pubHex}...`, "info");
     } catch (err) {
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     } finally {
       setProcessing(false);
     }
@@ -111,23 +111,23 @@ const MLKEMDemo = () => {
   // Encrypt with ML-KEM
   const handleEncrypt = async () => {
     if (!keyPair) {
-      setError('Please generate keys first');
+      setError("Please generate keys first");
       return;
     }
 
     setProcessing(true);
     setError(null);
     setEncrypted(null);
-    setDecrypted('');
+    setDecrypted("");
 
     try {
-      addLog('🔒 Starting ML-KEM encryption...', 'info');
+      addLog("🔒 Starting ML-KEM encryption...", "info");
       const startTime = performance.now();
 
       const layer = new MLKEMCipherLayer();
       const plaintext = new TextEncoder().encode(message);
 
-      addLog(`📝 Plaintext size: ${plaintext.length} bytes`, 'info');
+      addLog(`📝 Plaintext size: ${plaintext.length} bytes`, "info");
 
       const result = await layer.encrypt(plaintext, {
         publicKey: keyPair.publicKey,
@@ -137,7 +137,7 @@ const MLKEMDemo = () => {
       const encryptTime = endTime - startTime;
 
       setEncrypted(result);
-      
+
       if (metrics) {
         setMetrics({
           ...metrics,
@@ -147,12 +147,21 @@ const MLKEMDemo = () => {
         });
       }
 
-      addLog(`✅ Encryption complete in ${encryptTime.toFixed(2)}ms`, 'success');
-      addLog(`📊 Encapsulated key size: ${result.parameters.encapsulated.length} bytes`, 'info');
-      addLog(`📊 Ciphertext size: ${result.ciphertext.length} bytes`, 'info');
-      addLog(`📈 Size overhead: ${((result.ciphertext.length / plaintext.length - 1) * 100).toFixed(1)}%`, 'info');
+      addLog(
+        `✅ Encryption complete in ${encryptTime.toFixed(2)}ms`,
+        "success",
+      );
+      addLog(
+        `📊 Encapsulated key size: ${result.parameters.encapsulated.length} bytes`,
+        "info",
+      );
+      addLog(`📊 Ciphertext size: ${result.ciphertext.length} bytes`, "info");
+      addLog(
+        `📈 Size overhead: ${((result.ciphertext.length / plaintext.length - 1) * 100).toFixed(1)}%`,
+        "info",
+      );
     } catch (err) {
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     } finally {
       setProcessing(false);
     }
@@ -161,7 +170,7 @@ const MLKEMDemo = () => {
   // Decrypt with ML-KEM
   const handleDecrypt = async () => {
     if (!encrypted || !keyPair) {
-      setError('Please encrypt data first');
+      setError("Please encrypt data first");
       return;
     }
 
@@ -169,7 +178,7 @@ const MLKEMDemo = () => {
     setError(null);
 
     try {
-      addLog('🔓 Starting ML-KEM decryption...', 'info');
+      addLog("🔓 Starting ML-KEM decryption...", "info");
       const startTime = performance.now();
 
       const layer = new MLKEMCipherLayer();
@@ -190,16 +199,25 @@ const MLKEMDemo = () => {
         });
       }
 
-      addLog(`✅ Decryption complete in ${decryptTime.toFixed(2)}ms`, 'success');
-      addLog(`📝 Recovered message: "${plaintextStr}"`, 'success');
+      addLog(
+        `✅ Decryption complete in ${decryptTime.toFixed(2)}ms`,
+        "success",
+      );
+      addLog(`📝 Recovered message: "${plaintextStr}"`, "success");
 
       if (plaintextStr === message) {
-        addLog('🎉 Round-trip successful! Message matches perfectly!', 'success');
+        addLog(
+          "🎉 Round-trip successful! Message matches perfectly!",
+          "success",
+        );
       } else {
-        addLog('⚠️ Warning: Decrypted message does not match original', 'error');
+        addLog(
+          "⚠️ Warning: Decrypted message does not match original",
+          "error",
+        );
       }
     } catch (err) {
-      addLog(`❌ ${err.message}`, 'error');
+      addLog(`❌ ${err.message}`, "error");
     } finally {
       setProcessing(false);
     }
@@ -207,7 +225,7 @@ const MLKEMDemo = () => {
 
   const reset = () => {
     setEncrypted(null);
-    setDecrypted('');
+    setDecrypted("");
     setLogs([]);
     setError(null);
     setMetrics(null);
@@ -219,8 +237,9 @@ const MLKEMDemo = () => {
         🔐 ML-KEM (CRYSTALS-Kyber) Demo
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Interactive demonstration of ML-KEM-768, a NIST-standardized quantum-resistant key encapsulation mechanism.
-        ML-KEM provides post-quantum security equivalent to AES-192.
+        Interactive demonstration of ML-KEM-768, a NIST-standardized
+        quantum-resistant key encapsulation mechanism. ML-KEM provides
+        post-quantum security equivalent to AES-192.
       </Typography>
 
       <Stack spacing={3}>
@@ -231,8 +250,9 @@ const MLKEMDemo = () => {
               Step 1: Generate Key Pair
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              ML-KEM uses a key encapsulation mechanism (KEM) where the public key is used for encryption
-              and the private key is used for decryption.
+              ML-KEM uses a key encapsulation mechanism (KEM) where the public
+              key is used for encryption and the private key is used for
+              decryption.
             </Typography>
 
             <Button
@@ -257,16 +277,20 @@ const MLKEMDemo = () => {
                     <Box
                       sx={{
                         p: 1,
-                        bgcolor: 'grey.100',
+                        bgcolor: "grey.100",
                         borderRadius: 1,
-                        fontFamily: 'monospace',
-                        fontSize: '0.875rem',
-                        wordBreak: 'break-all',
+                        fontFamily: "monospace",
+                        fontSize: "0.875rem",
+                        wordBreak: "break-all",
                       }}
                     >
                       {publicKeyHex}...
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
                       Full size: {metrics?.publicKeySize} bytes
                     </Typography>
                   </Grid>
@@ -277,16 +301,20 @@ const MLKEMDemo = () => {
                     <Box
                       sx={{
                         p: 1,
-                        bgcolor: 'grey.100',
+                        bgcolor: "grey.100",
                         borderRadius: 1,
-                        fontFamily: 'monospace',
-                        fontSize: '0.875rem',
-                        wordBreak: 'break-all',
+                        fontFamily: "monospace",
+                        fontSize: "0.875rem",
+                        wordBreak: "break-all",
                       }}
                     >
                       {privateKeyHex}...
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
                       Full size: {metrics?.privateKeySize} bytes
                     </Typography>
                   </Grid>
@@ -304,8 +332,9 @@ const MLKEMDemo = () => {
                 Step 2: Encrypt Message
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Encrypt a message using the public key. ML-KEM encapsulates a shared secret,
-                which is then used with AES-GCM for authenticated encryption.
+                Encrypt a message using the public key. ML-KEM encapsulates a
+                shared secret, which is then used with AES-GCM for authenticated
+                encryption.
               </Typography>
 
               <TextField
@@ -340,21 +369,27 @@ const MLKEMDemo = () => {
                   <Box
                     sx={{
                       p: 1,
-                      bgcolor: 'grey.100',
+                      bgcolor: "grey.100",
                       borderRadius: 1,
-                      fontFamily: 'monospace',
-                      fontSize: '0.75rem',
-                      wordBreak: 'break-all',
+                      fontFamily: "monospace",
+                      fontSize: "0.75rem",
+                      wordBreak: "break-all",
                       maxHeight: 60,
-                      overflow: 'auto',
+                      overflow: "auto",
                     }}
                   >
                     {Array.from(encrypted.parameters.encapsulated.slice(0, 32))
-                      .map(b => b.toString(16).padStart(2, '0'))
-                      .join(' ')}...
+                      .map((b) => b.toString(16).padStart(2, "0"))
+                      .join(" ")}
+                    ...
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Full encapsulated key: {encrypted.parameters.encapsulated.length} bytes
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Full encapsulated key:{" "}
+                    {encrypted.parameters.encapsulated.length} bytes
                   </Typography>
                 </Box>
               )}
@@ -370,8 +405,9 @@ const MLKEMDemo = () => {
                 Step 3: Decrypt Message
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Decrypt the message using the private key. ML-KEM decapsulates the shared secret,
-                which is then used to decrypt the AES-GCM ciphertext.
+                Decrypt the message using the private key. ML-KEM decapsulates
+                the shared secret, which is then used to decrypt the AES-GCM
+                ciphertext.
               </Typography>
 
               <Button
@@ -385,12 +421,21 @@ const MLKEMDemo = () => {
 
               {decrypted && (
                 <Alert severity="success" sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2">Decrypted Message:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  <Typography variant="subtitle2">
+                    Decrypted Message:
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: "bold", mt: 1 }}
+                  >
                     {decrypted}
                   </Typography>
                   {decrypted === message && (
-                    <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       ✅ Perfect match! Round-trip successful.
                     </Typography>
                   )}
@@ -535,8 +580,8 @@ const MLKEMDemo = () => {
             <Box
               sx={{
                 maxHeight: 300,
-                overflow: 'auto',
-                bgcolor: 'grey.50',
+                overflow: "auto",
+                bgcolor: "grey.50",
                 p: 2,
                 borderRadius: 1,
               }}
@@ -551,9 +596,14 @@ const MLKEMDemo = () => {
                     key={i}
                     variant="body2"
                     sx={{
-                      fontFamily: 'monospace',
-                      fontSize: '0.8rem',
-                      color: log.type === 'error' ? 'error.main' : log.type === 'success' ? 'success.main' : 'text.primary',
+                      fontFamily: "monospace",
+                      fontSize: "0.8rem",
+                      color:
+                        log.type === "error"
+                          ? "error.main"
+                          : log.type === "success"
+                            ? "success.main"
+                            : "text.primary",
                     }}
                   >
                     [{log.time}] {log.message}
@@ -570,5 +620,4 @@ const MLKEMDemo = () => {
 
 export const MLKEMStandalone = () => <MLKEMDemo />;
 
-MLKEMStandalone.storyName = 'ML-KEM Standalone Demo';
-
+MLKEMStandalone.storyName = "ML-KEM Standalone Demo";

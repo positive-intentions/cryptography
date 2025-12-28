@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
-import { 
-  Button, 
-  TextField, 
-  Box, 
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
+import { CryptoDemo, CodeDisplay, OperationStatus } from "ui";
+import {
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Card,
@@ -18,32 +21,33 @@ import {
   Divider,
   Step,
   StepLabel,
-  Stepper
-} from '@mui/material';
-import { 
-  Send, 
-  VpnKey, 
+  Stepper,
+} from "@mui/material";
+import {
+  Send,
+  VpnKey,
   Security,
   Message,
   Person,
   SwapHoriz,
-  CheckCircle
-} from '@mui/icons-material';
+  CheckCircle,
+} from "@mui/icons-material";
 
 export default {
-  title: 'Cryptography/Use Cases/Secure Messaging',
+  title: "Cryptography/Use Cases/Secure Messaging",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'End-to-end encrypted messaging using hybrid cryptography (RSA + AES).',
+        component:
+          "End-to-end encrypted messaging using hybrid cryptography (RSA + AES).",
       },
     },
   },
 };
 
 const HybridMessagingDemo = () => {
-  const { 
+  const {
     generateKeyPair,
     generateSymmetricKey,
     deserializePublicKey,
@@ -52,30 +56,30 @@ const HybridMessagingDemo = () => {
     encrypt,
     decrypt,
     encryptWithSymmetricKey,
-    decryptWithSymmetricKey
+    decryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [step, setStep] = useState(0);
-  const [alice, setAlice] = useState({ 
-    keyPair: null, 
-    message: '', 
+  const [alice, setAlice] = useState({
+    keyPair: null,
+    message: "",
     sessionKey: null,
-    encryptedSessionKey: '',
-    encryptedMessage: ''
+    encryptedSessionKey: "",
+    encryptedMessage: "",
   });
-  const [bob, setBob] = useState({ 
-    keyPair: null, 
+  const [bob, setBob] = useState({
+    keyPair: null,
     decryptedSessionKey: null,
-    decryptedMessage: ''
+    decryptedMessage: "",
   });
   const [loading, setLoading] = useState(false);
 
   const steps = [
-    'Generate RSA key pairs',
-    'Generate AES session key',
-    'Exchange encrypted session key',
-    'Send encrypted message',
-    'Decrypt and read message'
+    "Generate RSA key pairs",
+    "Generate AES session key",
+    "Exchange encrypted session key",
+    "Send encrypted message",
+    "Decrypt and read message",
   ];
 
   const generateKeyPairs = async () => {
@@ -83,11 +87,11 @@ const HybridMessagingDemo = () => {
     try {
       const [aliceKeys, bobKeys] = await Promise.all([
         generateKeyPair(),
-        generateKeyPair()
+        generateKeyPair(),
       ]);
-      
-      setAlice(prev => ({ ...prev, keyPair: aliceKeys }));
-      setBob(prev => ({ ...prev, keyPair: bobKeys }));
+
+      setAlice((prev) => ({ ...prev, keyPair: aliceKeys }));
+      setBob((prev) => ({ ...prev, keyPair: bobKeys }));
       setStep(1);
     } catch (error) {
       setLoading(false);
@@ -98,7 +102,7 @@ const HybridMessagingDemo = () => {
     setLoading(true);
     try {
       const sessionKey = await generateSymmetricKey();
-      setAlice(prev => ({ ...prev, sessionKey }));
+      setAlice((prev) => ({ ...prev, sessionKey }));
       setStep(2);
     } catch (error) {
       setLoading(false);
@@ -107,18 +111,20 @@ const HybridMessagingDemo = () => {
 
   const exchangeSessionKey = async () => {
     if (!alice.sessionKey || !bob.keyPair) return;
-    
+
     setLoading(true);
     try {
       // Alice encrypts the session key with Bob's public key
       const bobPublicKey = await deserializePublicKey(bob.keyPair.publicKey);
-      const sessionKeyStr = alice.sessionKey ? JSON.stringify(alice.sessionKey) : '';
+      const sessionKeyStr = alice.sessionKey
+        ? JSON.stringify(alice.sessionKey)
+        : "";
       if (!sessionKeyStr) {
-        throw new Error('No session key to encrypt');
+        throw new Error("No session key to encrypt");
       }
       const encryptedSessionKey = await encrypt(sessionKeyStr, bobPublicKey);
-      
-      setAlice(prev => ({ ...prev, encryptedSessionKey }));
+
+      setAlice((prev) => ({ ...prev, encryptedSessionKey }));
       setStep(3);
     } catch (error) {
       setLoading(false);
@@ -127,14 +133,17 @@ const HybridMessagingDemo = () => {
 
   const sendMessage = async () => {
     if (!alice.message || !alice.sessionKey) return;
-    
+
     setLoading(true);
     try {
       // Alice encrypts the message with the session key
       const sessionKey = await deserializeSymmetricKey(alice.sessionKey);
-      const encryptedMessage = await encryptWithSymmetricKey(alice.message, sessionKey);
-      
-      setAlice(prev => ({ ...prev, encryptedMessage }));
+      const encryptedMessage = await encryptWithSymmetricKey(
+        alice.message,
+        sessionKey,
+      );
+
+      setAlice((prev) => ({ ...prev, encryptedMessage }));
       setStep(4);
     } catch (error) {
       setLoading(false);
@@ -142,28 +151,34 @@ const HybridMessagingDemo = () => {
   };
 
   const decryptMessage = async () => {
-    if (!alice.encryptedSessionKey || !alice.encryptedMessage || !bob.keyPair) return;
-    
+    if (!alice.encryptedSessionKey || !alice.encryptedMessage || !bob.keyPair)
+      return;
+
     setLoading(true);
     try {
       // Step 1: Bob decrypts the session key with his private key
       const bobPrivateKey = await deserializePrivateKey(bob.keyPair.privateKey);
-      const decryptedSessionKeyStr = await decrypt(alice.encryptedSessionKey, bobPrivateKey);
-      
+      const decryptedSessionKeyStr = await decrypt(
+        alice.encryptedSessionKey,
+        bobPrivateKey,
+      );
+
       let decryptedSessionKey;
       try {
         decryptedSessionKey = JSON.parse(decryptedSessionKeyStr);
-      } catch (error) {
-      }
-      
+      } catch (error) {}
+
       // Step 2: Bob uses the session key to decrypt the message
       const sessionKey = await deserializeSymmetricKey(decryptedSessionKey);
-      const decryptedMessage = await decryptWithSymmetricKey(alice.encryptedMessage, sessionKey);
-      
-      setBob(prev => ({ 
-        ...prev, 
+      const decryptedMessage = await decryptWithSymmetricKey(
+        alice.encryptedMessage,
+        sessionKey,
+      );
+
+      setBob((prev) => ({
+        ...prev,
         decryptedSessionKey,
-        decryptedMessage 
+        decryptedMessage,
       }));
     } catch (error) {
       setLoading(false);
@@ -178,9 +193,10 @@ const HybridMessagingDemo = () => {
       <Stack spacing={3}>
         <Alert severity="info">
           <Typography variant="body2">
-            <strong>Hybrid Approach:</strong> This demo shows how real-world encrypted messaging works. 
-            RSA encrypts a randomly generated AES key, then AES encrypts the actual message. 
-            This combines RSA's security with AES's speed.
+            <strong>Hybrid Approach:</strong> This demo shows how real-world
+            encrypted messaging works. RSA encrypts a randomly generated AES
+            key, then AES encrypts the actual message. This combines RSA's
+            security with AES's speed.
           </Typography>
         </Alert>
 
@@ -269,7 +285,9 @@ const HybridMessagingDemo = () => {
                 <TextField
                   label="Alice's Message"
                   value={alice.message}
-                  onChange={(e) => setAlice(prev => ({ ...prev, message: e.target.value }))}
+                  onChange={(e) =>
+                    setAlice((prev) => ({ ...prev, message: e.target.value }))
+                  }
                   multiline
                   rows={3}
                   fullWidth
@@ -332,21 +350,25 @@ const HybridMessagingDemo = () => {
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
+                  <Avatar sx={{ bgcolor: "primary.main" }}>
                     <Person />
                   </Avatar>
                   <Typography variant="h6">Alice (Sender)</Typography>
                 </Stack>
-                
+
                 {alice.sessionKey && (
                   <CodeDisplay
-                    code={alice.sessionKey ? JSON.stringify(alice.sessionKey, null, 2) : 'No session key available'}
+                    code={
+                      alice.sessionKey
+                        ? JSON.stringify(alice.sessionKey, null, 2)
+                        : "No session key available"
+                    }
                     label="Session Key (AES)"
                     secret={true}
                     maxHeight="100px"
                   />
                 )}
-                
+
                 {alice.encryptedSessionKey && (
                   <CodeDisplay
                     code={alice.encryptedSessionKey}
@@ -354,35 +376,43 @@ const HybridMessagingDemo = () => {
                     maxHeight="100px"
                   />
                 )}
-                
+
                 {alice.encryptedMessage && (
                   <CodeDisplay
-                    code={alice.encryptedMessage ? JSON.stringify(alice.encryptedMessage, null, 2) : 'No encrypted message available'}
+                    code={
+                      alice.encryptedMessage
+                        ? JSON.stringify(alice.encryptedMessage, null, 2)
+                        : "No encrypted message available"
+                    }
                     label="Encrypted Message (AES)"
                     maxHeight="100px"
                   />
                 )}
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                  <Avatar sx={{ bgcolor: "secondary.main" }}>
                     <Person />
                   </Avatar>
                   <Typography variant="h6">Bob (Receiver)</Typography>
                 </Stack>
-                
+
                 {bob.decryptedSessionKey && (
                   <CodeDisplay
-                    code={bob.decryptedSessionKey ? JSON.stringify(bob.decryptedSessionKey, null, 2) : 'No decrypted session key available'}
+                    code={
+                      bob.decryptedSessionKey
+                        ? JSON.stringify(bob.decryptedSessionKey, null, 2)
+                        : "No decrypted session key available"
+                    }
                     label="Decrypted Session Key"
                     secret={true}
                     maxHeight="100px"
                   />
                 )}
-                
+
                 {bob.decryptedMessage && (
                   <Alert severity="success" sx={{ mt: 2 }}>
                     <Typography variant="body2">
@@ -403,7 +433,7 @@ const HybridMessagingDemo = () => {
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
-              <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 2, textAlign: "center" }}>
                 <VpnKey color="primary" sx={{ fontSize: 40, mb: 1 }} />
                 <Typography variant="subtitle2" gutterBottom>
                   RSA for Key Exchange
@@ -413,9 +443,9 @@ const HybridMessagingDemo = () => {
                 </Typography>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
-              <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 2, textAlign: "center" }}>
                 <Security color="secondary" sx={{ fontSize: 40, mb: 1 }} />
                 <Typography variant="subtitle2" gutterBottom>
                   AES for Messages
@@ -425,9 +455,9 @@ const HybridMessagingDemo = () => {
                 </Typography>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
-              <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 2, textAlign: "center" }}>
                 <CheckCircle color="success" sx={{ fontSize: 40, mb: 1 }} />
                 <Typography variant="subtitle2" gutterBottom>
                   Best of Both
@@ -451,21 +481,21 @@ export const Default = () => (
 );
 
 const GroupMessagingDemo = () => {
-  const { 
+  const {
     generateSymmetricKey,
     deserializeSymmetricKey,
     encryptWithSymmetricKey,
-    decryptWithSymmetricKey
+    decryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [groupKey, setGroupKey] = useState(null);
   const [participants, setParticipants] = useState([
-    { id: 1, name: 'Alice', color: 'primary' },
-    { id: 2, name: 'Bob', color: 'secondary' },
-    { id: 3, name: 'Charlie', color: 'success' }
+    { id: 1, name: "Alice", color: "primary" },
+    { id: 2, name: "Bob", color: "secondary" },
+    { id: 3, name: "Charlie", color: "success" },
   ]);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [selectedSender, setSelectedSender] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -481,23 +511,23 @@ const GroupMessagingDemo = () => {
 
   const sendMessage = async () => {
     if (!groupKey || !newMessage) return;
-    
+
     setLoading(true);
     try {
       const key = await deserializeSymmetricKey(groupKey);
       const encrypted = await encryptWithSymmetricKey(newMessage, key);
-      
+
       const message = {
         id: Date.now(),
         senderId: selectedSender,
-        senderName: participants.find(p => p.id === selectedSender)?.name,
+        senderName: participants.find((p) => p.id === selectedSender)?.name,
         content: newMessage,
         encrypted: encrypted,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       };
-      
-      setMessages(prev => [...prev, message]);
-      setNewMessage('');
+
+      setMessages((prev) => [...prev, message]);
+      setNewMessage("");
     } catch (error) {
       setLoading(false);
     }
@@ -505,18 +535,18 @@ const GroupMessagingDemo = () => {
 
   const decryptMessage = async (messageId) => {
     if (!groupKey) return;
-    
+
     setLoading(true);
     try {
       const key = await deserializeSymmetricKey(groupKey);
-      const message = messages.find(m => m.id === messageId);
-      
+      const message = messages.find((m) => m.id === messageId);
+
       if (message && !message.decrypted) {
         const decrypted = await decryptWithSymmetricKey(message.encrypted, key);
-        
-        setMessages(prev => prev.map(m => 
-          m.id === messageId ? { ...m, decrypted } : m
-        ));
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, decrypted } : m)),
+        );
       }
     } catch (error) {
       setLoading(false);
@@ -531,8 +561,9 @@ const GroupMessagingDemo = () => {
       <Stack spacing={3}>
         <Alert severity="info">
           <Typography variant="body2">
-            In this simplified group messaging demo, all participants share the same AES key. 
-            In real applications, key distribution would be more complex and secure.
+            In this simplified group messaging demo, all participants share the
+            same AES key. In real applications, key distribution would be more
+            complex and secure.
           </Typography>
         </Alert>
 
@@ -555,7 +586,7 @@ const GroupMessagingDemo = () => {
                 Group Participants
               </Typography>
               <Stack direction="row" spacing={1}>
-                {participants.map(participant => (
+                {participants.map((participant) => (
                   <Chip
                     key={participant.id}
                     label={participant.name}
@@ -579,19 +610,21 @@ const GroupMessagingDemo = () => {
                   onChange={(e) => setSelectedSender(Number(e.target.value))}
                   SelectProps={{ native: true }}
                 >
-                  {participants.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                  {participants.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
                 </TextField>
-                
+
                 <TextField
                   label="Message"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   fullWidth
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                 />
-                
+
                 <Button
                   variant="contained"
                   onClick={sendMessage}
@@ -609,10 +642,15 @@ const GroupMessagingDemo = () => {
                   Group Messages
                 </Typography>
                 <Stack spacing={1}>
-                  {messages.map(message => (
+                  {messages.map((message) => (
                     <Card key={message.id} variant="outlined">
                       <CardContent sx={{ p: 2 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={1}
+                        >
                           <Typography variant="caption" color="text.secondary">
                             {message.senderName} • {message.timestamp}
                           </Typography>
@@ -626,7 +664,7 @@ const GroupMessagingDemo = () => {
                             </Button>
                           )}
                         </Stack>
-                        
+
                         {message.decrypted ? (
                           <Alert severity="success" sx={{ py: 1 }}>
                             <Typography variant="body2">
@@ -635,7 +673,11 @@ const GroupMessagingDemo = () => {
                           </Alert>
                         ) : (
                           <CodeDisplay
-                            code={message.encrypted ? JSON.stringify(message.encrypted, null, 2) : 'No encrypted message available'}
+                            code={
+                              message.encrypted
+                                ? JSON.stringify(message.encrypted, null, 2)
+                                : "No encrypted message available"
+                            }
                             label="Encrypted Message"
                             maxHeight="80px"
                           />

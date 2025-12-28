@@ -13,7 +13,7 @@ import {
   CascadeDecryptOptions,
   CascadingCipherError,
   LayerMetadata,
-} from './types';
+} from "./types";
 
 /**
  * CascadingCipherManager - Chains multiple cipher layers for layered encryption
@@ -36,7 +36,7 @@ export class CascadingCipherManager {
    * Convert Uint8Array to base64 string for consistent format between layers
    */
   private arrayBufferToBase64(buffer: Uint8Array): string {
-    let binary = '';
+    let binary = "";
     const bytes = new Uint8Array(buffer);
     const len = bytes.byteLength;
     for (let i = 0; i < len; i++) {
@@ -67,7 +67,7 @@ export class CascadingCipherManager {
     if (this.layerMap.has(layer.name)) {
       throw new CascadingCipherError(
         `Layer with name "${layer.name}" already exists`,
-        undefined
+        undefined,
       );
     }
 
@@ -118,10 +118,10 @@ export class CascadingCipherManager {
   async encrypt(
     plaintext: Uint8Array,
     keys: CipherKeys,
-    options?: Partial<CascadeEncryptOptions>
+    options?: Partial<CascadeEncryptOptions>,
   ): Promise<CascadedPayload> {
     if (this.layers.length === 0) {
-      throw new CascadingCipherError('No cipher layers configured', undefined);
+      throw new CascadingCipherError("No cipher layers configured", undefined);
     }
 
     const startTime = performance.now();
@@ -139,7 +139,7 @@ export class CascadingCipherManager {
         if (!layerKeys && !options?.skipValidation) {
           throw new CascadingCipherError(
             `Missing keys for layer: ${layer.name}`,
-            i
+            i,
           );
         }
 
@@ -147,7 +147,7 @@ export class CascadingCipherManager {
         if (layer.validateKeys && !layer.validateKeys(layerKeys)) {
           throw new CascadingCipherError(
             `Invalid keys for layer: ${layer.name}`,
-            i
+            i,
           );
         }
 
@@ -159,7 +159,7 @@ export class CascadingCipherManager {
             inputData = currentData;
           } else {
             // Subsequent layers receive base64 string from previous layer
-            if (typeof currentData === 'string') {
+            if (typeof currentData === "string") {
               inputData = this.base64ToArrayBuffer(currentData);
             } else {
               inputData = currentData;
@@ -178,7 +178,7 @@ export class CascadingCipherManager {
           throw new CascadingCipherError(
             `Encryption failed at layer ${i} (${layer.name}): ${error.message}`,
             i,
-            error as Error
+            error as Error,
           );
         }
       }
@@ -188,9 +188,10 @@ export class CascadingCipherManager {
 
       // Store final ciphertext as Uint8Array (convert from base64 string if needed)
       // currentData is base64 string after last layer, convert back to Uint8Array for storage
-      const finalCiphertextBytes = typeof currentData === 'string' 
-        ? this.base64ToArrayBuffer(currentData)
-        : currentData;
+      const finalCiphertextBytes =
+        typeof currentData === "string"
+          ? this.base64ToArrayBuffer(currentData)
+          : currentData;
 
       return {
         finalCiphertext: finalCiphertextBytes,
@@ -208,7 +209,7 @@ export class CascadingCipherManager {
       throw new CascadingCipherError(
         `Cascading encryption failed: ${error.message}`,
         undefined,
-        error as Error
+        error as Error,
       );
     }
   }
@@ -226,23 +227,25 @@ export class CascadingCipherManager {
   async decrypt(
     cascadedPayload: CascadedPayload,
     keys: CipherKeys,
-    options?: Partial<CascadeDecryptOptions>
+    options?: Partial<CascadeDecryptOptions>,
   ): Promise<Uint8Array> {
     if (this.layers.length === 0) {
-      throw new CascadingCipherError('No cipher layers configured', undefined);
+      throw new CascadingCipherError("No cipher layers configured", undefined);
     }
 
     if (this.layers.length !== cascadedPayload.layers.length) {
       throw new CascadingCipherError(
         `Layer count mismatch: manager has ${this.layers.length} layers, ` +
           `payload has ${cascadedPayload.layers.length} layers`,
-        undefined
+        undefined,
       );
     }
 
     // Convert finalCiphertext to base64 string for consistent format
     // All data between layers is stored as base64 strings
-    let currentData: string | Uint8Array = this.arrayBufferToBase64(cascadedPayload.finalCiphertext);
+    let currentData: string | Uint8Array = this.arrayBufferToBase64(
+      cascadedPayload.finalCiphertext,
+    );
 
     try {
       // Decrypt in reverse order (last layer first)
@@ -255,7 +258,7 @@ export class CascadingCipherManager {
         if (!layerKeys && !options?.skipValidation) {
           throw new CascadingCipherError(
             `Missing keys for layer: ${layer.name}`,
-            i
+            i,
           );
         }
 
@@ -263,7 +266,7 @@ export class CascadingCipherManager {
         if (layer.validateKeys && !layer.validateKeys(layerKeys)) {
           throw new CascadingCipherError(
             `Invalid keys for layer: ${layer.name}`,
-            i
+            i,
           );
         }
 
@@ -273,7 +276,7 @@ export class CascadingCipherManager {
             throw new CascadingCipherError(
               `Layer mismatch at position ${i}: expected ${layer.name}, ` +
                 `got ${layerMetadata.algorithm}`,
-              i
+              i,
             );
           }
         }
@@ -281,7 +284,7 @@ export class CascadingCipherManager {
         try {
           // Convert currentData from base64 string to Uint8Array for the layer
           let ciphertextBytes: Uint8Array;
-          if (typeof currentData === 'string') {
+          if (typeof currentData === "string") {
             ciphertextBytes = this.base64ToArrayBuffer(currentData);
           } else if (currentData instanceof Uint8Array) {
             ciphertextBytes = currentData;
@@ -311,7 +314,7 @@ export class CascadingCipherManager {
           throw new CascadingCipherError(
             `Decryption failed at layer ${i} (${layer.name}): ${error.message}`,
             i,
-            error as Error
+            error as Error,
           );
         }
       }
@@ -326,7 +329,7 @@ export class CascadingCipherManager {
       throw new CascadingCipherError(
         `Cascading decryption failed: ${error.message}`,
         undefined,
-        error as Error
+        error as Error,
       );
     }
   }

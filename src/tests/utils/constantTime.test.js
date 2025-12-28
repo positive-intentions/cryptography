@@ -9,106 +9,130 @@
  * side-channel attacks. Uses test-driven development approach.
  */
 
-describe('ConstantTime', () => {
+describe("ConstantTime", () => {
   let ConstantTime;
 
   beforeEach(async () => {
     try {
-      const module = await import('../../crypto/utils/constantTime.ts');
+      const module = await import("../../crypto/utils/constantTime.ts");
       ConstantTime = module.ConstantTime;
     } catch (e) {
       ConstantTime = null;
     }
   });
 
-  describe('constantTimeCompareStrings', () => {
-    describe('Basic functionality', () => {
-      test('should return true for matching strings', () => {
+  describe("constantTimeCompareStrings", () => {
+    describe("Basic functionality", () => {
+      test("should return true for matching strings", () => {
         if (!ConstantTime) return;
 
-        const result = ConstantTime.constantTimeCompareStrings('hello', 'hello');
+        const result = ConstantTime.constantTimeCompareStrings(
+          "hello",
+          "hello",
+        );
         expect(result).toBe(true);
       });
 
-      test('should return false for non-matching strings', () => {
+      test("should return false for non-matching strings", () => {
         if (!ConstantTime) return;
 
-        const result = ConstantTime.constantTimeCompareStrings('hello', 'world');
+        const result = ConstantTime.constantTimeCompareStrings(
+          "hello",
+          "world",
+        );
         expect(result).toBe(false);
       });
 
-      test('should return false for strings of different lengths', () => {
+      test("should return false for strings of different lengths", () => {
         if (!ConstantTime) return;
 
-        const result = ConstantTime.constantTimeCompareStrings('hello', 'hi');
+        const result = ConstantTime.constantTimeCompareStrings("hello", "hi");
         expect(result).toBe(false);
       });
 
-      test('should handle empty strings', () => {
+      test("should handle empty strings", () => {
         if (!ConstantTime) return;
 
-        expect(ConstantTime.constantTimeCompareStrings('', '')).toBe(true);
-        expect(ConstantTime.constantTimeCompareStrings('', 'a')).toBe(false);
-        expect(ConstantTime.constantTimeCompareStrings('a', '')).toBe(false);
+        expect(ConstantTime.constantTimeCompareStrings("", "")).toBe(true);
+        expect(ConstantTime.constantTimeCompareStrings("", "a")).toBe(false);
+        expect(ConstantTime.constantTimeCompareStrings("a", "")).toBe(false);
       });
 
-      test('should handle long strings', () => {
+      test("should handle long strings", () => {
         if (!ConstantTime) return;
 
-        const longStr1 = 'a'.repeat(1000);
-        const longStr2 = 'a'.repeat(1000);
-        const longStr3 = 'b'.repeat(1000);
+        const longStr1 = "a".repeat(1000);
+        const longStr2 = "a".repeat(1000);
+        const longStr3 = "b".repeat(1000);
 
-        expect(ConstantTime.constantTimeCompareStrings(longStr1, longStr2)).toBe(true);
-        expect(ConstantTime.constantTimeCompareStrings(longStr1, longStr3)).toBe(false);
+        expect(
+          ConstantTime.constantTimeCompareStrings(longStr1, longStr2),
+        ).toBe(true);
+        expect(
+          ConstantTime.constantTimeCompareStrings(longStr1, longStr3),
+        ).toBe(false);
       });
 
-      test('should handle strings with special characters', () => {
+      test("should handle strings with special characters", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'test@123#$%';
-        const str2 = 'test@123#$%';
-        const str3 = 'test@123#$!';
+        const str1 = "test@123#$%";
+        const str2 = "test@123#$%";
+        const str3 = "test@123#$!";
 
         expect(ConstantTime.constantTimeCompareStrings(str1, str2)).toBe(true);
         expect(ConstantTime.constantTimeCompareStrings(str1, str3)).toBe(false);
       });
 
-      test('should handle Unicode strings', () => {
+      test("should handle Unicode strings", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'Hello 世界 🌍';
-        const str2 = 'Hello 世界 🌍';
-        const str3 = 'Hello 世界 🌎';
+        const str1 = "Hello 世界 🌍";
+        const str2 = "Hello 世界 🌍";
+        const str3 = "Hello 世界 🌎";
 
         expect(ConstantTime.constantTimeCompareStrings(str1, str2)).toBe(true);
         expect(ConstantTime.constantTimeCompareStrings(str1, str3)).toBe(false);
       });
 
-      test('should handle null inputs', () => {
+      test("should handle null inputs", () => {
         if (!ConstantTime) return;
 
-        expect(() => ConstantTime.constantTimeCompareStrings(null, 'test')).toThrow();
-        expect(() => ConstantTime.constantTimeCompareStrings('test', null)).toThrow();
-        expect(() => ConstantTime.constantTimeCompareStrings(null, null)).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings(null, "test"),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings("test", null),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings(null, null),
+        ).toThrow();
       });
 
-      test('should handle undefined inputs', () => {
+      test("should handle undefined inputs", () => {
         if (!ConstantTime) return;
 
-        expect(() => ConstantTime.constantTimeCompareStrings(undefined, 'test')).toThrow();
-        expect(() => ConstantTime.constantTimeCompareStrings('test', undefined)).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings(undefined, "test"),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings("test", undefined),
+        ).toThrow();
       });
 
-      test('should handle non-string inputs', () => {
+      test("should handle non-string inputs", () => {
         if (!ConstantTime) return;
 
-        expect(() => ConstantTime.constantTimeCompareStrings(123, 'test')).toThrow();
-        expect(() => ConstantTime.constantTimeCompareStrings('test', 123)).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings(123, "test"),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareStrings("test", 123),
+        ).toThrow();
       });
     });
 
-    describe('Timing consistency', () => {
+    describe("Timing consistency", () => {
       /**
        * Measure timing for multiple runs
        */
@@ -128,17 +152,19 @@ describe('ConstantTime', () => {
        */
       function calculateStats(timings) {
         const mean = timings.reduce((a, b) => a + b, 0) / timings.length;
-        const variance = timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / timings.length;
+        const variance =
+          timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+          timings.length;
         const stdDev = Math.sqrt(variance);
         const coefficientOfVariation = stdDev / mean;
         return { mean, stdDev, coefficientOfVariation };
       }
 
-      test('should have consistent timing for strings differing at start', () => {
+      test("should have consistent timing for strings differing at start", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'a' + 'x'.repeat(100);
-        const str2 = 'b' + 'x'.repeat(100);
+        const str1 = "a" + "x".repeat(100);
+        const str2 = "b" + "x".repeat(100);
 
         const timings = measureTiming(() => {
           ConstantTime.constantTimeCompareStrings(str1, str2);
@@ -151,11 +177,11 @@ describe('ConstantTime', () => {
         expect(stats.coefficientOfVariation).toBeLessThan(10.0);
       });
 
-      test('should have consistent timing for strings differing at middle', () => {
+      test("should have consistent timing for strings differing at middle", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'x'.repeat(50) + 'a' + 'x'.repeat(50);
-        const str2 = 'x'.repeat(50) + 'b' + 'x'.repeat(50);
+        const str1 = "x".repeat(50) + "a" + "x".repeat(50);
+        const str2 = "x".repeat(50) + "b" + "x".repeat(50);
 
         const timings = measureTiming(() => {
           ConstantTime.constantTimeCompareStrings(str1, str2);
@@ -167,11 +193,11 @@ describe('ConstantTime', () => {
         expect(stats.coefficientOfVariation).toBeLessThan(6.0);
       });
 
-      test('should have consistent timing for strings differing at end', () => {
+      test("should have consistent timing for strings differing at end", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'x'.repeat(100) + 'a';
-        const str2 = 'x'.repeat(100) + 'b';
+        const str1 = "x".repeat(100) + "a";
+        const str2 = "x".repeat(100) + "b";
 
         const timings = measureTiming(() => {
           ConstantTime.constantTimeCompareStrings(str1, str2);
@@ -181,7 +207,7 @@ describe('ConstantTime', () => {
         const sorted = [...timings].sort((a, b) => a - b);
         const median = sorted[Math.floor(sorted.length / 2)];
         const q1 = sorted[Math.floor(sorted.length / 4)];
-        const q3 = sorted[Math.floor(sorted.length * 3 / 4)];
+        const q3 = sorted[Math.floor((sorted.length * 3) / 4)];
         const iqr = q3 - q1;
         const robustCV = iqr / median;
         // Use IQR-based CV - more robust to outliers than standard deviation
@@ -190,13 +216,13 @@ describe('ConstantTime', () => {
         expect(robustCV).toBeLessThan(3.0);
       });
 
-      test('should have consistent timing regardless of difference position', () => {
+      test("should have consistent timing regardless of difference position", () => {
         if (!ConstantTime) return;
 
-        const baseStr = 'x'.repeat(100);
-        const strStart = 'a' + baseStr;
-        const strMiddle = baseStr.slice(0, 50) + 'a' + baseStr.slice(50);
-        const strEnd = baseStr + 'a';
+        const baseStr = "x".repeat(100);
+        const strStart = "a" + baseStr;
+        const strMiddle = baseStr.slice(0, 50) + "a" + baseStr.slice(50);
+        const strEnd = baseStr + "a";
         const strMatch = baseStr;
 
         const timingsStart = measureTiming(() => {
@@ -217,19 +243,23 @@ describe('ConstantTime', () => {
 
         // Variance between different positions can be high in JavaScript - use 95% threshold
         // Increased from 65% to account for JavaScript timing variability
-        const varianceStartMiddle = Math.abs(statsStart.mean - statsMiddle.mean) / Math.max(statsStart.mean, statsMiddle.mean);
-        const varianceStartEnd = Math.abs(statsStart.mean - statsEnd.mean) / Math.max(statsStart.mean, statsEnd.mean);
+        const varianceStartMiddle =
+          Math.abs(statsStart.mean - statsMiddle.mean) /
+          Math.max(statsStart.mean, statsMiddle.mean);
+        const varianceStartEnd =
+          Math.abs(statsStart.mean - statsEnd.mean) /
+          Math.max(statsStart.mean, statsEnd.mean);
 
         expect(varianceStartMiddle).toBeLessThan(0.95);
         expect(varianceStartEnd).toBeLessThan(0.95);
       });
 
-      test('should have similar timing for matching vs non-matching strings', () => {
+      test("should have similar timing for matching vs non-matching strings", () => {
         if (!ConstantTime) return;
 
-        const str1 = 'x'.repeat(100);
-        const str2 = 'x'.repeat(100);
-        const str3 = 'y'.repeat(100);
+        const str1 = "x".repeat(100);
+        const str2 = "x".repeat(100);
+        const str3 = "y".repeat(100);
 
         const timingsMatch = measureTiming(() => {
           ConstantTime.constantTimeCompareStrings(str1, str2);
@@ -243,19 +273,22 @@ describe('ConstantTime', () => {
         const sortedMatch = [...timingsMatch].sort((a, b) => a - b);
         const sortedMismatch = [...timingsMismatch].sort((a, b) => a - b);
         const medianMatch = sortedMatch[Math.floor(sortedMatch.length / 2)];
-        const medianMismatch = sortedMismatch[Math.floor(sortedMismatch.length / 2)];
+        const medianMismatch =
+          sortedMismatch[Math.floor(sortedMismatch.length / 2)];
 
         // Calculate variance using medians (more robust to JavaScript timing variability)
-        const variance = Math.abs(medianMatch - medianMismatch) / Math.max(medianMatch, medianMismatch);
+        const variance =
+          Math.abs(medianMatch - medianMismatch) /
+          Math.max(medianMatch, medianMismatch);
         // Use 50% threshold - medians are more stable than means for timing measurements
         expect(variance).toBeLessThan(0.5);
       });
     });
   });
 
-  describe('constantTimeCompareBuffers', () => {
-    describe('Basic functionality', () => {
-      test('should return true for matching Uint8Arrays', () => {
+  describe("constantTimeCompareBuffers", () => {
+    describe("Basic functionality", () => {
+      test("should return true for matching Uint8Arrays", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([1, 2, 3, 4, 5]);
@@ -264,7 +297,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf2)).toBe(true);
       });
 
-      test('should return false for non-matching Uint8Arrays', () => {
+      test("should return false for non-matching Uint8Arrays", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([1, 2, 3, 4, 5]);
@@ -273,7 +306,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf2)).toBe(false);
       });
 
-      test('should return false for buffers of different lengths', () => {
+      test("should return false for buffers of different lengths", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([1, 2, 3]);
@@ -282,7 +315,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf2)).toBe(false);
       });
 
-      test('should handle empty buffers', () => {
+      test("should handle empty buffers", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([]);
@@ -293,7 +326,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf3)).toBe(false);
       });
 
-      test('should handle large buffers', () => {
+      test("should handle large buffers", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array(1000).fill(42);
@@ -304,7 +337,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf3)).toBe(false);
       });
 
-      test('should handle ArrayBuffer inputs', () => {
+      test("should handle ArrayBuffer inputs", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([1, 2, 3, 4, 5]).buffer;
@@ -315,7 +348,7 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf3)).toBe(false);
       });
 
-      test('should handle mixed Uint8Array and ArrayBuffer', () => {
+      test("should handle mixed Uint8Array and ArrayBuffer", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array([1, 2, 3, 4, 5]);
@@ -324,32 +357,44 @@ describe('ConstantTime', () => {
         expect(ConstantTime.constantTimeCompareBuffers(buf1, buf2)).toBe(true);
       });
 
-      test('should handle null inputs', () => {
+      test("should handle null inputs", () => {
         if (!ConstantTime) return;
 
         const buf = new Uint8Array([1, 2, 3]);
-        expect(() => ConstantTime.constantTimeCompareBuffers(null, buf)).toThrow();
-        expect(() => ConstantTime.constantTimeCompareBuffers(buf, null)).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers(null, buf),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers(buf, null),
+        ).toThrow();
       });
 
-      test('should handle undefined inputs', () => {
+      test("should handle undefined inputs", () => {
         if (!ConstantTime) return;
 
         const buf = new Uint8Array([1, 2, 3]);
-        expect(() => ConstantTime.constantTimeCompareBuffers(undefined, buf)).toThrow();
-        expect(() => ConstantTime.constantTimeCompareBuffers(buf, undefined)).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers(undefined, buf),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers(buf, undefined),
+        ).toThrow();
       });
 
-      test('should handle invalid input types', () => {
+      test("should handle invalid input types", () => {
         if (!ConstantTime) return;
 
         const buf = new Uint8Array([1, 2, 3]);
-        expect(() => ConstantTime.constantTimeCompareBuffers('string', buf)).toThrow();
-        expect(() => ConstantTime.constantTimeCompareBuffers(buf, 'string')).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers("string", buf),
+        ).toThrow();
+        expect(() =>
+          ConstantTime.constantTimeCompareBuffers(buf, "string"),
+        ).toThrow();
       });
     });
 
-    describe('Timing consistency', () => {
+    describe("Timing consistency", () => {
       /**
        * Measure timing for multiple runs
        */
@@ -369,13 +414,15 @@ describe('ConstantTime', () => {
        */
       function calculateStats(timings) {
         const mean = timings.reduce((a, b) => a + b, 0) / timings.length;
-        const variance = timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / timings.length;
+        const variance =
+          timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+          timings.length;
         const stdDev = Math.sqrt(variance);
         const coefficientOfVariation = stdDev / mean;
         return { mean, stdDev, coefficientOfVariation };
       }
 
-      test('should have consistent timing for buffers differing at start', () => {
+      test("should have consistent timing for buffers differing at start", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array(100).fill(1);
@@ -392,7 +439,7 @@ describe('ConstantTime', () => {
         expect(stats.coefficientOfVariation).toBeLessThan(10.0);
       });
 
-      test('should have consistent timing for buffers differing at middle', () => {
+      test("should have consistent timing for buffers differing at middle", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array(100).fill(1);
@@ -409,7 +456,7 @@ describe('ConstantTime', () => {
         expect(stats.coefficientOfVariation).toBeLessThan(10.0);
       });
 
-      test('should have consistent timing for buffers differing at end', () => {
+      test("should have consistent timing for buffers differing at end", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array(100).fill(1);
@@ -426,7 +473,7 @@ describe('ConstantTime', () => {
         expect(stats.coefficientOfVariation).toBeLessThan(10.0);
       });
 
-      test('should have consistent timing regardless of difference position', () => {
+      test("should have consistent timing regardless of difference position", () => {
         if (!ConstantTime) return;
 
         const baseBuf = new Uint8Array(100).fill(1);
@@ -453,15 +500,19 @@ describe('ConstantTime', () => {
         const statsMiddle = calculateStats(timingsMiddle);
         const statsEnd = calculateStats(timingsEnd);
 
-        const varianceStartMiddle = Math.abs(statsStart.mean - statsMiddle.mean) / Math.max(statsStart.mean, statsMiddle.mean);
-        const varianceStartEnd = Math.abs(statsStart.mean - statsEnd.mean) / Math.max(statsStart.mean, statsEnd.mean);
+        const varianceStartMiddle =
+          Math.abs(statsStart.mean - statsMiddle.mean) /
+          Math.max(statsStart.mean, statsMiddle.mean);
+        const varianceStartEnd =
+          Math.abs(statsStart.mean - statsEnd.mean) /
+          Math.max(statsStart.mean, statsEnd.mean);
 
         // JavaScript timing variance between different positions can be high - use 80% threshold
         expect(varianceStartMiddle).toBeLessThan(0.8);
         expect(varianceStartEnd).toBeLessThan(0.8);
       });
 
-      test('should have similar timing for matching vs non-matching buffers', () => {
+      test("should have similar timing for matching vs non-matching buffers", () => {
         if (!ConstantTime) return;
 
         const buf1 = new Uint8Array(100).fill(1);
@@ -480,59 +531,69 @@ describe('ConstantTime', () => {
         const sortedMatch = [...timingsMatch].sort((a, b) => a - b);
         const sortedMismatch = [...timingsMismatch].sort((a, b) => a - b);
         const medianMatch = sortedMatch[Math.floor(sortedMatch.length / 2)];
-        const medianMismatch = sortedMismatch[Math.floor(sortedMismatch.length / 2)];
+        const medianMismatch =
+          sortedMismatch[Math.floor(sortedMismatch.length / 2)];
 
         // Calculate variance using medians (more robust to JavaScript timing variability)
-        const variance = Math.abs(medianMatch - medianMismatch) / Math.max(medianMatch, medianMismatch);
+        const variance =
+          Math.abs(medianMatch - medianMismatch) /
+          Math.max(medianMatch, medianMismatch);
         // Use 50% threshold - medians are more stable than means for timing measurements
         expect(variance).toBeLessThan(0.5);
       });
     });
   });
 
-  describe('Integration with KeyAuthentication', () => {
+  describe("Integration with KeyAuthentication", () => {
     let KeyAuthentication;
     let crypto;
 
     beforeEach(async () => {
-      const { webcrypto } = await import('crypto');
+      const { webcrypto } = await import("crypto");
       global.crypto = webcrypto;
       globalThis.crypto = webcrypto;
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.crypto = webcrypto;
       }
       crypto = webcrypto;
 
       try {
-        const module = await import('../../crypto/utils/keyAuthentication.ts');
+        const module = await import("../../crypto/utils/keyAuthentication.ts");
         KeyAuthentication = module.KeyAuthentication;
       } catch (e) {
         KeyAuthentication = null;
       }
     });
 
-    test('should use constant-time comparison for fingerprint verification', async () => {
+    test("should use constant-time comparison for fingerprint verification", async () => {
       if (!ConstantTime || !KeyAuthentication) return;
 
       const keyBytes = new Uint8Array([1, 2, 3, 4, 5]);
       const fingerprint = await KeyAuthentication.generateFingerprint(keyBytes);
-      const wrongFingerprint = 'aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99';
+      const wrongFingerprint =
+        "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99";
 
       // Verify that fingerprint comparison would use constant-time
       // (This test verifies the concept, actual implementation will be in keyAuthentication.ts)
-      const isValid = ConstantTime.constantTimeCompareStrings(fingerprint, fingerprint);
-      const isInvalid = ConstantTime.constantTimeCompareStrings(fingerprint, wrongFingerprint);
+      const isValid = ConstantTime.constantTimeCompareStrings(
+        fingerprint,
+        fingerprint,
+      );
+      const isInvalid = ConstantTime.constantTimeCompareStrings(
+        fingerprint,
+        wrongFingerprint,
+      );
 
       expect(isValid).toBe(true);
       expect(isInvalid).toBe(false);
     });
 
-    test('should have consistent timing for fingerprint comparisons', async () => {
+    test("should have consistent timing for fingerprint comparisons", async () => {
       if (!ConstantTime || !KeyAuthentication) return;
 
       const keyBytes = new Uint8Array([1, 2, 3, 4, 5]);
       const fingerprint = await KeyAuthentication.generateFingerprint(keyBytes);
-      const wrongFingerprint = fingerprint.slice(0, -2) + '99';
+      const wrongFingerprint = fingerprint.slice(0, -2) + "99";
 
       function measureTiming(operation, runs = 200) {
         const timings = [];
@@ -558,13 +619,15 @@ describe('ConstantTime', () => {
       const sortedMatch = [...timingsMatch].sort((a, b) => a - b);
       const sortedMismatch = [...timingsMismatch].sort((a, b) => a - b);
       const medianMatch = sortedMatch[Math.floor(sortedMatch.length / 2)];
-      const medianMismatch = sortedMismatch[Math.floor(sortedMismatch.length / 2)];
+      const medianMismatch =
+        sortedMismatch[Math.floor(sortedMismatch.length / 2)];
 
       // Calculate variance using medians (more robust to JavaScript timing variability)
-      const variance = Math.abs(medianMatch - medianMismatch) / Math.max(medianMatch, medianMismatch);
+      const variance =
+        Math.abs(medianMatch - medianMismatch) /
+        Math.max(medianMatch, medianMismatch);
       // Use 50% threshold - medians are more stable than means for timing measurements
       expect(variance).toBeLessThan(0.5);
     });
   });
 });
-

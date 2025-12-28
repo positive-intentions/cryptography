@@ -49,7 +49,7 @@ export class SFrameManager {
   async deriveKeyFromMLSSecret(
     mlsSecret: ArrayBuffer,
     keyId: number,
-    context: string = 'SFrame'
+    context: string = "SFrame",
   ): Promise<any> {
     const mockKey = {
       keyId,
@@ -76,7 +76,9 @@ export class SFrameManager {
    */
   async encryptFrame(frameData: ArrayBuffer): Promise<Uint8Array> {
     if (!this.initialized) {
-      throw new Error('SFrame Manager not initialized. Call initialize() first.');
+      throw new Error(
+        "SFrame Manager not initialized. Call initialize() first.",
+      );
     }
 
     const sframeKey = this.keys.get(this.currentKeyId);
@@ -91,7 +93,9 @@ export class SFrameManager {
     new DataView(header.buffer).setUint32(1, this.frameCounter, false);
 
     const iv = new Uint8Array(12).fill(Math.random() * 255);
-    const encrypted = new Uint8Array(header.length + iv.length + plaintext.length);
+    const encrypted = new Uint8Array(
+      header.length + iv.length + plaintext.length,
+    );
     encrypted.set(header, 0);
     encrypted.set(iv, header.length);
     encrypted.set(plaintext, header.length + iv.length);
@@ -105,7 +109,9 @@ export class SFrameManager {
    */
   async decryptFrame(encryptedFrame: Uint8Array): Promise<ArrayBuffer> {
     if (!this.initialized) {
-      throw new Error('SFrame Manager not initialized. Call initialize() first.');
+      throw new Error(
+        "SFrame Manager not initialized. Call initialize() first.",
+      );
     }
 
     // Parse header
@@ -143,7 +149,9 @@ export class SFrameManager {
     const manager = this;
     return {
       transform: async (encodedFrame: any, controller: any) => {
-        const decrypted = await manager.decryptFrame(new Uint8Array(encodedFrame.data));
+        const decrypted = await manager.decryptFrame(
+          new Uint8Array(encodedFrame.data),
+        );
         encodedFrame.data = decrypted;
         controller.enqueue(encodedFrame);
       },

@@ -25,7 +25,7 @@
  * The null at index 3 is TRAILING and should be stripped.
  */
 
-describe('MLS Ratchet Tree - Null Node Handling', () => {
+describe("MLS Ratchet Tree - Null Node Handling", () => {
   let MLSManager;
   let aliceManager;
   let bobManager;
@@ -33,15 +33,15 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
 
   beforeAll(() => {
     // Import the real MLSManager directly
-    const actualModule = require('../crypto/MLS/MLSManager.tsx');
+    const actualModule = require("../crypto/MLS/MLSManager.tsx");
     MLSManager = actualModule.MLSManager;
   });
 
   beforeEach(async () => {
     // Create fresh managers for each test
-    aliceManager = new MLSManager('alice@example.com');
-    bobManager = new MLSManager('bob@example.com');
-    charlieManager = new MLSManager('charlie@example.com');
+    aliceManager = new MLSManager("alice@example.com");
+    bobManager = new MLSManager("bob@example.com");
+    charlieManager = new MLSManager("charlie@example.com");
   });
 
   afterEach(async () => {
@@ -60,27 +60,35 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
    * Trailing nulls are unnecessary tree padding that should be removed before
    * sending to reduce message size and follow RFC requirements.
    */
-  test('addMembers should strip trailing null nodes from ratchet tree per RFC 9420', async () => {
-    console.log('\n=== Test 1: Trailing Nulls Should Be Stripped ===\n');
+  test("addMembers should strip trailing null nodes from ratchet tree per RFC 9420", async () => {
+    console.log("\n=== Test 1: Trailing Nulls Should Be Stripped ===\n");
 
     // Setup: Initialize Alice and Bob
     await aliceManager.initialize();
     await bobManager.initialize();
 
-    console.log('1. Alice creates initial group');
-    const groupId = 'test-trailing-nulls';
+    console.log("1. Alice creates initial group");
+    const groupId = "test-trailing-nulls";
     await aliceManager.createGroup(groupId);
 
-    console.log('2. Alice adds Bob to create 2-member group');
+    console.log("2. Alice adds Bob to create 2-member group");
     const bobKeyPackage = bobManager.getKeyPackage();
-    const { ratchetTree } = await aliceManager.addMembers(groupId, [bobKeyPackage]);
+    const { ratchetTree } = await aliceManager.addMembers(groupId, [
+      bobKeyPackage,
+    ]);
 
-    console.log(`3. Inspecting returned ratchet tree (${ratchetTree.length} nodes):`);
+    console.log(
+      `3. Inspecting returned ratchet tree (${ratchetTree.length} nodes):`,
+    );
     ratchetTree.forEach((node, idx) => {
       if (node === null) {
-        console.log(`   [${idx}]: null (${idx === ratchetTree.length - 1 ? 'TRAILING' : 'interior'})`);
-      } else if (node.nodeType === 'leaf') {
-        const identity = new TextDecoder().decode(node.leaf.credential.identity);
+        console.log(
+          `   [${idx}]: null (${idx === ratchetTree.length - 1 ? "TRAILING" : "interior"})`,
+        );
+      } else if (node.nodeType === "leaf") {
+        const identity = new TextDecoder().decode(
+          node.leaf.credential.identity,
+        );
         console.log(`   [${idx}]: leaf (${identity})`);
       } else {
         console.log(`   [${idx}]: parent node`);
@@ -94,7 +102,9 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
 
     // Key assertion: Last element must NOT be null (no trailing nulls)
     const lastElement = ratchetTree[ratchetTree.length - 1];
-    console.log(`\n4. Verifying last element is NOT null: ${lastElement !== null}`);
+    console.log(
+      `\n4. Verifying last element is NOT null: ${lastElement !== null}`,
+    );
     expect(lastElement).not.toBe(null);
 
     // Verify no trailing nulls at all
@@ -116,17 +126,21 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
     expect(hasTrailingNulls).toBe(false);
 
     // Verify interior nulls ARE present (they maintain tree structure)
-    const nullCount = ratchetTree.filter(n => n === null).length;
-    const nonNullCount = ratchetTree.filter(n => n !== null).length;
+    const nullCount = ratchetTree.filter((n) => n === null).length;
+    const nonNullCount = ratchetTree.filter((n) => n !== null).length;
 
-    console.log(`6. Tree composition: ${nullCount} nulls, ${nonNullCount} non-nulls`);
-    console.log('   Interior nulls should be preserved for tree structure');
+    console.log(
+      `6. Tree composition: ${nullCount} nulls, ${nonNullCount} non-nulls`,
+    );
+    console.log("   Interior nulls should be preserved for tree structure");
 
     // For a 2-member group, we expect interior nulls (parent nodes)
     expect(nullCount).toBeGreaterThan(0);
     expect(nonNullCount).toBeGreaterThan(0);
 
-    console.log('\n✅ Test 1 PASSED: Trailing nulls stripped, interior nulls preserved\n');
+    console.log(
+      "\n✅ Test 1 PASSED: Trailing nulls stripped, interior nulls preserved\n",
+    );
   });
 
   /**
@@ -151,19 +165,19 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
    *
    * Removing these nulls would break the tree validation!
    */
-  test('ratchet tree should preserve interior null nodes for tree structure', async () => {
-    console.log('\n=== Test 2: Interior Nulls Should Be Preserved ===\n');
+  test("ratchet tree should preserve interior null nodes for tree structure", async () => {
+    console.log("\n=== Test 2: Interior Nulls Should Be Preserved ===\n");
 
     // Setup: Initialize all three managers
     await aliceManager.initialize();
     await bobManager.initialize();
     await charlieManager.initialize();
 
-    console.log('1. Alice creates initial group');
-    const groupId = 'test-interior-nulls';
+    console.log("1. Alice creates initial group");
+    const groupId = "test-interior-nulls";
     await aliceManager.createGroup(groupId);
 
-    console.log('2. Alice adds Bob and Charlie to create 3-member group');
+    console.log("2. Alice adds Bob and Charlie to create 3-member group");
     const bobKeyPackage = bobManager.getKeyPackage();
     const charlieKeyPackage = charlieManager.getKeyPackage();
 
@@ -172,7 +186,9 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
       charlieKeyPackage,
     ]);
 
-    console.log(`3. Inspecting ratchet tree structure (${ratchetTree.length} nodes):`);
+    console.log(
+      `3. Inspecting ratchet tree structure (${ratchetTree.length} nodes):`,
+    );
     const nullIndices = [];
     const leafIndices = [];
     const parentIndices = [];
@@ -181,9 +197,11 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
       if (node === null) {
         nullIndices.push(idx);
         console.log(`   [${idx}]: null (interior parent node)`);
-      } else if (node.nodeType === 'leaf') {
+      } else if (node.nodeType === "leaf") {
         leafIndices.push(idx);
-        const identity = new TextDecoder().decode(node.leaf.credential.identity);
+        const identity = new TextDecoder().decode(
+          node.leaf.credential.identity,
+        );
         console.log(`   [${idx}]: leaf (${identity})`);
       } else {
         parentIndices.push(idx);
@@ -193,9 +211,13 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
 
     // Assert: Tree should contain interior nulls
     console.log(`\n4. Tree composition:`);
-    console.log(`   - Leaf nodes at indices: [${leafIndices.join(', ')}]`);
-    console.log(`   - Interior null nodes at indices: [${nullIndices.join(', ')}]`);
-    console.log(`   - Merged parent nodes at indices: [${parentIndices.join(', ')}]`);
+    console.log(`   - Leaf nodes at indices: [${leafIndices.join(", ")}]`);
+    console.log(
+      `   - Interior null nodes at indices: [${nullIndices.join(", ")}]`,
+    );
+    console.log(
+      `   - Merged parent nodes at indices: [${parentIndices.join(", ")}]`,
+    );
 
     // Key assertion: Must have both nulls and non-nulls
     const nullCount = nullIndices.length;
@@ -213,14 +235,22 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
     console.log(`6. Last element is not null: ${lastElement !== null} ✓`);
 
     // Document the reason for interior nulls
-    console.log('\n7. Why interior nulls matter:');
-    console.log('   - Binary tree structure requires parent nodes between leaves');
-    console.log('   - Parent nodes start as null (unmerged) when members join');
-    console.log('   - Nulls represent "blank" nodes that maintain tree positions');
-    console.log('   - Removing them would break tree validation and member indexing');
-    console.log('   - They get populated when path secrets are updated');
+    console.log("\n7. Why interior nulls matter:");
+    console.log(
+      "   - Binary tree structure requires parent nodes between leaves",
+    );
+    console.log("   - Parent nodes start as null (unmerged) when members join");
+    console.log(
+      '   - Nulls represent "blank" nodes that maintain tree positions',
+    );
+    console.log(
+      "   - Removing them would break tree validation and member indexing",
+    );
+    console.log("   - They get populated when path secrets are updated");
 
-    console.log('\n✅ Test 2 PASSED: Interior nulls preserved for tree structure\n');
+    console.log(
+      "\n✅ Test 2 PASSED: Interior nulls preserved for tree structure\n",
+    );
   });
 
   /**
@@ -237,72 +267,80 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
    *
    * RFC 9420: Ratchet tree is OPTIONAL - if omitted, it's derived from Welcome.
    */
-  test('processWelcome should handle ratchet trees with interior null nodes', async () => {
-    console.log('\n=== Test 3: ProcessWelcome Works With Interior Nulls ===\n');
+  test("processWelcome should handle ratchet trees with interior null nodes", async () => {
+    console.log("\n=== Test 3: ProcessWelcome Works With Interior Nulls ===\n");
 
     // Setup: Initialize Alice and Bob
     await aliceManager.initialize();
     await bobManager.initialize();
 
-    console.log('1. Alice creates group');
-    const groupId = 'test-welcome-nulls';
+    console.log("1. Alice creates group");
+    const groupId = "test-welcome-nulls";
     await aliceManager.createGroup(groupId);
 
-    console.log('2. Alice adds Bob');
+    console.log("2. Alice adds Bob");
     const bobKeyPackage = bobManager.getKeyPackage();
-    const { welcome, ratchetTree } = await aliceManager.addMembers(groupId, [bobKeyPackage]);
+    const { welcome, ratchetTree } = await aliceManager.addMembers(groupId, [
+      bobKeyPackage,
+    ]);
 
     // Log the tree structure
     console.log(`3. Ratchet tree analysis (${ratchetTree.length} nodes):`);
-    const nullCount = ratchetTree.filter(n => n === null).length;
-    const nonNullCount = ratchetTree.filter(n => n !== null).length;
+    const nullCount = ratchetTree.filter((n) => n === null).length;
+    const nonNullCount = ratchetTree.filter((n) => n !== null).length;
     console.log(`   - Null nodes: ${nullCount}`);
     console.log(`   - Non-null nodes: ${nonNullCount}`);
 
     // Verify tree has interior nulls
     expect(nullCount).toBeGreaterThan(0);
     expect(nonNullCount).toBeGreaterThan(0);
-    console.log('   ✓ Tree contains interior null nodes');
+    console.log("   ✓ Tree contains interior null nodes");
 
     // Bob processes Welcome with the tree containing nulls
-    console.log('\n4. Bob processes Welcome message with tree containing nulls');
+    console.log(
+      "\n4. Bob processes Welcome message with tree containing nulls",
+    );
     let bobGroupInfo;
 
     try {
       bobGroupInfo = await bobManager.processWelcome(welcome, ratchetTree);
-      console.log('   ✓ processWelcome succeeded (no nodeType errors)');
+      console.log("   ✓ processWelcome succeeded (no nodeType errors)");
     } catch (error) {
-      console.error('   ✗ processWelcome failed:', error.message);
+      console.error("   ✗ processWelcome failed:", error.message);
       throw error;
     }
 
     // Assert: Bob successfully joined the group
     expect(bobGroupInfo).toBeDefined();
     expect(new TextDecoder().decode(bobGroupInfo.groupId)).toBe(groupId);
-    expect(bobGroupInfo.members).toContain('alice@example.com');
-    expect(bobGroupInfo.members).toContain('bob@example.com');
+    expect(bobGroupInfo.members).toContain("alice@example.com");
+    expect(bobGroupInfo.members).toContain("bob@example.com");
     expect(bobGroupInfo.members.length).toBe(2);
     expect(bobGroupInfo.epoch).toBe(1n);
 
-    console.log('5. Bob successfully joined group:');
-    console.log(`   - Group ID: ${new TextDecoder().decode(bobGroupInfo.groupId)}`);
-    console.log(`   - Members: [${bobGroupInfo.members.join(', ')}]`);
+    console.log("5. Bob successfully joined group:");
+    console.log(
+      `   - Group ID: ${new TextDecoder().decode(bobGroupInfo.groupId)}`,
+    );
+    console.log(`   - Members: [${bobGroupInfo.members.join(", ")}]`);
     console.log(`   - Epoch: ${bobGroupInfo.epoch}`);
 
     // Verify both can exchange messages (final proof it worked)
-    console.log('\n6. Verifying message exchange works:');
-    const testMessage = 'Test message with null nodes in tree';
+    console.log("\n6. Verifying message exchange works:");
+    const testMessage = "Test message with null nodes in tree";
 
     const envelope = await aliceManager.encryptMessage(groupId, testMessage);
-    console.log('   - Alice encrypted message ✓');
+    console.log("   - Alice encrypted message ✓");
 
     const decrypted = await bobManager.decryptMessage(envelope);
-    console.log('   - Bob decrypted message ✓');
+    console.log("   - Bob decrypted message ✓");
 
     expect(decrypted).toBe(testMessage);
     console.log(`   - Message content verified: "${decrypted}"`);
 
-    console.log('\n✅ Test 3 PASSED: processWelcome handles interior nulls correctly\n');
+    console.log(
+      "\n✅ Test 3 PASSED: processWelcome handles interior nulls correctly\n",
+    );
   });
 
   /**
@@ -323,24 +361,28 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
    * Note: This test documents whether the ts-mls library automatically
    * includes the ratchet_tree extension in Welcome messages.
    */
-  test('processWelcome should work with undefined ratchetTree parameter', async () => {
-    console.log('\n=== Test 4: ProcessWelcome Without External Tree ===\n');
+  test("processWelcome should work with undefined ratchetTree parameter", async () => {
+    console.log("\n=== Test 4: ProcessWelcome Without External Tree ===\n");
 
     // Setup: Initialize Alice and Bob
     await aliceManager.initialize();
     await bobManager.initialize();
 
-    console.log('1. Alice creates group');
-    const groupId = 'test-no-external-tree';
+    console.log("1. Alice creates group");
+    const groupId = "test-no-external-tree";
     await aliceManager.createGroup(groupId);
 
-    console.log('2. Alice adds Bob');
+    console.log("2. Alice adds Bob");
     const bobKeyPackage = bobManager.getKeyPackage();
     const { welcome } = await aliceManager.addMembers(groupId, [bobKeyPackage]);
 
     // We intentionally DO NOT pass the ratchetTree parameter
-    console.log('3. Bob attempts to process Welcome WITHOUT external ratchetTree');
-    console.log('   (ts-mls should extract tree from Welcome ratchet_tree extension)');
+    console.log(
+      "3. Bob attempts to process Welcome WITHOUT external ratchetTree",
+    );
+    console.log(
+      "   (ts-mls should extract tree from Welcome ratchet_tree extension)",
+    );
 
     let bobGroupInfo;
     let testPassed = false;
@@ -350,38 +392,48 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
       // The ratchetTree parameter is intentionally undefined
       bobGroupInfo = await bobManager.processWelcome(welcome, undefined);
 
-      console.log('   ✓ processWelcome succeeded without external tree!');
+      console.log("   ✓ processWelcome succeeded without external tree!");
       testPassed = true;
     } catch (error) {
-      console.log('   ✗ processWelcome failed without external tree');
+      console.log("   ✗ processWelcome failed without external tree");
       console.log(`   Error: ${error.message}`);
-      console.log('\n   This indicates the ratchet_tree extension may not be included');
-      console.log('   in Welcome messages by default in ts-mls.');
-      console.log('\n   RFC 9420: The extension is OPTIONAL but recommended for efficiency.');
-      console.log('   Without it, recipients must reconstruct the tree from group state,');
-      console.log('   which requires more computation.');
+      console.log(
+        "\n   This indicates the ratchet_tree extension may not be included",
+      );
+      console.log("   in Welcome messages by default in ts-mls.");
+      console.log(
+        "\n   RFC 9420: The extension is OPTIONAL but recommended for efficiency.",
+      );
+      console.log(
+        "   Without it, recipients must reconstruct the tree from group state,",
+      );
+      console.log("   which requires more computation.");
 
       // Don't throw - document the behavior instead
       expect(error.message).toBeTruthy();
-      console.log('\n⚠️  Test 4 DOCUMENTED: Extension support needs verification\n');
+      console.log(
+        "\n⚠️  Test 4 DOCUMENTED: Extension support needs verification\n",
+      );
       return; // Exit test gracefully
     }
 
     // If we got here, the test passed!
     expect(bobGroupInfo).toBeDefined();
     expect(new TextDecoder().decode(bobGroupInfo.groupId)).toBe(groupId);
-    expect(bobGroupInfo.members).toContain('alice@example.com');
-    expect(bobGroupInfo.members).toContain('bob@example.com');
+    expect(bobGroupInfo.members).toContain("alice@example.com");
+    expect(bobGroupInfo.members).toContain("bob@example.com");
     expect(bobGroupInfo.members.length).toBe(2);
 
-    console.log('4. Bob successfully joined using Welcome extension:');
-    console.log(`   - Group ID: ${new TextDecoder().decode(bobGroupInfo.groupId)}`);
-    console.log(`   - Members: [${bobGroupInfo.members.join(', ')}]`);
+    console.log("4. Bob successfully joined using Welcome extension:");
+    console.log(
+      `   - Group ID: ${new TextDecoder().decode(bobGroupInfo.groupId)}`,
+    );
+    console.log(`   - Members: [${bobGroupInfo.members.join(", ")}]`);
     console.log(`   - Epoch: ${bobGroupInfo.epoch}`);
 
     // Verify messaging works
-    console.log('\n5. Verifying message exchange:');
-    const testMessage = 'Test without external tree parameter';
+    console.log("\n5. Verifying message exchange:");
+    const testMessage = "Test without external tree parameter";
 
     const envelope = await aliceManager.encryptMessage(groupId, testMessage);
     const decrypted = await bobManager.decryptMessage(envelope);
@@ -389,8 +441,12 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
     expect(decrypted).toBe(testMessage);
     console.log(`   ✓ Message exchange successful: "${decrypted}"`);
 
-    console.log('\n✅ Test 4 PASSED: processWelcome works with ratchet_tree extension\n');
-    console.log('   This confirms ts-mls automatically includes the extension!');
+    console.log(
+      "\n✅ Test 4 PASSED: processWelcome works with ratchet_tree extension\n",
+    );
+    console.log(
+      "   This confirms ts-mls automatically includes the extension!",
+    );
   });
 
   /**
@@ -399,14 +455,16 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
    * This test verifies that the ratchet tree maintains proper binary tree
    * structure with correct node placement and no structural violations.
    */
-  test('ratchet tree should maintain valid binary tree structure', async () => {
-    console.log('\n=== Additional Test: Binary Tree Structure Validation ===\n');
+  test("ratchet tree should maintain valid binary tree structure", async () => {
+    console.log(
+      "\n=== Additional Test: Binary Tree Structure Validation ===\n",
+    );
 
     await aliceManager.initialize();
     await bobManager.initialize();
     await charlieManager.initialize();
 
-    const groupId = 'test-tree-structure';
+    const groupId = "test-tree-structure";
     await aliceManager.createGroup(groupId);
 
     const bobKeyPackage = bobManager.getKeyPackage();
@@ -417,16 +475,16 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
       charlieKeyPackage,
     ]);
 
-    console.log('1. Validating binary tree structure rules:');
+    console.log("1. Validating binary tree structure rules:");
     console.log(`   - Tree length: ${ratchetTree.length}`);
 
     // Rule 1: Leaf nodes should be at even indices
-    console.log('\n2. Checking leaf node placement (should be even indices):');
+    console.log("\n2. Checking leaf node placement (should be even indices):");
     let leafCountAtEvenIndices = 0;
     let leafCountAtOddIndices = 0;
 
     ratchetTree.forEach((node, idx) => {
-      if (node !== null && node.nodeType === 'leaf') {
+      if (node !== null && node.nodeType === "leaf") {
         if (idx % 2 === 0) {
           leafCountAtEvenIndices++;
           console.log(`   ✓ Leaf at index ${idx} (even)`);
@@ -439,18 +497,20 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
 
     expect(leafCountAtEvenIndices).toBeGreaterThan(0);
     expect(leafCountAtOddIndices).toBe(0);
-    console.log(`   Result: ${leafCountAtEvenIndices} leaves at even indices ✓`);
+    console.log(
+      `   Result: ${leafCountAtEvenIndices} leaves at even indices ✓`,
+    );
 
     // Rule 2: Parent nodes (including nulls) should be at odd indices
-    console.log('\n3. Checking parent node placement (should be odd indices):');
+    console.log("\n3. Checking parent node placement (should be odd indices):");
     let parentCountAtOddIndices = 0;
     let parentCountAtEvenIndices = 0;
 
     ratchetTree.forEach((node, idx) => {
-      if (node === null || (node !== null && node.nodeType === 'parent')) {
+      if (node === null || (node !== null && node.nodeType === "parent")) {
         if (idx % 2 === 1) {
           parentCountAtOddIndices++;
-          const nodeType = node === null ? 'null' : 'parent';
+          const nodeType = node === null ? "null" : "parent";
           console.log(`   ✓ ${nodeType} at index ${idx} (odd)`);
         } else {
           parentCountAtEvenIndices++;
@@ -461,14 +521,16 @@ describe('MLS Ratchet Tree - Null Node Handling', () => {
 
     expect(parentCountAtOddIndices).toBeGreaterThan(0);
     expect(parentCountAtEvenIndices).toBe(0);
-    console.log(`   Result: ${parentCountAtOddIndices} parents at odd indices ✓`);
+    console.log(
+      `   Result: ${parentCountAtOddIndices} parents at odd indices ✓`,
+    );
 
     // Rule 3: No trailing nulls
-    console.log('\n4. Checking for trailing nulls:');
+    console.log("\n4. Checking for trailing nulls:");
     const lastElement = ratchetTree[ratchetTree.length - 1];
     expect(lastElement).not.toBe(null);
     console.log(`   ✓ Last element is not null`);
 
-    console.log('\n✅ Binary tree structure validation PASSED\n');
+    console.log("\n✅ Binary tree structure validation PASSED\n");
   });
 });

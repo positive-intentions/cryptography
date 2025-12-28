@@ -38,26 +38,26 @@ export class MLSManager {
     // Generate mock key package
     this.keyPackage = {
       publicPackage: {
-        version: 'mls10',
+        version: "mls10",
         cipherSuite: 1,
         initKey: new Uint8Array(32),
         leafNode: {
           credential: {
-            credentialType: 'basic',
-            identity: new TextEncoder().encode(this.userId)
+            credentialType: "basic",
+            identity: new TextEncoder().encode(this.userId),
           },
           capabilities: {},
           encryptionKey: new Uint8Array(32),
-          signatureKey: new Uint8Array(32)
+          signatureKey: new Uint8Array(32),
         },
-        signature: new Uint8Array(64)
+        signature: new Uint8Array(64),
       },
       privatePackage: {
         initPrivKey: new Uint8Array(32),
         encryptionPrivKey: new Uint8Array(32),
-        signaturePrivKey: new Uint8Array(64)
+        signaturePrivKey: new Uint8Array(64),
       },
-      userId: this.userId
+      userId: this.userId,
     };
   }
 
@@ -66,7 +66,7 @@ export class MLSManager {
    */
   async generateKeyPackage(): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
     return this.keyPackage;
   }
@@ -90,7 +90,7 @@ export class MLSManager {
    */
   async createGroup(groupId: string): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const groupIdBytes = new TextEncoder().encode(groupId);
@@ -98,7 +98,7 @@ export class MLSManager {
       groupId: groupIdBytes,
       members: [this.userId],
       epoch: 0n,
-      treeHash: new Uint8Array(32).fill(Math.random() * 255)
+      treeHash: new Uint8Array(32).fill(Math.random() * 255),
     };
 
     this.groups.set(groupId, mockGroup);
@@ -110,7 +110,7 @@ export class MLSManager {
    */
   async addMembers(groupId: string, keyPackages: any[]): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -141,41 +141,41 @@ export class MLSManager {
     // Place leaf nodes at even indices (0, 2, 4, ...)
     for (let i = 0; i < memberCount; i++) {
       mockRatchetTree[i * 2] = {
-        nodeType: 'leaf',
+        nodeType: "leaf",
         leaf: {
           credential: {
-            identity: new TextEncoder().encode(group.members[i])
+            identity: new TextEncoder().encode(group.members[i]),
           },
-          publicKey: new Uint8Array(32).fill(i)
-        }
+          publicKey: new Uint8Array(32).fill(i),
+        },
       };
     }
 
     // Return mock welcome and commit
     // Store group ID in welcome for processWelcome to use
     const welcome = {
-      version: 'mls10',
+      version: "mls10",
       cipherSuite: 1,
       secrets: new Uint8Array(32),
       encryptedGroupInfo: new Uint8Array(128),
       _mockGroupId: groupId, // Internal mock field
-      _mockMembers: [...group.members] // Copy of current members
+      _mockMembers: [...group.members], // Copy of current members
     };
 
     const commit = {
-      version: 'mls10',
-      wireformat: 'mls_private_message',
+      version: "mls10",
+      wireformat: "mls_private_message",
       privateMessage: {
         groupId: group.groupId,
         epoch: group.epoch - 1n,
         content: {
-          contentType: 'commit',
-          proposals: keyPackages.map(kp => ({
-            proposalType: 'add',
-            add: { keyPackage: kp.publicPackage }
-          }))
-        }
-      }
+          contentType: "commit",
+          proposals: keyPackages.map((kp) => ({
+            proposalType: "add",
+            add: { keyPackage: kp.publicPackage },
+          })),
+        },
+      },
     };
 
     // RFC 9420: Strip trailing null nodes before transmission
@@ -184,7 +184,7 @@ export class MLSManager {
     return {
       welcome,
       commit,
-      ratchetTree: strippedTree
+      ratchetTree: strippedTree,
     };
   }
 
@@ -193,11 +193,11 @@ export class MLSManager {
    */
   async processWelcome(welcome: any, ratchetTree?: any): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     // Extract group ID from welcome message (mock internal field)
-    const groupId = welcome._mockGroupId || 'default-group';
+    const groupId = welcome._mockGroupId || "default-group";
     const groupIdBytes = new TextEncoder().encode(groupId);
 
     // Get existing members from welcome
@@ -213,7 +213,7 @@ export class MLSManager {
       groupId: groupIdBytes,
       members,
       epoch: 1n,
-      treeHash: ratchetTree || new Uint8Array(32)
+      treeHash: ratchetTree || new Uint8Array(32),
     };
 
     this.groups.set(groupId, mockGroup);
@@ -221,7 +221,7 @@ export class MLSManager {
     return {
       groupId: mockGroup.groupId,
       members: mockGroup.members,
-      epoch: mockGroup.epoch
+      epoch: mockGroup.epoch,
     };
   }
 
@@ -230,7 +230,7 @@ export class MLSManager {
    */
   async encryptMessage(groupId: string, plaintext: string): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -241,13 +241,13 @@ export class MLSManager {
     // Mock encryption - add randomness to ensure different ciphertexts
     const nonce = Math.random().toString(36).substring(7);
     const mlsFormat = `encrypted:${plaintext}:${group.epoch}:${nonce}`;
-    const ciphertext = Buffer.from(mlsFormat).toString('base64');
+    const ciphertext = Buffer.from(mlsFormat).toString("base64");
     const ciphertextBytes = new TextEncoder().encode(ciphertext);
 
     return {
       groupId: new TextEncoder().encode(groupId),
       ciphertext: ciphertextBytes,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -256,7 +256,7 @@ export class MLSManager {
    */
   async decryptMessage(envelope: any): Promise<string> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const groupId = new TextDecoder().decode(envelope.groupId);
@@ -268,13 +268,13 @@ export class MLSManager {
 
     // Check if this user is still a member of the group
     if (!group.members.includes(this.userId)) {
-      throw new Error('Cannot decrypt: user is not a member of this group');
+      throw new Error("Cannot decrypt: user is not a member of this group");
     }
 
     // Mock decryption - decode base64 and extract plaintext
     // The ciphertext from encryptMessage is a Uint8Array containing UTF-8 encoded base64 string
     let ciphertextStr: string;
-    
+
     // Ensure ciphertext is a Uint8Array - handle various input types
     let ciphertextBytes: Uint8Array;
     try {
@@ -284,83 +284,119 @@ export class MLSManager {
         ciphertextBytes = new Uint8Array(envelope.ciphertext);
       } else if (envelope.ciphertext instanceof ArrayBuffer) {
         ciphertextBytes = new Uint8Array(envelope.ciphertext);
-      } else if (envelope.ciphertext && typeof envelope.ciphertext === 'object') {
+      } else if (
+        envelope.ciphertext &&
+        typeof envelope.ciphertext === "object"
+      ) {
         // Try to extract buffer or convert from array-like object
-        if ('buffer' in envelope.ciphertext && envelope.ciphertext.buffer instanceof ArrayBuffer) {
-          ciphertextBytes = new Uint8Array(envelope.ciphertext.buffer, envelope.ciphertext.byteOffset || 0, envelope.ciphertext.byteLength || envelope.ciphertext.length);
-        } else if ('length' in envelope.ciphertext && typeof envelope.ciphertext.length === 'number') {
+        if (
+          "buffer" in envelope.ciphertext &&
+          envelope.ciphertext.buffer instanceof ArrayBuffer
+        ) {
+          ciphertextBytes = new Uint8Array(
+            envelope.ciphertext.buffer,
+            envelope.ciphertext.byteOffset || 0,
+            envelope.ciphertext.byteLength || envelope.ciphertext.length,
+          );
+        } else if (
+          "length" in envelope.ciphertext &&
+          typeof envelope.ciphertext.length === "number"
+        ) {
           // Array-like object
-          ciphertextBytes = new Uint8Array(Array.from(envelope.ciphertext as any));
+          ciphertextBytes = new Uint8Array(
+            Array.from(envelope.ciphertext as any),
+          );
         } else {
-          throw new Error(`Cannot convert ciphertext to Uint8Array: object type ${envelope.ciphertext.constructor?.name || 'unknown'}`);
+          throw new Error(
+            `Cannot convert ciphertext to Uint8Array: object type ${envelope.ciphertext.constructor?.name || "unknown"}`,
+          );
         }
       } else {
-        throw new Error(`Invalid ciphertext type: ${typeof envelope.ciphertext}`);
+        throw new Error(
+          `Invalid ciphertext type: ${typeof envelope.ciphertext}`,
+        );
       }
     } catch (e) {
-      throw new Error(`Invalid ciphertext format: ${e.message}. Ciphertext type: ${typeof envelope.ciphertext}, constructor: ${envelope.ciphertext?.constructor?.name || 'unknown'}`);
+      throw new Error(
+        `Invalid ciphertext format: ${e.message}. Ciphertext type: ${typeof envelope.ciphertext}, constructor: ${envelope.ciphertext?.constructor?.name || "unknown"}`,
+      );
     }
-    
+
     try {
       // Try to decode as UTF-8 (normal case - ciphertext is UTF-8 encoded base64 string)
-      ciphertextStr = new TextDecoder('utf-8', { fatal: false }).decode(ciphertextBytes);
-      
+      ciphertextStr = new TextDecoder("utf-8", { fatal: false }).decode(
+        ciphertextBytes,
+      );
+
       // If decoding produced replacement characters or empty string, it's not valid UTF-8
       if (ciphertextStr.length === 0) {
-        throw new Error('Decoded string is empty');
+        throw new Error("Decoded string is empty");
       }
-      if (ciphertextStr.includes('\uFFFD')) {
-        throw new Error('Contains UTF-8 replacement characters (invalid UTF-8)');
+      if (ciphertextStr.includes("\uFFFD")) {
+        throw new Error(
+          "Contains UTF-8 replacement characters (invalid UTF-8)",
+        );
       }
     } catch (e) {
       // If UTF-8 decoding fails, the data might be binary from a previous layer
       // In this case, we can't decrypt it as MLS-encrypted data
-      throw new Error(`Invalid ciphertext format: cannot decode as UTF-8. This may indicate the ciphertext is from a previous encryption layer and not in MLS format. Original error: ${e.message}`);
+      throw new Error(
+        `Invalid ciphertext format: cannot decode as UTF-8. This may indicate the ciphertext is from a previous encryption layer and not in MLS format. Original error: ${e.message}`,
+      );
     }
 
     // Now decode the base64 string to get the plaintext format
     // The ciphertextStr is a base64-encoded string that should decode to "encrypted:plaintext:epoch:nonce"
     let decoded: string;
-    
+
     // First, check if ciphertextStr is already in the expected format (not base64-encoded)
-    if (ciphertextStr.includes('encrypted:') && ciphertextStr.split(':').length >= 4) {
+    if (
+      ciphertextStr.includes("encrypted:") &&
+      ciphertextStr.split(":").length >= 4
+    ) {
       // It's already in the format "encrypted:plaintext:epoch:nonce"
-      const parts = ciphertextStr.split(':');
-      if (parts[0] === 'encrypted') {
+      const parts = ciphertextStr.split(":");
+      if (parts[0] === "encrypted") {
         return parts[1]; // Return the plaintext part
       }
     }
-    
+
     // Try to decode it as base64
     try {
-      decoded = Buffer.from(ciphertextStr, 'base64').toString('utf-8');
+      decoded = Buffer.from(ciphertextStr, "base64").toString("utf-8");
     } catch (e) {
       // If base64 decode fails, check if it's already in the expected format
-      if (ciphertextStr.includes('encrypted:')) {
-        const parts = ciphertextStr.split('encrypted:');
+      if (ciphertextStr.includes("encrypted:")) {
+        const parts = ciphertextStr.split("encrypted:");
         if (parts.length > 1) {
-          return parts[1].split(':')[0]; // Return the plaintext part
+          return parts[1].split(":")[0]; // Return the plaintext part
         }
       }
       // If ciphertextStr is not base64 and not in "encrypted:" format, it might be plaintext
       // from a previous layer. In a cascade, this shouldn't happen, but we'll handle it.
       // Return the plaintext directly (base64-encode it to match expected return format)
-      return Buffer.from(ciphertextStr, 'utf-8').toString('base64');
+      return Buffer.from(ciphertextStr, "utf-8").toString("base64");
     }
 
-    const parts = decoded.split(':');
+    const parts = decoded.split(":");
 
-    if (parts[0] !== 'encrypted') {
+    if (parts[0] !== "encrypted") {
       // The decoded string doesn't start with "encrypted:" - this means the data format is unexpected.
       // This can happen if the base64 round-trip through the cascade lost the MLS format.
       // Check if decoded contains only printable ASCII characters (valid plaintext)
-      const hasOnlyPrintableASCII = decoded.length > 0 && decoded.split('').every(c => c.charCodeAt(0) >= 32 && c.charCodeAt(0) <= 126);
-      if (hasOnlyPrintableASCII && !decoded.includes('\uFFFD')) {
+      const hasOnlyPrintableASCII =
+        decoded.length > 0 &&
+        decoded
+          .split("")
+          .every((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) <= 126);
+      if (hasOnlyPrintableASCII && !decoded.includes("\uFFFD")) {
         // It's valid printable ASCII but not in the expected format - return it base64-encoded to match expected return format
         // This handles cases where the format was lost during the cascade
-        return Buffer.from(decoded, 'utf-8').toString('base64');
+        return Buffer.from(decoded, "utf-8").toString("base64");
       }
-      throw new Error(`Invalid ciphertext format: expected to start with "encrypted:", got "${decoded.substring(0, Math.min(50, decoded.length)).replace(/[^\x20-\x7E]/g, '?')}...". This suggests the base64 round-trip through the cascade is not preserving the MLS format correctly.`);
+      throw new Error(
+        `Invalid ciphertext format: expected to start with "encrypted:", got "${decoded.substring(0, Math.min(50, decoded.length)).replace(/[^\x20-\x7E]/g, "?")}...". This suggests the base64 round-trip through the cascade is not preserving the MLS format correctly.`,
+      );
     }
 
     return parts[1]; // Return the plaintext part (which is base64-encoded binary data when from previous layers)
@@ -371,7 +407,7 @@ export class MLSManager {
    */
   async updateKey(groupId: string): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -387,21 +423,23 @@ export class MLSManager {
 
     // Return mock commit
     return {
-      version: 'mls10',
-      wireformat: 'mls_private_message',
+      version: "mls10",
+      wireformat: "mls_private_message",
       privateMessage: {
         groupId: group.groupId,
         epoch: group.epoch - 1n,
         content: {
-          contentType: 'commit',
-          proposals: [{
-            proposalType: 'update',
-            update: {
-              leafNode: this.keyPackage.publicPackage.leafNode
-            }
-          }]
-        }
-      }
+          contentType: "commit",
+          proposals: [
+            {
+              proposalType: "update",
+              update: {
+                leafNode: this.keyPackage.publicPackage.leafNode,
+              },
+            },
+          ],
+        },
+      },
     };
   }
 
@@ -410,7 +448,7 @@ export class MLSManager {
    */
   async processCommit(groupId: string, commit: any): Promise<void> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -424,7 +462,7 @@ export class MLSManager {
     // Process proposals if they exist
     if (privateMessage.content && privateMessage.content.proposals) {
       for (const proposal of privateMessage.content.proposals) {
-        if (proposal.proposalType === 'remove') {
+        if (proposal.proposalType === "remove") {
           // Handle member removal
           const removeIndex = Number(proposal.remove?.removed || 0);
           if (removeIndex >= 0 && removeIndex < group.members.length) {
@@ -446,7 +484,7 @@ export class MLSManager {
    */
   async removeMembers(groupId: string, memberIndices: number[]): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -466,21 +504,21 @@ export class MLSManager {
 
     // Return mock commit with removal proposals
     return {
-      version: 'mls10',
-      wireformat: 'mls_private_message',
+      version: "mls10",
+      wireformat: "mls_private_message",
       privateMessage: {
         groupId: group.groupId,
         epoch: group.epoch - 1n,
         content: {
-          contentType: 'commit',
-          proposals: memberIndices.map(index => ({
-            proposalType: 'remove',
+          contentType: "commit",
+          proposals: memberIndices.map((index) => ({
+            proposalType: "remove",
             remove: {
-              removed: BigInt(index)
-            }
-          }))
-        }
-      }
+              removed: BigInt(index),
+            },
+          })),
+        },
+      },
     };
   }
 
@@ -489,10 +527,12 @@ export class MLSManager {
    */
   async getGroups(): Promise<Uint8Array[]> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
-    return Array.from(this.groups.keys()).map(id => new TextEncoder().encode(id));
+    return Array.from(this.groups.keys()).map((id) =>
+      new TextEncoder().encode(id),
+    );
   }
 
   /**
@@ -509,8 +549,8 @@ export class MLSManager {
       groupId,
       epoch: group.epoch.toString(),
       members: group.members,
-      cipherSuite: 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
-      treeHash: Buffer.from(group.treeHash).toString('hex').substring(0, 16)
+      cipherSuite: "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
+      treeHash: Buffer.from(group.treeHash).toString("hex").substring(0, 16),
     };
   }
 
@@ -519,7 +559,7 @@ export class MLSManager {
    */
   async exportGroupState(groupId: string): Promise<any> {
     if (!this.initialized) {
-      throw new Error('MLS Manager not initialized. Call initialize() first.');
+      throw new Error("MLS Manager not initialized. Call initialize() first.");
     }
 
     const group = this.groups.get(groupId);
@@ -530,7 +570,7 @@ export class MLSManager {
     return {
       groupId,
       epoch: group.epoch.toString(),
-      exported: Date.now()
+      exported: Date.now(),
     };
   }
 

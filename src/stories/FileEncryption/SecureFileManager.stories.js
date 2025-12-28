@@ -1,5 +1,8 @@
-import React, { useState, useCallback } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState, useCallback } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -42,49 +45,56 @@ import {
   Image,
   Description,
   VideoFile,
-  AudioFile
-} from 'ui';
+  AudioFile,
+} from "ui";
 
 export default {
-  title: 'Cryptography/File Encryption/Secure File Manager',
+  title: "Cryptography/File Encryption/Secure File Manager",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Password-based file encryption system supporting text and binary files with PBKDF2 key derivation.',
+        component:
+          "Password-based file encryption system supporting text and binary files with PBKDF2 key derivation.",
       },
     },
   },
 };
 
 const PasswordBasedFileEncryptionDemo = () => {
-  const { 
+  const {
     encryptTextFile,
     decryptTextFile,
     encryptBinaryFile,
     decryptBinaryFile,
     createSecureFileDownload,
     parseEncryptedFilePackage,
-    decryptUploadedFile
+    decryptUploadedFile,
   } = useCryptography();
-  
-  const [password, setPassword] = useState('demo-password-123');
+
+  const [password, setPassword] = useState("demo-password-123");
   const [showPassword, setShowPassword] = useState(false);
-  const [textContent, setTextContent] = useState('This is a secret document that will be encrypted!\n\nIt contains sensitive information:\n- Personal notes\n- API keys\n- Confidential data');
-  const [fileName, setFileName] = useState('secret-document.txt');
+  const [textContent, setTextContent] = useState(
+    "This is a secret document that will be encrypted!\n\nIt contains sensitive information:\n- Personal notes\n- API keys\n- Confidential data",
+  );
+  const [fileName, setFileName] = useState("secret-document.txt");
   const [encryptedFiles, setEncryptedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [decryptedContent, setDecryptedContent] = useState('');
+  const [decryptedContent, setDecryptedContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-  const [previewDialog, setPreviewDialog] = useState({ open: false, content: '', title: '' });
+  const [previewDialog, setPreviewDialog] = useState({
+    open: false,
+    content: "",
+    title: "",
+  });
   const [uploadedEncryptedFile, setUploadedEncryptedFile] = useState(null);
   const [uploadValidation, setUploadValidation] = useState(null);
 
   const handleEncryptText = async () => {
     if (!textContent.trim() || !password.trim()) {
-      setStatus('Please enter both text content and password');
+      setStatus("Please enter both text content and password");
       return;
     }
 
@@ -94,14 +104,14 @@ const PasswordBasedFileEncryptionDemo = () => {
       const newFile = {
         id: Date.now(),
         ...encrypted,
-        type: 'text',
-        isEncrypted: true
+        type: "text",
+        isEncrypted: true,
       };
-      
-      setEncryptedFiles(prev => [...prev, newFile]);
+
+      setEncryptedFiles((prev) => [...prev, newFile]);
       setStatus(`File "${fileName}" encrypted successfully!`);
-      setTextContent('');
-      setFileName('secret-document.txt');
+      setTextContent("");
+      setFileName("secret-document.txt");
     } catch (error) {
       setStatus(`Encryption failed: ${error.message}`);
     } finally {
@@ -112,7 +122,7 @@ const PasswordBasedFileEncryptionDemo = () => {
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file || !password.trim()) {
-      setStatus('Please select a file and enter a password');
+      setStatus("Please select a file and enter a password");
       return;
     }
 
@@ -122,15 +132,15 @@ const PasswordBasedFileEncryptionDemo = () => {
       const newFile = {
         id: Date.now(),
         ...encrypted,
-        type: 'binary',
+        type: "binary",
         isEncrypted: true,
         originalName: file.name,
-        size: file.size
+        size: file.size,
       };
-      
-      setEncryptedFiles(prev => [...prev, newFile]);
+
+      setEncryptedFiles((prev) => [...prev, newFile]);
       setStatus(`File "${file.name}" encrypted successfully!`);
-      event.target.value = ''; // Reset file input
+      event.target.value = ""; // Reset file input
     } catch (error) {
       setStatus(`Encryption failed: ${error.message}`);
     } finally {
@@ -140,13 +150,13 @@ const PasswordBasedFileEncryptionDemo = () => {
 
   const handleDecryptFile = async (file) => {
     if (!password.trim()) {
-      setStatus('Please enter the password to decrypt');
+      setStatus("Please enter the password to decrypt");
       return;
     }
 
     setLoading(true);
     try {
-      if (file.type === 'text') {
+      if (file.type === "text") {
         const decrypted = await decryptTextFile(file, password);
         setDecryptedContent(decrypted.textContent);
         setSelectedFile(file);
@@ -157,8 +167,8 @@ const PasswordBasedFileEncryptionDemo = () => {
         setPreviewDialog({
           open: true,
           title: `Decrypted: ${file.fileName}`,
-          content: `File decrypted successfully!\n\nFile: ${file.fileName}\nType: ${file.mimeType || 'Unknown'}\nSize: ${formatFileSize(file.originalSize)}\n\nClick download to save the decrypted file.`,
-          downloadData: decrypted
+          content: `File decrypted successfully!\n\nFile: ${file.fileName}\nType: ${file.mimeType || "Unknown"}\nSize: ${formatFileSize(file.originalSize)}\n\nClick download to save the decrypted file.`,
+          downloadData: decrypted,
         });
         setStatus(`Binary file "${file.fileName}" decrypted successfully!`);
       }
@@ -173,9 +183,13 @@ const PasswordBasedFileEncryptionDemo = () => {
     if (downloadData.blob) {
       createSecureFileDownload(downloadData.blob, downloadData.fileName);
     } else if (downloadData.data) {
-      createSecureFileDownload(downloadData.data, downloadData.fileName, downloadData.mimeType);
+      createSecureFileDownload(
+        downloadData.data,
+        downloadData.fileName,
+        downloadData.mimeType,
+      );
     }
-    setPreviewDialog({ open: false, content: '', title: '' });
+    setPreviewDialog({ open: false, content: "", title: "" });
   };
 
   const handleDownloadEncrypted = (file) => {
@@ -187,38 +201,42 @@ const PasswordBasedFileEncryptionDemo = () => {
       timestamp: file.timestamp,
       originalSize: file.originalSize,
       mimeType: file.mimeType,
-      type: file.type
+      type: file.type,
     };
-    
-    const blob = new Blob([JSON.stringify(encryptedData, null, 2)], { type: 'application/json' });
+
+    const blob = new Blob([JSON.stringify(encryptedData, null, 2)], {
+      type: "application/json",
+    });
     createSecureFileDownload(blob, `${file.fileName}.encrypted.json`);
-    setStatus(`Encrypted file package downloaded: ${file.fileName}.encrypted.json`);
+    setStatus(
+      `Encrypted file package downloaded: ${file.fileName}.encrypted.json`,
+    );
   };
 
   const handleDeleteFile = (fileId) => {
-    setEncryptedFiles(prev => prev.filter(f => f.id !== fileId));
+    setEncryptedFiles((prev) => prev.filter((f) => f.id !== fileId));
     if (selectedFile && selectedFile.id === fileId) {
       setSelectedFile(null);
-      setDecryptedContent('');
+      setDecryptedContent("");
     }
-    setStatus('File deleted from session');
+    setStatus("File deleted from session");
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const getFileIcon = (file) => {
-    if (file.type === 'text') return <Description color="primary" />;
-    
-    const mimeType = file.mimeType || '';
-    if (mimeType.startsWith('image/')) return <Image color="success" />;
-    if (mimeType.startsWith('video/')) return <VideoFile color="error" />;
-    if (mimeType.startsWith('audio/')) return <AudioFile color="warning" />;
+    if (file.type === "text") return <Description color="primary" />;
+
+    const mimeType = file.mimeType || "";
+    if (mimeType.startsWith("image/")) return <Image color="success" />;
+    if (mimeType.startsWith("video/")) return <VideoFile color="error" />;
+    if (mimeType.startsWith("audio/")) return <AudioFile color="warning" />;
     return <InsertDriveFile color="action" />;
   };
 
@@ -231,16 +249,18 @@ const PasswordBasedFileEncryptionDemo = () => {
       // Validate the encrypted file package
       const validation = await parseEncryptedFilePackage(file);
       setUploadValidation(validation);
-      
+
       if (validation.isValid) {
         setUploadedEncryptedFile(file);
-        setStatus(`Encrypted file "${validation.metadata.fileName}" loaded successfully. Enter password to decrypt.`);
+        setStatus(
+          `Encrypted file "${validation.metadata.fileName}" loaded successfully. Enter password to decrypt.`,
+        );
       } else {
         setStatus(`Invalid encrypted file: ${validation.error}`);
         setUploadedEncryptedFile(null);
       }
-      
-      event.target.value = ''; // Reset file input
+
+      event.target.value = ""; // Reset file input
     } catch (error) {
       setStatus(`Failed to load encrypted file: ${error.message}`);
       setUploadedEncryptedFile(null);
@@ -252,38 +272,45 @@ const PasswordBasedFileEncryptionDemo = () => {
 
   const handleDecryptUploadedFile = async () => {
     if (!uploadedEncryptedFile || !password.trim()) {
-      setStatus('Please select an encrypted file and enter the password');
+      setStatus("Please select an encrypted file and enter the password");
       return;
     }
 
     setLoading(true);
     try {
-      const decrypted = await decryptUploadedFile(uploadedEncryptedFile, password);
-      
+      const decrypted = await decryptUploadedFile(
+        uploadedEncryptedFile,
+        password,
+      );
+
       if (decrypted.isTextFile) {
         // Show text content directly
         setDecryptedContent(decrypted.textContent);
         setSelectedFile({
-          id: 'uploaded',
+          id: "uploaded",
           fileName: decrypted.metadata.fileName,
-          type: 'text'
+          type: "text",
         });
-        setStatus(`Text file "${decrypted.metadata.fileName}" decrypted successfully!`);
+        setStatus(
+          `Text file "${decrypted.metadata.fileName}" decrypted successfully!`,
+        );
       } else {
         // Show binary file preview and offer download
         setPreviewDialog({
           open: true,
           title: `Decrypted: ${decrypted.metadata.fileName}`,
-          content: `Encrypted file decrypted successfully!\n\nFile: ${decrypted.metadata.fileName}\nType: ${decrypted.metadata.mimeType || 'Binary'}\nSize: ${formatFileSize(decrypted.metadata.originalSize)}\n\nClick download to save the decrypted file.`,
+          content: `Encrypted file decrypted successfully!\n\nFile: ${decrypted.metadata.fileName}\nType: ${decrypted.metadata.mimeType || "Binary"}\nSize: ${formatFileSize(decrypted.metadata.originalSize)}\n\nClick download to save the decrypted file.`,
           downloadData: {
             data: decrypted.data,
             fileName: decrypted.metadata.fileName,
-            mimeType: decrypted.metadata.mimeType
-          }
+            mimeType: decrypted.metadata.mimeType,
+          },
         });
-        setStatus(`Binary file "${decrypted.metadata.fileName}" decrypted successfully!`);
+        setStatus(
+          `Binary file "${decrypted.metadata.fileName}" decrypted successfully!`,
+        );
       }
-      
+
       // Clear the uploaded file after successful decryption
       setUploadedEncryptedFile(null);
       setUploadValidation(null);
@@ -296,7 +323,7 @@ const PasswordBasedFileEncryptionDemo = () => {
 
   const createSampleFiles = async () => {
     if (!password.trim()) {
-      setStatus('Please enter a password first');
+      setStatus("Please enter a password first");
       return;
     }
 
@@ -304,35 +331,54 @@ const PasswordBasedFileEncryptionDemo = () => {
     try {
       // Create multiple sample encrypted files
       const samples = [
-        { content: 'API Key: sk-1234567890abcdef\nDatabase URL: postgresql://user:pass@localhost/db\nSecret Token: abc123xyz789', name: 'api-secrets.txt' },
-        { content: '# Private Notes\n\n## Project Ideas\n- Build encrypted file system\n- Secure messaging app\n- Password manager\n\n## Passwords\n- GitHub: secure-token-123\n- Email: my-secret-password', name: 'private-notes.md' },
-        { content: JSON.stringify({
-  "environment": "production",
-  "apiKeys": {
-    "stripe": "sk_live_...",
-    "sendgrid": "SG...",
-    "aws": "AKIA..."
-  },
-  "database": {
-    "host": "prod-db.company.com",
-    "username": "admin",
-    "password": "super-secret-db-pass"
-  }
-}, null, 2), name: 'production-config.json' }
+        {
+          content:
+            "API Key: sk-1234567890abcdef\nDatabase URL: postgresql://user:pass@localhost/db\nSecret Token: abc123xyz789",
+          name: "api-secrets.txt",
+        },
+        {
+          content:
+            "# Private Notes\n\n## Project Ideas\n- Build encrypted file system\n- Secure messaging app\n- Password manager\n\n## Passwords\n- GitHub: secure-token-123\n- Email: my-secret-password",
+          name: "private-notes.md",
+        },
+        {
+          content: JSON.stringify(
+            {
+              environment: "production",
+              apiKeys: {
+                stripe: "sk_live_...",
+                sendgrid: "SG...",
+                aws: "AKIA...",
+              },
+              database: {
+                host: "prod-db.company.com",
+                username: "admin",
+                password: "super-secret-db-pass",
+              },
+            },
+            null,
+            2,
+          ),
+          name: "production-config.json",
+        },
       ];
 
       for (const sample of samples) {
-        const encrypted = await encryptTextFile(sample.content, password, sample.name);
+        const encrypted = await encryptTextFile(
+          sample.content,
+          password,
+          sample.name,
+        );
         const newFile = {
           id: Date.now() + Math.random(),
           ...encrypted,
-          type: 'text',
-          isEncrypted: true
+          type: "text",
+          isEncrypted: true,
         };
-        setEncryptedFiles(prev => [...prev, newFile]);
+        setEncryptedFiles((prev) => [...prev, newFile]);
       }
 
-      setStatus('Sample encrypted files created successfully!');
+      setStatus("Sample encrypted files created successfully!");
     } catch (error) {
       setStatus(`Failed to create sample files: ${error.message}`);
     } finally {
@@ -348,9 +394,10 @@ const PasswordBasedFileEncryptionDemo = () => {
       <Stack spacing={3}>
         <Alert severity="info">
           <Typography variant="body2">
-            <strong>Secure File Encryption:</strong> This system uses PBKDF2 with 100,000 iterations 
-            to derive encryption keys from passwords, then encrypts files with AES-GCM. 
-            Each file gets a unique salt and IV for maximum security.
+            <strong>Secure File Encryption:</strong> This system uses PBKDF2
+            with 100,000 iterations to derive encryption keys from passwords,
+            then encrypts files with AES-GCM. Each file gets a unique salt and
+            IV for maximum security.
           </Typography>
         </Alert>
 
@@ -363,7 +410,7 @@ const PasswordBasedFileEncryptionDemo = () => {
           <CardContent>
             <TextField
               label="Encryption Password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               fullWidth
@@ -371,11 +418,14 @@ const PasswordBasedFileEncryptionDemo = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                )
+                ),
               }}
               helperText="Use a strong password for maximum security"
             />
@@ -406,7 +456,7 @@ const PasswordBasedFileEncryptionDemo = () => {
                   fullWidth
                   variant="outlined"
                 />
-                
+
                 <TextField
                   label="Text Content"
                   value={textContent}
@@ -417,17 +467,19 @@ const PasswordBasedFileEncryptionDemo = () => {
                   variant="outlined"
                   placeholder="Enter the text content you want to encrypt..."
                 />
-                
-                <Box sx={{ display: 'flex', gap: 2 }}>
+
+                <Box sx={{ display: "flex", gap: 2 }}>
                   <Button
                     variant="contained"
                     onClick={handleEncryptText}
-                    disabled={loading || !textContent.trim() || !password.trim()}
+                    disabled={
+                      loading || !textContent.trim() || !password.trim()
+                    }
                     startIcon={<Lock />}
                   >
                     Encrypt Text File
                   </Button>
-                  
+
                   <Button
                     variant="outlined"
                     onClick={createSampleFiles}
@@ -453,7 +505,7 @@ const PasswordBasedFileEncryptionDemo = () => {
               <Stack spacing={2}>
                 <input
                   accept="*/*"
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                   id="file-upload"
                   type="file"
                   onChange={handleFileUpload}
@@ -470,9 +522,10 @@ const PasswordBasedFileEncryptionDemo = () => {
                     Select File to Encrypt
                   </Button>
                 </label>
-                
+
                 <Typography variant="body2" color="text.secondary">
-                  Supports all file types: images, documents, videos, archives, etc.
+                  Supports all file types: images, documents, videos, archives,
+                  etc.
                 </Typography>
               </Stack>
             </CardContent>
@@ -490,14 +543,15 @@ const PasswordBasedFileEncryptionDemo = () => {
               <Stack spacing={2}>
                 <Alert severity="info">
                   <Typography variant="body2">
-                    Upload encrypted .json files that were previously downloaded from this system.
-                    These files contain the encrypted data, IV, salt, and metadata needed for decryption.
+                    Upload encrypted .json files that were previously downloaded
+                    from this system. These files contain the encrypted data,
+                    IV, salt, and metadata needed for decryption.
                   </Typography>
                 </Alert>
-                
+
                 <input
                   accept=".json,.encrypted"
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                   id="encrypted-file-upload"
                   type="file"
                   onChange={handleEncryptedFileUpload}
@@ -515,16 +569,20 @@ const PasswordBasedFileEncryptionDemo = () => {
                     Upload Encrypted File Package
                   </Button>
                 </label>
-                
+
                 {uploadValidation && (
-                  <Alert severity={uploadValidation.isValid ? 'success' : 'error'}>
+                  <Alert
+                    severity={uploadValidation.isValid ? "success" : "error"}
+                  >
                     {uploadValidation.isValid ? (
                       <Typography variant="body2">
-                        <strong>Valid encrypted file loaded:</strong><br/>
-                        • File: {uploadValidation.metadata.fileName}<br/>
-                        • Original size: {formatFileSize(uploadValidation.metadata.originalSize)}<br/>
-                        • Type: {uploadValidation.metadata.type || 'Unknown'}<br/>
-                        • Encrypted: {uploadValidation.metadata.timestamp}
+                        <strong>Valid encrypted file loaded:</strong>
+                        <br />• File: {uploadValidation.metadata.fileName}
+                        <br />• Original size:{" "}
+                        {formatFileSize(uploadValidation.metadata.originalSize)}
+                        <br />• Type:{" "}
+                        {uploadValidation.metadata.type || "Unknown"}
+                        <br />• Encrypted: {uploadValidation.metadata.timestamp}
                       </Typography>
                     ) : (
                       <Typography variant="body2">
@@ -533,7 +591,7 @@ const PasswordBasedFileEncryptionDemo = () => {
                     )}
                   </Alert>
                 )}
-                
+
                 {uploadedEncryptedFile && uploadValidation?.isValid && (
                   <Box sx={{ mt: 2 }}>
                     <Button
@@ -545,17 +603,22 @@ const PasswordBasedFileEncryptionDemo = () => {
                     >
                       Decrypt Uploaded File
                     </Button>
-                    
+
                     {!password.trim() && (
-                      <Typography variant="caption" color="error" sx={{ ml: 2 }}>
+                      <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{ ml: 2 }}
+                      >
                         Enter password above to decrypt
                       </Typography>
                     )}
                   </Box>
                 )}
-                
+
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Supported formats:</strong> .json files created by this encryption system
+                  <strong>Supported formats:</strong> .json files created by
+                  this encryption system
                 </Typography>
               </Stack>
             </CardContent>
@@ -573,14 +636,24 @@ const PasswordBasedFileEncryptionDemo = () => {
                 />
                 <CardContent>
                   {encryptedFiles.length === 0 ? (
-                    <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                    <Typography
+                      color="text.secondary"
+                      align="center"
+                      sx={{ py: 4 }}
+                    >
                       No encrypted files yet. Create some using the other tabs.
                     </Typography>
                   ) : (
                     <List>
                       {encryptedFiles.map((file) => (
                         <ListItem key={file.id} divider>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mr: 2,
+                            }}
+                          >
                             {getFileIcon(file)}
                           </Box>
                           <ListItemText
@@ -588,15 +661,18 @@ const PasswordBasedFileEncryptionDemo = () => {
                             secondary={
                               <Box>
                                 <Typography variant="caption" display="block">
-                                  {file.type === 'text' ? 'Text File' : `${file.mimeType || 'Binary File'}`}
+                                  {file.type === "text"
+                                    ? "Text File"
+                                    : `${file.mimeType || "Binary File"}`}
                                 </Typography>
                                 <Typography variant="caption" display="block">
-                                  Size: {formatFileSize(file.originalSize)} • {new Date(file.timestamp).toLocaleString()}
+                                  Size: {formatFileSize(file.originalSize)} •{" "}
+                                  {new Date(file.timestamp).toLocaleString()}
                                 </Typography>
-                                <Chip 
-                                  label="ENCRYPTED" 
-                                  size="small" 
-                                  color="error" 
+                                <Chip
+                                  label="ENCRYPTED"
+                                  size="small"
+                                  color="error"
                                   variant="outlined"
                                   sx={{ mt: 0.5 }}
                                 />
@@ -653,7 +729,12 @@ const PasswordBasedFileEncryptionDemo = () => {
                     />
                     <Button
                       variant="outlined"
-                      onClick={() => createSecureFileDownload(decryptedContent, selectedFile.fileName)}
+                      onClick={() =>
+                        createSecureFileDownload(
+                          decryptedContent,
+                          selectedFile.fileName,
+                        )
+                      }
                       startIcon={<Download />}
                       sx={{ mt: 2 }}
                     >
@@ -669,7 +750,13 @@ const PasswordBasedFileEncryptionDemo = () => {
         <OperationStatus loading={loading} />
 
         {status && (
-          <Alert severity={status.includes('failed') || status.includes('Error') ? 'error' : 'success'}>
+          <Alert
+            severity={
+              status.includes("failed") || status.includes("Error")
+                ? "error"
+                : "success"
+            }
+          >
             {status}
           </Alert>
         )}
@@ -677,24 +764,32 @@ const PasswordBasedFileEncryptionDemo = () => {
         {/* Binary File Preview Dialog */}
         <Dialog
           open={previewDialog.open}
-          onClose={() => setPreviewDialog({ open: false, content: '', title: '' })}
+          onClose={() =>
+            setPreviewDialog({ open: false, content: "", title: "" })
+          }
           maxWidth="sm"
           fullWidth
         >
           <DialogTitle>{previewDialog.title}</DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+            <Typography variant="body1" sx={{ whiteSpace: "pre-line" }}>
               {previewDialog.content}
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setPreviewDialog({ open: false, content: '', title: '' })}>
+            <Button
+              onClick={() =>
+                setPreviewDialog({ open: false, content: "", title: "" })
+              }
+            >
               Close
             </Button>
             {previewDialog.downloadData && (
-              <Button 
-                variant="contained" 
-                onClick={() => handleDownloadDecrypted(previewDialog.downloadData)}
+              <Button
+                variant="contained"
+                onClick={() =>
+                  handleDownloadDecrypted(previewDialog.downloadData)
+                }
                 startIcon={<Download />}
               >
                 Download
@@ -709,12 +804,30 @@ const PasswordBasedFileEncryptionDemo = () => {
             🔐 Security Features
           </Typography>
           <Typography component="ul" variant="body2" sx={{ mt: 1, mb: 0 }}>
-            <li><strong>PBKDF2 Key Derivation:</strong> 100,000 iterations with SHA-256</li>
-            <li><strong>AES-GCM Encryption:</strong> 256-bit keys with authenticated encryption</li>
-            <li><strong>Unique Salt & IV:</strong> Each file gets cryptographically random values</li>
-            <li><strong>Binary File Support:</strong> Handles any file type (images, documents, etc.)</li>
-            <li><strong>Secure Downloads:</strong> Files are decrypted in memory before download</li>
-            <li><strong>No Server Storage:</strong> All encryption happens in your browser</li>
+            <li>
+              <strong>PBKDF2 Key Derivation:</strong> 100,000 iterations with
+              SHA-256
+            </li>
+            <li>
+              <strong>AES-GCM Encryption:</strong> 256-bit keys with
+              authenticated encryption
+            </li>
+            <li>
+              <strong>Unique Salt & IV:</strong> Each file gets
+              cryptographically random values
+            </li>
+            <li>
+              <strong>Binary File Support:</strong> Handles any file type
+              (images, documents, etc.)
+            </li>
+            <li>
+              <strong>Secure Downloads:</strong> Files are decrypted in memory
+              before download
+            </li>
+            <li>
+              <strong>No Server Storage:</strong> All encryption happens in your
+              browser
+            </li>
           </Typography>
         </Alert>
       </Stack>
@@ -729,9 +842,10 @@ export const Default = () => (
 );
 
 const DragDropFileEncryptionDemo = () => {
-  const { encryptBinaryFile, decryptBinaryFile, createSecureFileDownload } = useCryptography();
-  
-  const [password, setPassword] = useState('secure-password-123');
+  const { encryptBinaryFile, decryptBinaryFile, createSecureFileDownload } =
+    useCryptography();
+
+  const [password, setPassword] = useState("secure-password-123");
   const [dragOver, setDragOver] = useState(false);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -747,36 +861,39 @@ const DragDropFileEncryptionDemo = () => {
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback(async (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    await processFiles(droppedFiles);
-  }, [password]);
+  const handleDrop = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setDragOver(false);
+
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      await processFiles(droppedFiles);
+    },
+    [password],
+  );
 
   const processFiles = async (fileList) => {
     if (!password.trim()) {
-      alert('Please enter a password first');
+      alert("Please enter a password first");
       return;
     }
 
     setLoading(true);
     setProgress(0);
-    
+
     try {
       for (let i = 0; i < fileList.length; i++) {
         const file = fileList[i];
         const encrypted = await encryptBinaryFile(file, password);
-        
+
         const newFile = {
           id: Date.now() + Math.random(),
           originalFile: file,
           encrypted: encrypted,
-          status: 'encrypted'
+          status: "encrypted",
         };
-        
-        setFiles(prev => [...prev, newFile]);
+
+        setFiles((prev) => [...prev, newFile]);
         setProgress(((i + 1) / fileList.length) * 100);
       }
     } catch (error) {
@@ -790,7 +907,7 @@ const DragDropFileEncryptionDemo = () => {
       const decrypted = await decryptBinaryFile(fileItem.encrypted, password);
       createSecureFileDownload(decrypted.blob, fileItem.originalFile.name);
     } catch (error) {
-      alert('Decryption failed: ' + error.message);
+      alert("Decryption failed: " + error.message);
     }
   };
 
@@ -814,23 +931,29 @@ const DragDropFileEncryptionDemo = () => {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           sx={{
-            border: `2px dashed ${dragOver ? '#2196f3' : '#ddd'}`,
+            border: `2px dashed ${dragOver ? "#2196f3" : "#ddd"}`,
             borderRadius: 2,
             p: 4,
-            textAlign: 'center',
-            backgroundColor: dragOver ? '#f3f9ff' : '#fafafa',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
+            textAlign: "center",
+            backgroundColor: dragOver ? "#f3f9ff" : "#fafafa",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
             minHeight: 200,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center'
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Upload sx={{ fontSize: 64, color: dragOver ? 'primary.main' : 'text.secondary', mb: 2 }} />
+          <Upload
+            sx={{
+              fontSize: 64,
+              color: dragOver ? "primary.main" : "text.secondary",
+              mb: 2,
+            }}
+          />
           <Typography variant="h6" gutterBottom>
-            {dragOver ? 'Drop files here to encrypt' : 'Drag & drop files here'}
+            {dragOver ? "Drop files here to encrypt" : "Drag & drop files here"}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Supports all file types • Multiple files allowed

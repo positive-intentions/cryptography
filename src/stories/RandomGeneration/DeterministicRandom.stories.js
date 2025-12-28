@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { 
-  CryptoDemo, 
-  CodeDisplay, 
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
+import {
+  CryptoDemo,
+  CodeDisplay,
   OperationStatus,
-  Button, 
-  TextField, 
-  Box, 
+  Button,
+  TextField,
+  Box,
   Typography,
   Stack,
   Alert,
   Chip,
   Paper,
   Grid,
-  Autorenew, 
-  Science 
-} from 'ui';
+  Autorenew,
+  Science,
+} from "ui";
 
 export default {
-  title: 'Cryptography/Random Generation/Deterministic Random',
+  title: "Cryptography/Random Generation/Deterministic Random",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Generate deterministic "random" values using Chance.js with a seed. Same seed always produces same output.',
+        component:
+          'Generate deterministic "random" values using Chance.js with a seed. Same seed always produces same output.',
       },
     },
   },
@@ -31,7 +35,7 @@ export default {
 
 const DeterministicDemo = () => {
   const crypto = useCryptography();
-  const [seed, setSeed] = useState('my-test-seed');
+  const [seed, setSeed] = useState("my-test-seed");
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +44,7 @@ const DeterministicDemo = () => {
     try {
       // Get the Chance instance with seed
       const chance = crypto.chance(seed);
-      
+
       // Generate various types of deterministic "random" data
       const newResults = {
         guid: chance.guid(),
@@ -54,10 +58,10 @@ const DeterministicDemo = () => {
         name: chance.name(),
         email: chance.email(),
         ip: chance.ip(),
-        color: chance.color({ format: 'hex' }),
+        color: chance.color({ format: "hex" }),
         date: chance.date({ year: 2024 }).toDateString(),
       };
-      
+
       setResults(newResults);
     } catch (error) {
       setLoading(false);
@@ -70,8 +74,9 @@ const DeterministicDemo = () => {
       description="Using Chance.js with a seed to generate reproducible 'random' values. Perfect for testing and simulations."
     >
       <Alert severity="info" sx={{ mb: 3 }}>
-        Deterministic generation means the same seed will always produce the same sequence of values. 
-        This is NOT cryptographically secure and should only be used for testing or non-security purposes.
+        Deterministic generation means the same seed will always produce the
+        same sequence of values. This is NOT cryptographically secure and should
+        only be used for testing or non-security purposes.
       </Alert>
 
       <Stack spacing={3}>
@@ -101,7 +106,7 @@ const DeterministicDemo = () => {
             <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
               Generated Values (Seed: "{seed}")
             </Typography>
-            
+
             <Grid container spacing={2}>
               {Object.entries(results).map(([key, value]) => (
                 <Grid item xs={12} sm={6} key={key}>
@@ -109,7 +114,10 @@ const DeterministicDemo = () => {
                     <Typography variant="caption" color="text.secondary">
                       {key.charAt(0).toUpperCase() + key.slice(1)}
                     </Typography>
-                    <Typography variant="body1" sx={{ fontFamily: 'monospace', mt: 0.5 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ fontFamily: "monospace", mt: 0.5 }}
+                    >
                       {String(value)}
                     </Typography>
                   </Paper>
@@ -121,7 +129,8 @@ const DeterministicDemo = () => {
 
         <Box sx={{ mt: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            Try changing the seed and regenerating. Then change it back to see the same values return!
+            Try changing the seed and regenerating. Then change it back to see
+            the same values return!
           </Typography>
         </Box>
       </Stack>
@@ -137,8 +146,8 @@ export const Default = () => (
 
 const ComparisonDemo = () => {
   const crypto = useCryptography();
-  const [seed1, setSeed1] = useState('seed-A');
-  const [seed2, setSeed2] = useState('seed-B');
+  const [seed1, setSeed1] = useState("seed-A");
+  const [seed2, setSeed2] = useState("seed-B");
   const [comparison, setComparison] = useState({ set1: [], set2: [] });
   const [loading, setLoading] = useState(false);
 
@@ -147,15 +156,15 @@ const ComparisonDemo = () => {
     try {
       const chance1 = crypto.chance(seed1);
       const chance2 = crypto.chance(seed2);
-      
+
       const set1 = [];
       const set2 = [];
-      
+
       for (let i = 0; i < 5; i++) {
         set1.push(chance1.integer({ min: 1, max: 100 }));
         set2.push(chance2.integer({ min: 1, max: 100 }));
       }
-      
+
       setComparison({ set1, set2 });
     } catch (error) {
       setLoading(false);
@@ -217,10 +226,10 @@ const ComparisonDemo = () => {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   {comparison.set1.map((val, idx) => (
-                    <Chip 
-                      key={idx} 
-                      label={val} 
-                      color="primary" 
+                    <Chip
+                      key={idx}
+                      label={val}
+                      color="primary"
                       variant="outlined"
                     />
                   ))}
@@ -234,10 +243,12 @@ const ComparisonDemo = () => {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   {comparison.set2.map((val, idx) => (
-                    <Chip 
-                      key={idx} 
-                      label={val} 
-                      color={val === comparison.set1[idx] ? "primary" : "secondary"} 
+                    <Chip
+                      key={idx}
+                      label={val}
+                      color={
+                        val === comparison.set1[idx] ? "primary" : "secondary"
+                      }
                       variant="outlined"
                     />
                   ))}
@@ -258,11 +269,12 @@ const ComparisonDemo = () => {
             <li>Creating deterministic simulations</li>
             <li>Generating placeholder data for development</li>
           </Typography>
-          
+
           <Alert severity="warning" sx={{ mt: 2 }}>
-            <strong>Security Note:</strong> Never use deterministic generation for security-critical 
-            random values like passwords, tokens, or cryptographic keys. Use the cryptographically 
-            secure randomString() function instead.
+            <strong>Security Note:</strong> Never use deterministic generation
+            for security-critical random values like passwords, tokens, or
+            cryptographic keys. Use the cryptographically secure randomString()
+            function instead.
           </Alert>
         </Box>
       </Stack>

@@ -1,54 +1,74 @@
-import React, { useState } from 'react';
-import { 
-  Box, Typography, Button, Card, CardContent, Stepper, Step, StepLabel, 
-  Alert, Grid, Paper, Divider, Avatar, Chip, IconButton, Tooltip, TextField
-} from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import KeyIcon from '@mui/icons-material/VpnKey';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import SecurityIcon from '@mui/icons-material/Security';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import SendIcon from '@mui/icons-material/Send';
-import LockIcon from '@mui/icons-material/Lock';
-import MessageIcon from '@mui/icons-material/Message';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { CryptoDemo, CodeDisplay, OperationStatus } from 'ui';
+import React, { useState } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Stepper,
+  Step,
+  StepLabel,
+  Alert,
+  Grid,
+  Paper,
+  Divider,
+  Avatar,
+  Chip,
+  IconButton,
+  Tooltip,
+  TextField,
+} from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import KeyIcon from "@mui/icons-material/VpnKey";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import SecurityIcon from "@mui/icons-material/Security";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import SendIcon from "@mui/icons-material/Send";
+import LockIcon from "@mui/icons-material/Lock";
+import MessageIcon from "@mui/icons-material/Message";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
+import { CryptoDemo, CodeDisplay, OperationStatus } from "ui";
 
 const KeyExchangeFlowDemo = () => {
   const crypto = useCryptography();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [alice, setAlice] = useState(null);
   const [bob, setBob] = useState(null);
   const [exchangeData, setExchangeData] = useState({});
   const [showPrivateKeys, setShowPrivateKeys] = useState(false);
-  const [message, setMessage] = useState('Hello Bob! This is a secure message from Alice 🔒');
+  const [message, setMessage] = useState(
+    "Hello Bob! This is a secure message from Alice 🔒",
+  );
   const [encryptedMessage, setEncryptedMessage] = useState(null);
-  const [decryptedMessage, setDecryptedMessage] = useState('');
+  const [decryptedMessage, setDecryptedMessage] = useState("");
 
   const steps = [
-    'Setup: Initialize Alice & Bob',
-    'Bob: Generate and Share Key Bundle',
-    'Alice: Generate Ephemeral Key',
-    'Alice: Perform Key Exchange Calculations', 
-    'Bob: Calculate Matching Secret',
-    'Verification: Confirm Shared Secret',
-    'Alice: Encrypt & Send Message',
-    'Bob: Receive & Decrypt Message'
+    "Setup: Initialize Alice & Bob",
+    "Bob: Generate and Share Key Bundle",
+    "Alice: Generate Ephemeral Key",
+    "Alice: Perform Key Exchange Calculations",
+    "Bob: Calculate Matching Secret",
+    "Verification: Confirm Shared Secret",
+    "Alice: Encrypt & Send Message",
+    "Bob: Receive & Decrypt Message",
   ];
 
   const stepDescriptions = [
-    'Both Alice and Bob generate their long-term identity keys, signed prekeys, and one-time prekeys',
-    'Bob creates a public key bundle containing his identity key, signed prekey, and one-time prekeys for Alice to use',
-    'Alice generates a fresh ephemeral key pair for this specific conversation',
-    'Alice performs the X3DH key exchange using Bob\'s public keys and her own private keys',
-    'Bob calculates the same shared secret using Alice\'s ephemeral public key and his private keys',
-    'Both parties now have the same shared secret and can begin secure messaging',
-    'Alice encrypts a message using the shared secret and sends it to Bob',
-    'Bob receives the encrypted message and decrypts it using the same shared secret'
+    "Both Alice and Bob generate their long-term identity keys, signed prekeys, and one-time prekeys",
+    "Bob creates a public key bundle containing his identity key, signed prekey, and one-time prekeys for Alice to use",
+    "Alice generates a fresh ephemeral key pair for this specific conversation",
+    "Alice performs the X3DH key exchange using Bob's public keys and her own private keys",
+    "Bob calculates the same shared secret using Alice's ephemeral public key and his private keys",
+    "Both parties now have the same shared secret and can begin secure messaging",
+    "Alice encrypts a message using the shared secret and sends it to Bob",
+    "Bob receives the encrypted message and decrypts it using the same shared secret",
   ];
 
   const resetDemo = () => {
@@ -57,14 +77,14 @@ const KeyExchangeFlowDemo = () => {
     setBob(null);
     setExchangeData({});
     setEncryptedMessage(null);
-    setDecryptedMessage('');
-    setError('');
+    setDecryptedMessage("");
+    setError("");
   };
 
   const executeStep = async (stepNumber) => {
     setLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
       switch (stepNumber) {
         case 0: // Initialize users
@@ -72,11 +92,15 @@ const KeyExchangeFlowDemo = () => {
           const bobUser = await crypto.initializeSignalUser("Bob");
           setAlice(aliceUser);
           setBob(bobUser);
-          
+
           // Store key info for display
-          const aliceIdentityPublic = await crypto.exportSignalPublicKey(aliceUser.identityKeyPair.publicKey);
-          const bobIdentityPublic = await crypto.exportSignalPublicKey(bobUser.identityKeyPair.publicKey);
-          
+          const aliceIdentityPublic = await crypto.exportSignalPublicKey(
+            aliceUser.identityKeyPair.publicKey,
+          );
+          const bobIdentityPublic = await crypto.exportSignalPublicKey(
+            bobUser.identityKeyPair.publicKey,
+          );
+
           setExchangeData({
             aliceIdentityPublic: crypto.bufferToSignalHex(aliceIdentityPublic),
             bobIdentityPublic: crypto.bufferToSignalHex(bobIdentityPublic),
@@ -85,11 +109,14 @@ const KeyExchangeFlowDemo = () => {
 
         case 1: // Bob creates key bundle
           const bobBundle = await crypto.getSignalPublicKeyBundle(bob);
-          const bobSignedPrekeyPublic = crypto.bufferToSignalHex(bobBundle.signedPrekey);
-          const bobOneTimePrekeyPublic = bobBundle.oneTimePrekey ? 
-            crypto.bufferToSignalHex(bobBundle.oneTimePrekey) : null;
-          
-          setExchangeData(prev => ({
+          const bobSignedPrekeyPublic = crypto.bufferToSignalHex(
+            bobBundle.signedPrekey,
+          );
+          const bobOneTimePrekeyPublic = bobBundle.oneTimePrekey
+            ? crypto.bufferToSignalHex(bobBundle.oneTimePrekey)
+            : null;
+
+          setExchangeData((prev) => ({
             ...prev,
             bobBundle,
             bobSignedPrekeyPublic,
@@ -99,44 +126,57 @@ const KeyExchangeFlowDemo = () => {
 
         case 2: // Alice generates ephemeral key
           const aliceEphemeralPair = await crypto.generateSignalKeyPair();
-          const aliceEphemeralPublic = await crypto.exportSignalPublicKey(aliceEphemeralPair.publicKey);
-          
-          setExchangeData(prev => ({
+          const aliceEphemeralPublic = await crypto.exportSignalPublicKey(
+            aliceEphemeralPair.publicKey,
+          );
+
+          setExchangeData((prev) => ({
             ...prev,
             aliceEphemeralPair,
-            aliceEphemeralPublic: crypto.bufferToSignalHex(aliceEphemeralPublic),
+            aliceEphemeralPublic:
+              crypto.bufferToSignalHex(aliceEphemeralPublic),
           }));
           break;
 
         case 3: // Alice performs X3DH
-          const keyExchangeResult = await crypto.performSignalX3DHKeyExchange(alice, exchangeData.bobBundle);
-          
-          setExchangeData(prev => ({
+          const keyExchangeResult = await crypto.performSignalX3DHKeyExchange(
+            alice,
+            exchangeData.bobBundle,
+          );
+
+          setExchangeData((prev) => ({
             ...prev,
-            aliceSecret: crypto.bufferToSignalHex(keyExchangeResult.masterSecret),
+            aliceSecret: crypto.bufferToSignalHex(
+              keyExchangeResult.masterSecret,
+            ),
             keyExchangeResult,
           }));
           break;
 
         case 4: // Bob calculates matching secret
-          const aliceIdentityPublicBytes = await crypto.exportSignalPublicKey(alice.identityKeyPair.publicKey);
+          const aliceIdentityPublicBytes = await crypto.exportSignalPublicKey(
+            alice.identityKeyPair.publicKey,
+          );
           const bobSecret = await crypto.deriveSignalSharedSecret(
             bob,
             exchangeData.keyExchangeResult.aliceEphemeralPublic,
             aliceIdentityPublicBytes,
             exchangeData.keyExchangeResult.usedOneTimePrekey,
-            exchangeData.keyExchangeResult.usedOneTimePrekey ? exchangeData.bobBundle.oneTimePrekey : null
+            exchangeData.keyExchangeResult.usedOneTimePrekey
+              ? exchangeData.bobBundle.oneTimePrekey
+              : null,
           );
-          
-          setExchangeData(prev => ({
+
+          setExchangeData((prev) => ({
             ...prev,
             bobSecret: crypto.bufferToSignalHex(bobSecret),
           }));
           break;
 
         case 5: // Verification
-          const secretsMatch = exchangeData.aliceSecret === exchangeData.bobSecret;
-          setExchangeData(prev => ({
+          const secretsMatch =
+            exchangeData.aliceSecret === exchangeData.bobSecret;
+          setExchangeData((prev) => ({
             ...prev,
             secretsMatch,
           }));
@@ -145,40 +185,50 @@ const KeyExchangeFlowDemo = () => {
         case 6: // Alice encrypts message
           // First convert the hex shared secret to a proper symmetric key
           const aliceSecretBytes = new Uint8Array(
-            exchangeData.aliceSecret.match(/.{2}/g).map(byte => parseInt(byte, 16))
+            exchangeData.aliceSecret
+              .match(/.{2}/g)
+              .map((byte) => parseInt(byte, 16)),
           );
           const aliceSymmetricKey = await window.crypto.subtle.importKey(
-            'raw',
+            "raw",
             aliceSecretBytes.slice(0, 32), // Use first 32 bytes for AES-256
-            { name: 'AES-GCM' },
+            { name: "AES-GCM" },
             false,
-            ['encrypt']
+            ["encrypt"],
           );
-          
+
           // Use the existing encryptWithSymmetricKey method
-          const encryptedResult = await crypto.encryptWithSymmetricKey(message, aliceSymmetricKey);
+          const encryptedResult = await crypto.encryptWithSymmetricKey(
+            message,
+            aliceSymmetricKey,
+          );
           setEncryptedMessage(encryptedResult);
           break;
 
         case 7: // Bob decrypts message
           // First convert Bob's hex shared secret to a proper symmetric key
           const bobSecretBytes = new Uint8Array(
-            exchangeData.bobSecret.match(/.{2}/g).map(byte => parseInt(byte, 16))
+            exchangeData.bobSecret
+              .match(/.{2}/g)
+              .map((byte) => parseInt(byte, 16)),
           );
           const bobSymmetricKey = await window.crypto.subtle.importKey(
-            'raw',
+            "raw",
             bobSecretBytes.slice(0, 32), // Use first 32 bytes for AES-256
-            { name: 'AES-GCM' },
+            { name: "AES-GCM" },
             false,
-            ['decrypt']
+            ["decrypt"],
           );
-          
+
           // Use the existing decryptWithSymmetricKey method
-          const decryptedResult = await crypto.decryptWithSymmetricKey(encryptedMessage, bobSymmetricKey);
+          const decryptedResult = await crypto.decryptWithSymmetricKey(
+            encryptedMessage,
+            bobSymmetricKey,
+          );
           setDecryptedMessage(decryptedResult);
           break;
       }
-      
+
       setCurrentStep(stepNumber + 1);
     } catch (err) {
       setError(err.message);
@@ -188,24 +238,33 @@ const KeyExchangeFlowDemo = () => {
   };
 
   const UserCard = ({ user, name, isAlice }) => (
-    <Card sx={{ height: '100%', bgcolor: isAlice ? 'primary.50' : 'secondary.50' }}>
+    <Card
+      sx={{ height: "100%", bgcolor: isAlice ? "primary.50" : "secondary.50" }}
+    >
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Avatar sx={{ bgcolor: isAlice ? 'primary.main' : 'secondary.main' }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <Avatar sx={{ bgcolor: isAlice ? "primary.main" : "secondary.main" }}>
             <PersonIcon />
           </Avatar>
           <Typography variant="h6">{name}</Typography>
         </Box>
 
         {user && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box>
-              <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="subtitle2"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
                 <KeyIcon fontSize="small" />
                 Identity Key (Public)
               </Typography>
-              <CodeDisplay 
-                code={exchangeData[`${name.toLowerCase()}IdentityPublic`] || 'Not generated yet'} 
+              <CodeDisplay
+                code={
+                  exchangeData[`${name.toLowerCase()}IdentityPublic`] ||
+                  "Not generated yet"
+                }
                 language="text"
                 maxHeight="60px"
               />
@@ -216,8 +275,8 @@ const KeyExchangeFlowDemo = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   Signed Prekey (Public)
                 </Typography>
-                <CodeDisplay 
-                  code={exchangeData.bobSignedPrekeyPublic} 
+                <CodeDisplay
+                  code={exchangeData.bobSignedPrekeyPublic}
                   language="text"
                   maxHeight="60px"
                 />
@@ -229,8 +288,8 @@ const KeyExchangeFlowDemo = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   One-time Prekey (Public)
                 </Typography>
-                <CodeDisplay 
-                  code={exchangeData.bobOneTimePrekeyPublic} 
+                <CodeDisplay
+                  code={exchangeData.bobOneTimePrekeyPublic}
                   language="text"
                   maxHeight="60px"
                 />
@@ -242,8 +301,8 @@ const KeyExchangeFlowDemo = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   Ephemeral Key (Public)
                 </Typography>
-                <CodeDisplay 
-                  code={exchangeData.aliceEphemeralPublic} 
+                <CodeDisplay
+                  code={exchangeData.aliceEphemeralPublic}
                   language="text"
                   maxHeight="60px"
                 />
@@ -274,12 +333,19 @@ const KeyExchangeFlowDemo = () => {
             {/* Show encrypted message on Alice's side */}
             {isAlice && encryptedMessage && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom color="warning.main">
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="warning.main"
+                >
                   <LockIcon fontSize="small" sx={{ mr: 1 }} />
                   Encrypted Message
                 </Typography>
-                <CodeDisplay 
-                  code={encryptedMessage.ciphertext || JSON.stringify(encryptedMessage, null, 2)} 
+                <CodeDisplay
+                  code={
+                    encryptedMessage.ciphertext ||
+                    JSON.stringify(encryptedMessage, null, 2)
+                  }
                   language="text"
                   maxHeight="100px"
                 />
@@ -289,14 +355,16 @@ const KeyExchangeFlowDemo = () => {
             {/* Show decrypted message on Bob's side */}
             {!isAlice && decryptedMessage && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom color="success.main">
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="success.main"
+                >
                   <LockOpenIcon fontSize="small" sx={{ mr: 1 }} />
                   Decrypted Message
                 </Typography>
                 <Alert severity="success" sx={{ mt: 1 }}>
-                  <Typography variant="body1">
-                    "{decryptedMessage}"
-                  </Typography>
+                  <Typography variant="body1">"{decryptedMessage}"</Typography>
                 </Alert>
               </Box>
             )}
@@ -307,19 +375,28 @@ const KeyExchangeFlowDemo = () => {
   );
 
   const KeyExchangeVisualization = () => (
-    <Paper sx={{ p: 2, bgcolor: 'grey.50', textAlign: 'center' }}>
-      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+    <Paper sx={{ p: 2, bgcolor: "grey.50", textAlign: "center" }}>
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+        }}
+      >
         <SwapHorizIcon />
         {currentStep >= 7 ? "Secure Communication" : "Key Exchange Process"}
       </Typography>
-      
+
       {currentStep >= 4 && exchangeData.aliceSecret && currentStep < 7 && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle1" gutterBottom color="primary">
             Alice's Calculated Secret:
           </Typography>
-          <CodeDisplay 
-            code={exchangeData.aliceSecret} 
+          <CodeDisplay
+            code={exchangeData.aliceSecret}
             language="text"
             maxHeight="80px"
           />
@@ -331,8 +408,8 @@ const KeyExchangeFlowDemo = () => {
           <Typography variant="subtitle1" gutterBottom color="secondary">
             Bob's Calculated Secret:
           </Typography>
-          <CodeDisplay 
-            code={exchangeData.bobSecret} 
+          <CodeDisplay
+            code={exchangeData.bobSecret}
             language="text"
             maxHeight="80px"
           />
@@ -343,13 +420,14 @@ const KeyExchangeFlowDemo = () => {
         <Box sx={{ mt: 2 }}>
           <Alert severity={exchangeData.secretsMatch ? "success" : "error"}>
             <Typography variant="h6">
-              {exchangeData.secretsMatch ? "✅ Secrets Match!" : "❌ Secrets Don't Match"}
+              {exchangeData.secretsMatch
+                ? "✅ Secrets Match!"
+                : "❌ Secrets Don't Match"}
             </Typography>
             <Typography variant="body2">
-              {exchangeData.secretsMatch 
+              {exchangeData.secretsMatch
                 ? "Alice and Bob can now communicate securely using their shared secret"
-                : "Something went wrong in the key exchange process"
-              }
+                : "Something went wrong in the key exchange process"}
             </Typography>
           </Alert>
         </Box>
@@ -358,12 +436,19 @@ const KeyExchangeFlowDemo = () => {
       {/* Message transmission visualization */}
       {currentStep >= 7 && (
         <Box sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ textAlign: 'left' }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+            }}
+          >
+            <Box sx={{ textAlign: "left" }}>
               <Typography variant="body2" color="primary">
                 <strong>Alice</strong>
               </Typography>
-              <Chip 
+              <Chip
                 icon={<MessageIcon />}
                 label="Sends Encrypted"
                 size="small"
@@ -371,18 +456,18 @@ const KeyExchangeFlowDemo = () => {
                 variant="outlined"
               />
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <LockIcon color="warning" />
               <Typography variant="body2" color="text.secondary">
                 Encrypted Channel
               </Typography>
               <SendIcon color="action" />
             </Box>
-            <Box sx={{ textAlign: 'right' }}>
+            <Box sx={{ textAlign: "right" }}>
               <Typography variant="body2" color="secondary">
                 <strong>Bob</strong>
               </Typography>
-              <Chip 
+              <Chip
                 icon={<LockOpenIcon />}
                 label="Receives Decrypted"
                 size="small"
@@ -397,9 +482,20 @@ const KeyExchangeFlowDemo = () => {
               <Typography variant="subtitle2" gutterBottom>
                 Message in Transit (Encrypted):
               </Typography>
-              <Paper sx={{ p: 1, bgcolor: 'warning.light', maxHeight: '100px', overflow: 'auto' }}>
-                <Typography variant="caption" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                  {encryptedMessage?.ciphertext || JSON.stringify(encryptedMessage)}
+              <Paper
+                sx={{
+                  p: 1,
+                  bgcolor: "warning.light",
+                  maxHeight: "100px",
+                  overflow: "auto",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ fontFamily: "monospace", wordBreak: "break-all" }}
+                >
+                  {encryptedMessage?.ciphertext ||
+                    JSON.stringify(encryptedMessage)}
                 </Typography>
               </Paper>
             </Box>
@@ -409,7 +505,8 @@ const KeyExchangeFlowDemo = () => {
             <Box sx={{ mt: 2 }}>
               <Alert severity="success" icon={<MessageIcon />}>
                 <Typography variant="body1">
-                  <strong>Secure Message Delivered:</strong> "{decryptedMessage}"
+                  <strong>Secure Message Delivered:</strong> "{decryptedMessage}
+                  "
                 </Typography>
               </Alert>
             </Box>
@@ -420,32 +517,42 @@ const KeyExchangeFlowDemo = () => {
   );
 
   return (
-    <CryptoDemo title="Signal Protocol: Step-by-Step Key Exchange" icon={<SecurityIcon />}>
+    <CryptoDemo
+      title="Signal Protocol: Step-by-Step Key Exchange"
+      icon={<SecurityIcon />}
+    >
       <Typography variant="body1" paragraph>
-        This interactive demo shows exactly how Alice and Bob establish a shared secret using the Signal Protocol's X3DH key exchange. 
-        Follow each step to see the keys being generated and exchanged.
+        This interactive demo shows exactly how Alice and Bob establish a shared
+        secret using the Signal Protocol's X3DH key exchange. Follow each step
+        to see the keys being generated and exchanged.
       </Typography>
 
       {/* Controls */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button 
-          variant="contained" 
+      <Box
+        sx={{
+          mb: 3,
+          display: "flex",
+          gap: 2,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <Button
+          variant="contained"
           onClick={() => executeStep(currentStep)}
           disabled={loading || currentStep >= steps.length}
           startIcon={loading ? null : <SendIcon />}
         >
-          {loading ? 'Processing...' : 
-           currentStep === 0 ? 'Start Demo' :
-           currentStep >= steps.length ? 'Complete' :
-           'Next Step'
-          }
+          {loading
+            ? "Processing..."
+            : currentStep === 0
+              ? "Start Demo"
+              : currentStep >= steps.length
+                ? "Complete"
+                : "Next Step"}
         </Button>
-        
-        <Button 
-          variant="outlined" 
-          onClick={resetDemo}
-          disabled={loading}
-        >
+
+        <Button variant="outlined" onClick={resetDemo} disabled={loading}>
           Reset Demo
         </Button>
 
@@ -495,105 +602,158 @@ const KeyExchangeFlowDemo = () => {
       {/* Detailed Step Information */}
       {currentStep > 0 && (
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          >
             <LockIcon />
             Cryptographic Operations Performed
           </Typography>
-          
+
           <Paper sx={{ p: 2 }}>
             {currentStep >= 1 && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 1: User Initialization</Typography>
+                <Typography variant="subtitle2">
+                  Step 1: User Initialization
+                </Typography>
                 <Typography variant="body2">
-                  • Alice and Bob each generate ECDH identity key pairs (long-term)<br/>
-                  • Bob generates a signed prekey pair and signs it with his identity key<br/>
-                  • Bob generates one-time prekey pairs for forward secrecy
+                  • Alice and Bob each generate ECDH identity key pairs
+                  (long-term)
+                  <br />
+                  • Bob generates a signed prekey pair and signs it with his
+                  identity key
+                  <br />• Bob generates one-time prekey pairs for forward
+                  secrecy
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 2 && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 2: Public Key Bundle Creation</Typography>
+                <Typography variant="subtitle2">
+                  Step 2: Public Key Bundle Creation
+                </Typography>
                 <Typography variant="body2">
-                  • Bob creates a bundle containing his public identity key, signed prekey, and one-time prekey<br/>
-                  • This bundle is what Alice needs to initiate secure communication<br/>
-                  • The signed prekey proves the keys are authentic (signed by Bob's identity key)
+                  • Bob creates a bundle containing his public identity key,
+                  signed prekey, and one-time prekey
+                  <br />
+                  • This bundle is what Alice needs to initiate secure
+                  communication
+                  <br />• The signed prekey proves the keys are authentic
+                  (signed by Bob's identity key)
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 3 && (
               <Alert severity="warning" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 3: Ephemeral Key Generation</Typography>
+                <Typography variant="subtitle2">
+                  Step 3: Ephemeral Key Generation
+                </Typography>
                 <Typography variant="body2">
-                  • Alice generates a fresh ECDH key pair just for this conversation<br/>
-                  • This ephemeral key provides forward secrecy<br/>
-                  • It will never be stored permanently and is deleted after use
+                  • Alice generates a fresh ECDH key pair just for this
+                  conversation
+                  <br />
+                  • This ephemeral key provides forward secrecy
+                  <br />• It will never be stored permanently and is deleted
+                  after use
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 4 && (
               <Alert severity="success" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 4: Alice's X3DH Calculation</Typography>
+                <Typography variant="subtitle2">
+                  Step 4: Alice's X3DH Calculation
+                </Typography>
                 <Typography variant="body2">
-                  Alice performs three (or four) Diffie-Hellman operations:<br/>
-                  • DH1: Alice_Identity × Bob_SignedPrekey (mutual authentication)<br/>
-                  • DH2: Alice_Ephemeral × Bob_Identity (forward secrecy)<br/>
-                  • DH3: Alice_Ephemeral × Bob_SignedPrekey (additional forward secrecy)<br/>
-                  {exchangeData.keyExchangeResult?.usedOneTimePrekey && "• DH4: Alice_Ephemeral × Bob_OneTimePrekey (perfect forward secrecy)"}
-                  <br/>• All results are concatenated and put through HKDF to derive the final secret
+                  Alice performs three (or four) Diffie-Hellman operations:
+                  <br />
+                  • DH1: Alice_Identity × Bob_SignedPrekey (mutual
+                  authentication)
+                  <br />
+                  • DH2: Alice_Ephemeral × Bob_Identity (forward secrecy)
+                  <br />
+                  • DH3: Alice_Ephemeral × Bob_SignedPrekey (additional forward
+                  secrecy)
+                  <br />
+                  {exchangeData.keyExchangeResult?.usedOneTimePrekey &&
+                    "• DH4: Alice_Ephemeral × Bob_OneTimePrekey (perfect forward secrecy)"}
+                  <br />• All results are concatenated and put through HKDF to
+                  derive the final secret
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 5 && (
               <Alert severity="success" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 5: Bob's Matching Calculation</Typography>
+                <Typography variant="subtitle2">
+                  Step 5: Bob's Matching Calculation
+                </Typography>
                 <Typography variant="body2">
-                  Bob performs the same DH operations but with roles reversed:<br/>
-                  • DH1: Bob_SignedPrekey × Alice_Identity<br/>
-                  • DH2: Bob_Identity × Alice_Ephemeral<br/>
-                  • DH3: Bob_SignedPrekey × Alice_Ephemeral<br/>
-                  {exchangeData.keyExchangeResult?.usedOneTimePrekey && "• DH4: Bob_OneTimePrekey × Alice_Ephemeral"}<br/>
-                  • Same HKDF process produces identical shared secret
+                  Bob performs the same DH operations but with roles reversed:
+                  <br />
+                  • DH1: Bob_SignedPrekey × Alice_Identity
+                  <br />
+                  • DH2: Bob_Identity × Alice_Ephemeral
+                  <br />
+                  • DH3: Bob_SignedPrekey × Alice_Ephemeral
+                  <br />
+                  {exchangeData.keyExchangeResult?.usedOneTimePrekey &&
+                    "• DH4: Bob_OneTimePrekey × Alice_Ephemeral"}
+                  <br />• Same HKDF process produces identical shared secret
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 6 && (
               <Alert severity={exchangeData.secretsMatch ? "success" : "error"}>
-                <Typography variant="subtitle2">Step 6: Verification Complete</Typography>
+                <Typography variant="subtitle2">
+                  Step 6: Verification Complete
+                </Typography>
                 <Typography variant="body2">
-                  {exchangeData.secretsMatch 
+                  {exchangeData.secretsMatch
                     ? "✅ Both parties now have the same 256-bit shared secret. They can use this to derive encryption keys for secure messaging. The one-time prekey (if used) is now consumed and deleted."
-                    : "❌ The secrets don't match, indicating an error in the key exchange process."
-                  }
+                    : "❌ The secrets don't match, indicating an error in the key exchange process."}
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 7 && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 7: Message Encryption</Typography>
+                <Typography variant="subtitle2">
+                  Step 7: Message Encryption
+                </Typography>
                 <Typography variant="body2">
-                  • Alice derives an AES-256-GCM key from the shared secret<br/>
-                  • She encrypts her message with a random IV (initialization vector)<br/>
-                  • The encrypted data and IV are sent to Bob through the insecure channel<br/>
-                  • Anyone intercepting this data cannot decrypt it without the shared secret
+                  • Alice derives an AES-256-GCM key from the shared secret
+                  <br />
+                  • She encrypts her message with a random IV (initialization
+                  vector)
+                  <br />
+                  • The encrypted data and IV are sent to Bob through the
+                  insecure channel
+                  <br />• Anyone intercepting this data cannot decrypt it
+                  without the shared secret
                 </Typography>
               </Alert>
             )}
 
             {currentStep >= 8 && (
               <Alert severity="success" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Step 8: Message Decryption</Typography>
+                <Typography variant="subtitle2">
+                  Step 8: Message Decryption
+                </Typography>
                 <Typography variant="body2">
-                  • Bob derives the same AES-256-GCM key from his copy of the shared secret<br/>
-                  • He uses this key and the received IV to decrypt the message<br/>
-                  • The decrypted message matches Alice's original text perfectly<br/>
-                  • ✅ End-to-end encryption is complete - only Alice and Bob can read the message
+                  • Bob derives the same AES-256-GCM key from his copy of the
+                  shared secret
+                  <br />
+                  • He uses this key and the received IV to decrypt the message
+                  <br />
+                  • The decrypted message matches Alice's original text
+                  perfectly
+                  <br />• ✅ End-to-end encryption is complete - only Alice and
+                  Bob can read the message
                 </Typography>
               </Alert>
             )}
@@ -604,10 +764,12 @@ const KeyExchangeFlowDemo = () => {
       {/* Security Properties Explanation */}
       {currentStep >= 6 && exchangeData.secretsMatch && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" gutterBottom>Security Properties Achieved</Typography>
+          <Typography variant="h6" gutterBottom>
+            Security Properties Achieved
+          </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Chip 
+              <Chip
                 icon={<SecurityIcon />}
                 label="Forward Secrecy"
                 color="success"
@@ -618,9 +780,9 @@ const KeyExchangeFlowDemo = () => {
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Chip 
+              <Chip
                 icon={<SecurityIcon />}
-                label="Mutual Authentication" 
+                label="Mutual Authentication"
                 color="success"
                 sx={{ mb: 1, mr: 1 }}
               />
@@ -636,7 +798,7 @@ const KeyExchangeFlowDemo = () => {
 };
 
 export default {
-  title: 'Signal Protocol/Key Exchange Flow',
+  title: "Signal Protocol/Key Exchange Flow",
   component: CryptographyProvider,
   parameters: {
     docs: {
@@ -662,10 +824,10 @@ This demo is designed specifically for understanding:
 - **Practical Implementation**: Real cryptographic operations using Web Crypto API
 
 Perfect for developers, students, or anyone wanting to understand how modern secure messaging works under the hood.
-        `
-      }
-    }
-  }
+        `,
+      },
+    },
+  },
 };
 
 export const InteractiveFlow = () => (

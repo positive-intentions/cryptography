@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -26,33 +29,34 @@ import {
   Speed,
   RefreshIcon as Refresh,
   Download,
-  Upload
-} from 'ui';
+  Upload,
+} from "ui";
 
 export default {
-  title: 'Cryptography/Symmetric/AES Encryption',
+  title: "Cryptography/Symmetric/AES Encryption",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'AES-GCM symmetric encryption for fast, secure data encryption with the same key.',
+        component:
+          "AES-GCM symmetric encryption for fast, secure data encryption with the same key.",
       },
     },
   },
 };
 
 const AESBasicDemo = () => {
-  const { 
-    generateSymmetricKey, 
+  const {
+    generateSymmetricKey,
     deserializeSymmetricKey,
     encryptWithSymmetricKey,
-    decryptWithSymmetricKey 
+    decryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [key, setKey] = useState(null);
-  const [message, setMessage] = useState('');
-  const [encrypted, setEncrypted] = useState('');
-  const [decrypted, setDecrypted] = useState('');
+  const [message, setMessage] = useState("");
+  const [encrypted, setEncrypted] = useState("");
+  const [decrypted, setDecrypted] = useState("");
   const [loading, setLoading] = useState(false);
   const [timings, setTimings] = useState({});
 
@@ -62,7 +66,10 @@ const AESBasicDemo = () => {
     try {
       const newKey = await generateSymmetricKey();
       setKey(newKey);
-      setTimings(prev => ({ ...prev, keyGen: (performance.now() - start).toFixed(2) }));
+      setTimings((prev) => ({
+        ...prev,
+        keyGen: (performance.now() - start).toFixed(2),
+      }));
     } catch (error) {
       setLoading(false);
     }
@@ -70,14 +77,17 @@ const AESBasicDemo = () => {
 
   const encryptMessage = async () => {
     if (!key || !message) return;
-    
+
     setLoading(true);
     const start = performance.now();
     try {
       const symmetricKey = await deserializeSymmetricKey(key);
       const result = await encryptWithSymmetricKey(message, symmetricKey);
       setEncrypted(result);
-      setTimings(prev => ({ ...prev, encrypt: (performance.now() - start).toFixed(2) }));
+      setTimings((prev) => ({
+        ...prev,
+        encrypt: (performance.now() - start).toFixed(2),
+      }));
     } catch (error) {
       setLoading(false);
     }
@@ -85,14 +95,17 @@ const AESBasicDemo = () => {
 
   const decryptMessage = async () => {
     if (!key || !encrypted) return;
-    
+
     setLoading(true);
     const start = performance.now();
     try {
       const symmetricKey = await deserializeSymmetricKey(key);
       const result = await decryptWithSymmetricKey(encrypted, symmetricKey);
       setDecrypted(result);
-      setTimings(prev => ({ ...prev, decrypt: (performance.now() - start).toFixed(2) }));
+      setTimings((prev) => ({
+        ...prev,
+        decrypt: (performance.now() - start).toFixed(2),
+      }));
     } catch (error) {
       setLoading(false);
     }
@@ -105,8 +118,9 @@ const AESBasicDemo = () => {
     >
       <Stack spacing={3}>
         <Alert severity="info">
-          AES-GCM (Galois/Counter Mode) provides both confidentiality and authenticity. 
-          It's much faster than RSA and can handle large amounts of data efficiently.
+          AES-GCM (Galois/Counter Mode) provides both confidentiality and
+          authenticity. It's much faster than RSA and can handle large amounts
+          of data efficiently.
         </Alert>
 
         {/* Key Generation */}
@@ -125,23 +139,25 @@ const AESBasicDemo = () => {
               >
                 Generate 256-bit AES Key
               </Button>
-              
+
               {key && (
                 <Box>
                   <Stack direction="row" spacing={1} mb={1}>
-                    <Chip 
-                      label={`Generated in ${timings.keyGen}ms`} 
-                      color="success" 
+                    <Chip
+                      label={`Generated in ${timings.keyGen}ms`}
+                      color="success"
                       size="small"
                     />
-                    <Chip 
-                      label="AES-GCM 256-bit" 
-                      color="primary" 
+                    <Chip
+                      label="AES-GCM 256-bit"
+                      color="primary"
                       size="small"
                     />
                   </Stack>
                   <CodeDisplay
-                    code={key ? JSON.stringify(key, null, 2) : 'No key available'}
+                    code={
+                      key ? JSON.stringify(key, null, 2) : "No key available"
+                    }
                     label="AES Key (JWK Format)"
                     secret={true}
                     maxHeight="150px"
@@ -170,7 +186,7 @@ const AESBasicDemo = () => {
                   fullWidth
                   placeholder="Enter any message (no size limit for AES)..."
                 />
-                
+
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Button
                     variant="contained"
@@ -181,9 +197,9 @@ const AESBasicDemo = () => {
                     Encrypt Message
                   </Button>
                   {timings.encrypt && (
-                    <Chip 
-                      label={`${timings.encrypt}ms`} 
-                      color="success" 
+                    <Chip
+                      label={`${timings.encrypt}ms`}
+                      color="success"
                       size="small"
                     />
                   )}
@@ -191,7 +207,11 @@ const AESBasicDemo = () => {
 
                 {encrypted && (
                   <CodeDisplay
-                    code={encrypted ? JSON.stringify(encrypted, null, 2) : 'No encrypted data available'}
+                    code={
+                      encrypted
+                        ? JSON.stringify(encrypted, null, 2)
+                        : "No encrypted data available"
+                    }
                     label="Encrypted Data (Base64 with IV)"
                   />
                 )}
@@ -219,9 +239,9 @@ const AESBasicDemo = () => {
                     Decrypt Message
                   </Button>
                   {timings.decrypt && (
-                    <Chip 
-                      label={`${timings.decrypt}ms`} 
-                      color="success" 
+                    <Chip
+                      label={`${timings.decrypt}ms`}
+                      color="success"
                       size="small"
                     />
                   )}
@@ -258,21 +278,22 @@ export const BasicAES = () => (
 );
 
 const AESBulkDemo = () => {
-  const { 
-    generateSymmetricKey, 
+  const {
+    generateSymmetricKey,
     deserializeSymmetricKey,
     encryptWithSymmetricKey,
-    decryptWithSymmetricKey 
+    decryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [key, setKey] = useState(null);
   const [dataSize, setDataSize] = useState(1000);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const generateLargeData = (size) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
-    let result = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
+    let result = "";
     for (let i = 0; i < size; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -286,10 +307,9 @@ const AESBulkDemo = () => {
         const newKey = await generateSymmetricKey();
         setKey(newKey);
         return performBulkTestWithKey(newKey);
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     return performBulkTestWithKey(key);
   };
 
@@ -298,17 +318,17 @@ const AESBulkDemo = () => {
     try {
       const data = generateLargeData(dataSize);
       const symmetricKey = await deserializeSymmetricKey(testKey);
-      
+
       // Encryption
       const encryptStart = performance.now();
       const encrypted = await encryptWithSymmetricKey(data, symmetricKey);
       const encryptTime = (performance.now() - encryptStart).toFixed(2);
-      
+
       // Decryption
       const decryptStart = performance.now();
       const decrypted = await decryptWithSymmetricKey(encrypted, symmetricKey);
       const decryptTime = (performance.now() - decryptStart).toFixed(2);
-      
+
       setResults({
         dataSize,
         originalSize: new Blob([data]).size,
@@ -316,8 +336,14 @@ const AESBulkDemo = () => {
         encryptTime,
         decryptTime,
         success: data === decrypted,
-        throughputEncrypt: (dataSize / parseFloat(encryptTime) * 1000).toFixed(0),
-        throughputDecrypt: (dataSize / parseFloat(decryptTime) * 1000).toFixed(0)
+        throughputEncrypt: (
+          (dataSize / parseFloat(encryptTime)) *
+          1000
+        ).toFixed(0),
+        throughputDecrypt: (
+          (dataSize / parseFloat(decryptTime)) *
+          1000
+        ).toFixed(0),
       });
     } catch (error) {
       setLoading(false);
@@ -341,10 +367,10 @@ const AESBulkDemo = () => {
             max={50000}
             step={100}
             marks={[
-              { value: 100, label: '100' },
-              { value: 1000, label: '1K' },
-              { value: 10000, label: '10K' },
-              { value: 50000, label: '50K' },
+              { value: 100, label: "100" },
+              { value: 1000, label: "1K" },
+              { value: 10000, label: "10K" },
+              { value: 50000, label: "50K" },
             ]}
             valueLabelDisplay="auto"
             valueLabelFormat={(value) => `${value.toLocaleString()} chars`}
@@ -378,15 +404,17 @@ const AESBulkDemo = () => {
                     <strong>Decryption Time:</strong> {results.decryptTime}ms
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Encrypt Throughput:</strong> {results.throughputEncrypt} chars/sec
+                    <strong>Encrypt Throughput:</strong>{" "}
+                    {results.throughputEncrypt} chars/sec
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Decrypt Throughput:</strong> {results.throughputDecrypt} chars/sec
+                    <strong>Decrypt Throughput:</strong>{" "}
+                    {results.throughputDecrypt} chars/sec
                   </Typography>
                 </Stack>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="h6" gutterBottom>
@@ -394,16 +422,23 @@ const AESBulkDemo = () => {
                 </Typography>
                 <Stack spacing={1}>
                   <Typography variant="body2">
-                    <strong>Original Size:</strong> {results.originalSize.toLocaleString()} bytes
+                    <strong>Original Size:</strong>{" "}
+                    {results.originalSize.toLocaleString()} bytes
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Encrypted Size:</strong> {results.encryptedSize.toLocaleString()} bytes
+                    <strong>Encrypted Size:</strong>{" "}
+                    {results.encryptedSize.toLocaleString()} bytes
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Overhead:</strong> {(results.encryptedSize - results.originalSize).toLocaleString()} bytes
+                    <strong>Overhead:</strong>{" "}
+                    {(
+                      results.encryptedSize - results.originalSize
+                    ).toLocaleString()}{" "}
+                    bytes
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Verification:</strong> {results.success ? '✅ Passed' : '❌ Failed'}
+                    <strong>Verification:</strong>{" "}
+                    {results.success ? "✅ Passed" : "❌ Failed"}
                   </Typography>
                 </Stack>
               </Paper>
@@ -413,8 +448,9 @@ const AESBulkDemo = () => {
 
         <Alert severity="info">
           <Typography variant="body2">
-            AES-GCM is highly optimized in modern browsers and can handle large amounts of data efficiently. 
-            The small overhead comes from the initialization vector (IV) and authentication tag.
+            AES-GCM is highly optimized in modern browsers and can handle large
+            amounts of data efficiently. The small overhead comes from the
+            initialization vector (IV) and authentication tag.
           </Typography>
         </Alert>
       </Stack>
@@ -429,18 +465,18 @@ export const BulkEncryption = () => (
 );
 
 const AESFileDemo = () => {
-  const { 
-    generateSymmetricKey, 
+  const {
+    generateSymmetricKey,
     deserializeSymmetricKey,
     encryptWithSymmetricKey,
-    decryptWithSymmetricKey 
+    decryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [key, setKey] = useState(null);
   const [file, setFile] = useState(null);
-  const [fileContent, setFileContent] = useState('');
-  const [encrypted, setEncrypted] = useState('');
-  const [decrypted, setDecrypted] = useState('');
+  const [fileContent, setFileContent] = useState("");
+  const [encrypted, setEncrypted] = useState("");
+  const [decrypted, setDecrypted] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
@@ -458,7 +494,7 @@ const AESFileDemo = () => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setFileContent(e.target.result);
@@ -469,7 +505,7 @@ const AESFileDemo = () => {
 
   const encryptFile = async () => {
     if (!key || !fileContent) return;
-    
+
     setLoading(true);
     try {
       const symmetricKey = await deserializeSymmetricKey(key);
@@ -482,7 +518,7 @@ const AESFileDemo = () => {
 
   const decryptFile = async () => {
     if (!key || !encrypted) return;
-    
+
     setLoading(true);
     try {
       const symmetricKey = await deserializeSymmetricKey(key);
@@ -494,9 +530,9 @@ const AESFileDemo = () => {
   };
 
   const downloadEncrypted = () => {
-    const blob = new Blob([encrypted], { type: 'text/plain' });
+    const blob = new Blob([encrypted], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `${file.name}.encrypted`;
     a.click();
@@ -525,7 +561,7 @@ const AESFileDemo = () => {
             <Box>
               <input
                 accept="*/*"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 id="file-upload"
                 type="file"
                 onChange={handleFileSelect}
@@ -562,7 +598,7 @@ const AESFileDemo = () => {
                 >
                   Encrypt File
                 </Button>
-                
+
                 {encrypted && (
                   <>
                     <Button
@@ -573,7 +609,7 @@ const AESFileDemo = () => {
                     >
                       Decrypt File
                     </Button>
-                    
+
                     <Button
                       variant="outlined"
                       onClick={downloadEncrypted}
@@ -588,12 +624,15 @@ const AESFileDemo = () => {
 
             {(fileContent || encrypted || decrypted) && (
               <Box>
-                <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)}>
+                <Tabs
+                  value={activeTab}
+                  onChange={(e, val) => setActiveTab(val)}
+                >
                   {fileContent && <Tab label="Original" />}
                   {encrypted && <Tab label="Encrypted" />}
                   {decrypted && <Tab label="Decrypted" />}
                 </Tabs>
-                
+
                 <Box sx={{ mt: 2 }}>
                   {activeTab === 0 && fileContent && (
                     <CodeDisplay
@@ -604,7 +643,11 @@ const AESFileDemo = () => {
                   )}
                   {activeTab === 1 && encrypted && (
                     <CodeDisplay
-                      code={encrypted ? JSON.stringify(encrypted, null, 2) : 'No encrypted data available'}
+                      code={
+                        encrypted
+                          ? JSON.stringify(encrypted, null, 2)
+                          : "No encrypted data available"
+                      }
                       label="Encrypted File Content"
                       maxHeight="300px"
                     />
@@ -612,7 +655,8 @@ const AESFileDemo = () => {
                   {activeTab === 2 && decrypted && (
                     <Box>
                       <Alert severity="success" sx={{ mb: 2 }}>
-                        File decrypted successfully! Content matches original: {fileContent === decrypted ? '✅' : '❌'}
+                        File decrypted successfully! Content matches original:{" "}
+                        {fileContent === decrypted ? "✅" : "❌"}
                       </Alert>
                       <CodeDisplay
                         code={decrypted}

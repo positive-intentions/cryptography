@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -16,15 +19,16 @@ import {
   Grid,
   Paper,
   Chip,
-} from 'ui';
+} from "ui";
 
 export default {
-  title: 'Cryptography/Symmetric/Scrypt Migration',
+  title: "Cryptography/Symmetric/Scrypt Migration",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Demonstration of Scrypt key derivation replacing PBKDF2 for GPU/ASIC-resistant password-based encryption.',
+        component:
+          "Demonstration of Scrypt key derivation replacing PBKDF2 for GPU/ASIC-resistant password-based encryption.",
       },
     },
   },
@@ -32,8 +36,8 @@ export default {
 
 const ScryptMigrationDemo = () => {
   const { encryptFile, decryptFile } = useCryptography();
-  const [password, setPassword] = useState('my-secure-password');
-  const [message, setMessage] = useState('Hello, Scrypt encryption!');
+  const [password, setPassword] = useState("my-secure-password");
+  const [message, setMessage] = useState("Hello, Scrypt encryption!");
   const [encrypted, setEncrypted] = useState(null);
   const [decrypted, setDecrypted] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +46,7 @@ const ScryptMigrationDemo = () => {
 
   const handleEncrypt = async () => {
     if (!password || !message) {
-      setError('Please provide both password and message');
+      setError("Please provide both password and message");
       return;
     }
 
@@ -52,9 +56,12 @@ const ScryptMigrationDemo = () => {
     const start = performance.now();
 
     try {
-      const result = await encryptFile(message, password, 'test.txt');
+      const result = await encryptFile(message, password, "test.txt");
       setEncrypted(result);
-      setTimings(prev => ({ ...prev, encrypt: (performance.now() - start).toFixed(2) }));
+      setTimings((prev) => ({
+        ...prev,
+        encrypt: (performance.now() - start).toFixed(2),
+      }));
     } catch (err) {
       setError(`Encryption failed: ${err.message}`);
     } finally {
@@ -64,7 +71,7 @@ const ScryptMigrationDemo = () => {
 
   const handleDecrypt = async () => {
     if (!encrypted || !password) {
-      setError('Please encrypt a message first');
+      setError("Please encrypt a message first");
       return;
     }
 
@@ -76,7 +83,10 @@ const ScryptMigrationDemo = () => {
       const result = await decryptFile(encrypted, password);
       const textContent = new TextDecoder().decode(result.data);
       setDecrypted(textContent);
-      setTimings(prev => ({ ...prev, decrypt: (performance.now() - start).toFixed(2) }));
+      setTimings((prev) => ({
+        ...prev,
+        decrypt: (performance.now() - start).toFixed(2),
+      }));
     } catch (err) {
       setError(`Decryption failed: ${err.message}`);
     } finally {
@@ -89,8 +99,10 @@ const ScryptMigrationDemo = () => {
       <Stack spacing={3}>
         <Alert severity="info">
           <Typography variant="body2">
-            <strong>Scrypt Migration:</strong> This demo shows the migration from PBKDF2 to Scrypt for key derivation.
-            Scrypt is GPU/ASIC resistant and provides better security against hardware-accelerated attacks.
+            <strong>Scrypt Migration:</strong> This demo shows the migration
+            from PBKDF2 to Scrypt for key derivation. Scrypt is GPU/ASIC
+            resistant and provides better security against hardware-accelerated
+            attacks.
           </Typography>
         </Alert>
 
@@ -99,20 +111,26 @@ const ScryptMigrationDemo = () => {
           <CardContent>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-                  <Typography variant="caption" color="text.secondary">N (CPU/Memory Cost)</Typography>
+                <Paper sx={{ p: 2, bgcolor: "background.default" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    N (CPU/Memory Cost)
+                  </Typography>
                   <Typography variant="h6">32,768</Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-                  <Typography variant="caption" color="text.secondary">r (Block Size)</Typography>
+                <Paper sx={{ p: 2, bgcolor: "background.default" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    r (Block Size)
+                  </Typography>
                   <Typography variant="h6">8</Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-                  <Typography variant="caption" color="text.secondary">p (Parallelization)</Typography>
+                <Paper sx={{ p: 2, bgcolor: "background.default" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    p (Parallelization)
+                  </Typography>
                   <Typography variant="h6">1</Typography>
                 </Paper>
               </Grid>
@@ -160,15 +178,23 @@ const ScryptMigrationDemo = () => {
             <CardHeader title="Encrypted Result" />
             <CardContent>
               <Stack spacing={2}>
-                <OperationStatus status="success" message="Encryption successful" />
+                <OperationStatus
+                  status="success"
+                  message="Encryption successful"
+                />
                 <CodeDisplay
-                  code={JSON.stringify({
-                    encryptedData: encrypted.encryptedData.substring(0, 50) + '...',
-                    iv: encrypted.iv.substring(0, 20) + '...',
-                    salt: encrypted.salt.substring(0, 20) + '...',
-                    fileName: encrypted.fileName,
-                    timestamp: encrypted.timestamp,
-                  }, null, 2)}
+                  code={JSON.stringify(
+                    {
+                      encryptedData:
+                        encrypted.encryptedData.substring(0, 50) + "...",
+                      iv: encrypted.iv.substring(0, 20) + "...",
+                      salt: encrypted.salt.substring(0, 20) + "...",
+                      fileName: encrypted.fileName,
+                      timestamp: encrypted.timestamp,
+                    },
+                    null,
+                    2,
+                  )}
                   language="json"
                 />
                 <Button
@@ -193,17 +219,18 @@ const ScryptMigrationDemo = () => {
           <Card>
             <CardHeader title="Decrypted Result" />
             <CardContent>
-              <OperationStatus status="success" message="Decryption successful" />
-              <Paper sx={{ p: 2, mt: 2, bgcolor: 'background.default' }}>
+              <OperationStatus
+                status="success"
+                message="Decryption successful"
+              />
+              <Paper sx={{ p: 2, mt: 2, bgcolor: "background.default" }}>
                 <Typography variant="body1">{decrypted}</Typography>
               </Paper>
             </CardContent>
           </Card>
         )}
 
-        {error && (
-          <Alert severity="error">{error}</Alert>
-        )}
+        {error && <Alert severity="error">{error}</Alert>}
 
         <Card>
           <CardHeader title="Security Features" />
@@ -211,8 +238,16 @@ const ScryptMigrationDemo = () => {
             <Stack spacing={1}>
               <Chip label="GPU/ASIC Resistant" color="success" size="small" />
               <Chip label="Memory Hard" color="success" size="small" />
-              <Chip label="Zeroization of Password Buffers" color="success" size="small" />
-              <Chip label="Random Salt per Encryption" color="success" size="small" />
+              <Chip
+                label="Zeroization of Password Buffers"
+                color="success"
+                size="small"
+              />
+              <Chip
+                label="Random Salt per Encryption"
+                color="success"
+                size="small"
+              />
             </Stack>
           </CardContent>
         </Card>
@@ -228,4 +263,3 @@ export const ScryptDemo = {
     </CryptographyProvider>
   ),
 };
-

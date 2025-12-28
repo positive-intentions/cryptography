@@ -6,7 +6,7 @@
  */
 
 // Re-export MlKem768 class
-export { MlKem768 } from '@hpke/ml-kem';
+export { MlKem768 } from "@hpke/ml-kem";
 
 /**
  * Create ML-KEM singleton factory
@@ -16,12 +16,12 @@ export { MlKem768 } from '@hpke/ml-kem';
 const createMLKEMSingleton = () => {
   let cachedInstance: any = null;
   let MlKem768Class: any = null;
-  
+
   return {
     async getInstance(): Promise<any> {
       if (cachedInstance) return cachedInstance;
       if (!MlKem768Class) {
-        const mlkemModule = await import('@hpke/ml-kem');
+        const mlkemModule = await import("@hpke/ml-kem");
         MlKem768Class = mlkemModule.MlKem768;
       }
       cachedInstance = new MlKem768Class();
@@ -29,11 +29,11 @@ const createMLKEMSingleton = () => {
     },
     async getClass(): Promise<any> {
       if (!MlKem768Class) {
-        const mlkemModule = await import('@hpke/ml-kem');
+        const mlkemModule = await import("@hpke/ml-kem");
         MlKem768Class = mlkemModule.MlKem768;
       }
       return MlKem768Class;
-    }
+    },
   };
 };
 
@@ -55,4 +55,3 @@ export function getMLKEMInstance(): Promise<any> {
 export function getMlKem768Class(): Promise<any> {
   return mlkemSingleton.getClass();
 }
-

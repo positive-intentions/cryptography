@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
-import { AESCipherLayer } from '../../crypto/CascadingCipher/layers/AESCipherLayer';
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
+import { AESCipherLayer } from "../../crypto/CascadingCipher/layers/AESCipherLayer";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -22,15 +25,16 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-} from 'ui';
+} from "ui";
 
 export default {
-  title: 'Cryptography/Security/Timing Attack Protection',
+  title: "Cryptography/Security/Timing Attack Protection",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Demonstration of timing attack protection through consistent operation timing.',
+        component:
+          "Demonstration of timing attack protection through consistent operation timing.",
       },
     },
   },
@@ -40,17 +44,17 @@ const TimingAttackProtectionDemo = () => {
   const [tabValue, setTabValue] = useState(0);
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState(null);
-  const [message, setMessage] = useState('Test message for timing analysis');
-  
+  const [message, setMessage] = useState("Test message for timing analysis");
+
   // Constant-time comparison state
   const [ctRunning, setCtRunning] = useState(false);
   const [ctResults, setCtResults] = useState(null);
-  const [ctString1, setCtString1] = useState('test-string-123');
-  const [ctString2, setCtString2] = useState('test-string-123');
-  const [ctBuffer1, setCtBuffer1] = useState('');
-  const [ctBuffer2, setCtBuffer2] = useState('');
+  const [ctString1, setCtString1] = useState("test-string-123");
+  const [ctString2, setCtString2] = useState("test-string-123");
+  const [ctBuffer1, setCtBuffer1] = useState("");
+  const [ctBuffer2, setCtBuffer2] = useState("");
   const [ctTestRuns, setCtTestRuns] = useState(100);
-  const [ctTestType, setCtTestType] = useState('string');
+  const [ctTestType, setCtTestType] = useState("string");
 
   const measureTiming = async (operation, runs = 50) => {
     const timings = [];
@@ -69,7 +73,9 @@ const TimingAttackProtectionDemo = () => {
 
   const calculateStats = (timings) => {
     const mean = timings.reduce((a, b) => a + b, 0) / timings.length;
-    const variance = timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / timings.length;
+    const variance =
+      timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+      timings.length;
     const stdDev = Math.sqrt(variance);
     const min = Math.min(...timings);
     const max = Math.max(...timings);
@@ -84,7 +90,7 @@ const TimingAttackProtectionDemo = () => {
 
     try {
       const layer = new AESCipherLayer();
-      const keys = { password: 'test-password' };
+      const keys = { password: "test-password" };
       const plaintext = new TextEncoder().encode(message);
 
       // Encrypt
@@ -96,7 +102,7 @@ const TimingAttackProtectionDemo = () => {
       });
 
       // Measure invalid decryption timing (wrong password)
-      const invalidKeys = { password: 'wrong-password' };
+      const invalidKeys = { password: "wrong-password" };
       const invalidTimings = await measureTiming(async () => {
         try {
           await layer.decrypt(encrypted, invalidKeys);
@@ -109,7 +115,9 @@ const TimingAttackProtectionDemo = () => {
       const invalidStats = calculateStats(invalidTimings);
 
       // Calculate variance between valid and invalid
-      const variance = Math.abs(validStats.mean - invalidStats.mean) / Math.max(validStats.mean, invalidStats.mean);
+      const variance =
+        Math.abs(validStats.mean - invalidStats.mean) /
+        Math.max(validStats.mean, invalidStats.mean);
 
       setResults({
         valid: validStats,
@@ -131,9 +139,11 @@ const TimingAttackProtectionDemo = () => {
     setCtResults(null);
 
     try {
-      const { ConstantTime } = await import('../../crypto/utils/constantTime.ts');
+      const { ConstantTime } = await import(
+        "../../crypto/utils/constantTime.ts"
+      );
 
-      if (ctTestType === 'string') {
+      if (ctTestType === "string") {
         // String comparison test
         const measureTiming = (operation, runs) => {
           const timings = [];
@@ -148,7 +158,9 @@ const TimingAttackProtectionDemo = () => {
 
         const calculateStats = (timings) => {
           const mean = timings.reduce((a, b) => a + b, 0) / timings.length;
-          const variance = timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / timings.length;
+          const variance =
+            timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+            timings.length;
           const stdDev = Math.sqrt(variance);
           const min = Math.min(...timings);
           const max = Math.max(...timings);
@@ -163,7 +175,7 @@ const TimingAttackProtectionDemo = () => {
         }, ctTestRuns);
 
         const ctTimingsMismatch = measureTiming(() => {
-          ConstantTime.constantTimeCompareStrings(ctString1, ctString1 + 'x');
+          ConstantTime.constantTimeCompareStrings(ctString1, ctString1 + "x");
         }, ctTestRuns);
 
         // Test regular comparison
@@ -174,7 +186,7 @@ const TimingAttackProtectionDemo = () => {
 
         const regularTimingsMismatch = measureTiming(() => {
           // eslint-disable-next-line eqeqeq
-          return ctString1 == (ctString1 + 'x');
+          return ctString1 == ctString1 + "x";
         }, ctTestRuns);
 
         const ctStatsMatch = calculateStats(ctTimingsMatch);
@@ -182,13 +194,15 @@ const TimingAttackProtectionDemo = () => {
         const regularStatsMatch = calculateStats(regularTimingsMatch);
         const regularStatsMismatch = calculateStats(regularTimingsMismatch);
 
-        const ctVariance = Math.abs(ctStatsMatch.mean - ctStatsMismatch.mean) / 
+        const ctVariance =
+          Math.abs(ctStatsMatch.mean - ctStatsMismatch.mean) /
           Math.max(ctStatsMatch.mean, ctStatsMismatch.mean);
-        const regularVariance = Math.abs(regularStatsMatch.mean - regularStatsMismatch.mean) / 
+        const regularVariance =
+          Math.abs(regularStatsMatch.mean - regularStatsMismatch.mean) /
           Math.max(regularStatsMatch.mean, regularStatsMismatch.mean);
 
         setCtResults({
-          type: 'string',
+          type: "string",
           match: ctMatch,
           constantTime: {
             match: ctStatsMatch,
@@ -209,8 +223,8 @@ const TimingAttackProtectionDemo = () => {
         });
       } else {
         // Buffer comparison test
-        const buf1 = new TextEncoder().encode(ctBuffer1 || 'test-buffer-123');
-        const buf2 = new TextEncoder().encode(ctBuffer2 || 'test-buffer-123');
+        const buf1 = new TextEncoder().encode(ctBuffer1 || "test-buffer-123");
+        const buf2 = new TextEncoder().encode(ctBuffer2 || "test-buffer-123");
 
         const measureTiming = (operation, runs) => {
           const timings = [];
@@ -225,7 +239,9 @@ const TimingAttackProtectionDemo = () => {
 
         const calculateStats = (timings) => {
           const mean = timings.reduce((a, b) => a + b, 0) / timings.length;
-          const variance = timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / timings.length;
+          const variance =
+            timings.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+            timings.length;
           const stdDev = Math.sqrt(variance);
           const min = Math.min(...timings);
           const max = Math.max(...timings);
@@ -233,14 +249,17 @@ const TimingAttackProtectionDemo = () => {
           return { mean, stdDev, min, max, coefficientOfVariation };
         };
 
-        const { ConstantTime } = await import('../../crypto/utils/constantTime.ts');
+        const { ConstantTime } = await import(
+          "../../crypto/utils/constantTime.ts"
+        );
         const ctMatch = ConstantTime.constantTimeCompareBuffers(buf1, buf2);
 
         // Test with differences at different positions
         const bufStart = new Uint8Array(buf1);
         bufStart[0] = bufStart[0] === 255 ? 0 : 255;
         const bufMiddle = new Uint8Array(buf1);
-        bufMiddle[Math.floor(buf1.length / 2)] = bufMiddle[Math.floor(buf1.length / 2)] === 255 ? 0 : 255;
+        bufMiddle[Math.floor(buf1.length / 2)] =
+          bufMiddle[Math.floor(buf1.length / 2)] === 255 ? 0 : 255;
         const bufEnd = new Uint8Array(buf1);
         bufEnd[buf1.length - 1] = bufEnd[buf1.length - 1] === 255 ? 0 : 255;
 
@@ -265,15 +284,18 @@ const TimingAttackProtectionDemo = () => {
         const ctStatsMiddle = calculateStats(ctTimingsMiddle);
         const ctStatsEnd = calculateStats(ctTimingsEnd);
 
-        const varianceStart = Math.abs(ctStatsMatch.mean - ctStatsStart.mean) / 
+        const varianceStart =
+          Math.abs(ctStatsMatch.mean - ctStatsStart.mean) /
           Math.max(ctStatsMatch.mean, ctStatsStart.mean);
-        const varianceMiddle = Math.abs(ctStatsMatch.mean - ctStatsMiddle.mean) / 
+        const varianceMiddle =
+          Math.abs(ctStatsMatch.mean - ctStatsMiddle.mean) /
           Math.max(ctStatsMatch.mean, ctStatsMiddle.mean);
-        const varianceEnd = Math.abs(ctStatsMatch.mean - ctStatsEnd.mean) / 
+        const varianceEnd =
+          Math.abs(ctStatsMatch.mean - ctStatsEnd.mean) /
           Math.max(ctStatsMatch.mean, ctStatsEnd.mean);
 
         setCtResults({
-          type: 'buffer',
+          type: "buffer",
           match: ctMatch,
           constantTime: {
             match: ctStatsMatch,
@@ -306,9 +328,10 @@ const TimingAttackProtectionDemo = () => {
       <Stack spacing={3}>
         <Alert severity="info">
           <Typography variant="body2">
-            <strong>Timing Attack Protection:</strong> Cryptographic operations should have consistent timing
-            regardless of whether they succeed or fail. This prevents attackers from learning information
-            through timing differences.
+            <strong>Timing Attack Protection:</strong> Cryptographic operations
+            should have consistent timing regardless of whether they succeed or
+            fail. This prevents attackers from learning information through
+            timing differences.
           </Typography>
         </Alert>
 
@@ -338,7 +361,9 @@ const TimingAttackProtectionDemo = () => {
                   </Button>
                   {running && (
                     <Box>
-                      <Typography variant="body2" gutterBottom>Running timing tests...</Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Running timing tests...
+                      </Typography>
                       <LinearProgress />
                     </Box>
                   )}
@@ -347,81 +372,124 @@ const TimingAttackProtectionDemo = () => {
             </Card>
 
             {results && (
-          <>
-            {results.error ? (
-              <Alert severity="error">{results.error}</Alert>
-            ) : (
               <>
-                <Card>
-                  <CardHeader title="Timing Statistics" />
-                  <CardContent>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <Paper sx={{ p: 2 }}>
-                          <Typography variant="h6" gutterBottom>Valid Decryption</Typography>
-                          <Stack spacing={1}>
-                            <Typography variant="body2">Mean: {results.valid.mean.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Std Dev: {results.valid.stdDev.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Min: {results.valid.min.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Max: {results.valid.max.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">CV: {(results.valid.coefficientOfVariation * 100).toFixed(1)}%</Typography>
-                          </Stack>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Paper sx={{ p: 2 }}>
-                          <Typography variant="h6" gutterBottom>Invalid Decryption</Typography>
-                          <Stack spacing={1}>
-                            <Typography variant="body2">Mean: {results.invalid.mean.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Std Dev: {results.invalid.stdDev.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Min: {results.invalid.min.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">Max: {results.invalid.max.toFixed(2)}ms</Typography>
-                            <Typography variant="body2">CV: {(results.invalid.coefficientOfVariation * 100).toFixed(1)}%</Typography>
-                          </Stack>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
+                {results.error ? (
+                  <Alert severity="error">{results.error}</Alert>
+                ) : (
+                  <>
+                    <Card>
+                      <CardHeader title="Timing Statistics" />
+                      <CardContent>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="h6" gutterBottom>
+                                Valid Decryption
+                              </Typography>
+                              <Stack spacing={1}>
+                                <Typography variant="body2">
+                                  Mean: {results.valid.mean.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev: {results.valid.stdDev.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Min: {results.valid.min.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Max: {results.valid.max.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  CV:{" "}
+                                  {(
+                                    results.valid.coefficientOfVariation * 100
+                                  ).toFixed(1)}
+                                  %
+                                </Typography>
+                              </Stack>
+                            </Paper>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="h6" gutterBottom>
+                                Invalid Decryption
+                              </Typography>
+                              <Stack spacing={1}>
+                                <Typography variant="body2">
+                                  Mean: {results.invalid.mean.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev: {results.invalid.stdDev.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Min: {results.invalid.min.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Max: {results.invalid.max.toFixed(2)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  CV:{" "}
+                                  {(
+                                    results.invalid.coefficientOfVariation * 100
+                                  ).toFixed(1)}
+                                  %
+                                </Typography>
+                              </Stack>
+                            </Paper>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardHeader title="Timing Consistency Analysis" />
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Typography variant="body1">
-                        Variance between valid and invalid: {(results.variance * 100).toFixed(1)}%
-                      </Typography>
-                      <OperationStatus
-                        status={results.consistent ? 'success' : 'warning'}
-                        message={
-                          results.consistent
-                            ? 'Timing is consistent - timing attacks are mitigated'
-                            : 'Timing variance is high - may leak information (Note: JavaScript timing is not perfectly consistent)'
-                        }
-                      />
-                      <Alert severity="info">
-                        <Typography variant="body2">
-                          Note: JavaScript timing is inherently variable due to event loop, garbage collection,
-                          and other factors. This test demonstrates the concept, but perfect timing consistency
-                          is difficult to achieve in JavaScript environments.
-                        </Typography>
-                      </Alert>
-                    </Stack>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardHeader title="Timing Consistency Analysis" />
+                      <CardContent>
+                        <Stack spacing={2}>
+                          <Typography variant="body1">
+                            Variance between valid and invalid:{" "}
+                            {(results.variance * 100).toFixed(1)}%
+                          </Typography>
+                          <OperationStatus
+                            status={results.consistent ? "success" : "warning"}
+                            message={
+                              results.consistent
+                                ? "Timing is consistent - timing attacks are mitigated"
+                                : "Timing variance is high - may leak information (Note: JavaScript timing is not perfectly consistent)"
+                            }
+                          />
+                          <Alert severity="info">
+                            <Typography variant="body2">
+                              Note: JavaScript timing is inherently variable due
+                              to event loop, garbage collection, and other
+                              factors. This test demonstrates the concept, but
+                              perfect timing consistency is difficult to achieve
+                              in JavaScript environments.
+                            </Typography>
+                          </Alert>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </>
             )}
-          </>
-        )}
 
             <Card>
               <CardHeader title="Protection Mechanisms" />
               <CardContent>
                 <Stack spacing={1}>
-                  <Typography variant="body2">• Constant-time operations where possible</Typography>
-                  <Typography variant="body2">• Consistent error handling paths</Typography>
-                  <Typography variant="body2">• Statistical timing analysis</Typography>
-                  <Typography variant="body2">• Awareness of timing side channels</Typography>
+                  <Typography variant="body2">
+                    • Constant-time operations where possible
+                  </Typography>
+                  <Typography variant="body2">
+                    • Consistent error handling paths
+                  </Typography>
+                  <Typography variant="body2">
+                    • Statistical timing analysis
+                  </Typography>
+                  <Typography variant="body2">
+                    • Awareness of timing side channels
+                  </Typography>
                 </Stack>
               </CardContent>
             </Card>
@@ -436,23 +504,34 @@ const TimingAttackProtectionDemo = () => {
                 <Stack spacing={2}>
                   <Alert severity="info">
                     <Typography variant="body2">
-                      <strong>Constant-Time Comparison:</strong> Compare strings and buffers using constant-time
-                      algorithms to prevent timing attacks. This is critical for security-sensitive operations
-                      like key fingerprint verification.
+                      <strong>Constant-Time Comparison:</strong> Compare strings
+                      and buffers using constant-time algorithms to prevent
+                      timing attacks. This is critical for security-sensitive
+                      operations like key fingerprint verification.
                     </Typography>
                   </Alert>
 
-                  <Typography variant="subtitle2" gutterBottom>Test Type</Typography>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Test Type
+                  </Typography>
                   <RadioGroup
                     row
                     value={ctTestType}
                     onChange={(e) => setCtTestType(e.target.value)}
                   >
-                    <FormControlLabel value="string" control={<Radio />} label="String Comparison" />
-                    <FormControlLabel value="buffer" control={<Radio />} label="Buffer Comparison" />
+                    <FormControlLabel
+                      value="string"
+                      control={<Radio />}
+                      label="String Comparison"
+                    />
+                    <FormControlLabel
+                      value="buffer"
+                      control={<Radio />}
+                      label="Buffer Comparison"
+                    />
                   </RadioGroup>
 
-                  {ctTestType === 'string' ? (
+                  {ctTestType === "string" ? (
                     <>
                       <TextField
                         label="String 1"
@@ -490,7 +569,9 @@ const TimingAttackProtectionDemo = () => {
                     label="Number of Test Runs"
                     type="number"
                     value={ctTestRuns}
-                    onChange={(e) => setCtTestRuns(parseInt(e.target.value) || 100)}
+                    onChange={(e) =>
+                      setCtTestRuns(parseInt(e.target.value) || 100)
+                    }
                     inputProps={{ min: 10, max: 1000 }}
                     fullWidth
                   />
@@ -505,7 +586,9 @@ const TimingAttackProtectionDemo = () => {
 
                   {ctRunning && (
                     <Box>
-                      <Typography variant="body2" gutterBottom>Running constant-time tests...</Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Running constant-time tests...
+                      </Typography>
                       <LinearProgress />
                     </Box>
                   )}
@@ -517,69 +600,141 @@ const TimingAttackProtectionDemo = () => {
               <>
                 {ctResults.error ? (
                   <Alert severity="error">{ctResults.error}</Alert>
-                ) : ctResults.type === 'string' ? (
+                ) : ctResults.type === "string" ? (
                   <>
                     <Card>
                       <CardHeader title="String Comparison Results" />
                       <CardContent>
                         <Stack spacing={2}>
                           <OperationStatus
-                            status={ctResults.match ? 'success' : 'warning'}
-                            message={ctResults.match ? 'Strings match' : 'Strings do not match'}
-                          />
-
-                          <Typography variant="h6">Constant-Time Comparison</Typography>
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                              <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Match</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.match.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Std Dev: {ctResults.constantTime.match.stdDev.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">CV: {(ctResults.constantTime.match.coefficientOfVariation * 100).toFixed(2)}%</Typography>
-                              </Paper>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Mismatch</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.mismatch.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Std Dev: {ctResults.constantTime.mismatch.stdDev.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">CV: {(ctResults.constantTime.mismatch.coefficientOfVariation * 100).toFixed(2)}%</Typography>
-                              </Paper>
-                            </Grid>
-                          </Grid>
-
-                          <Typography variant="body1">
-                            Timing Variance: {(ctResults.constantTime.variance * 100).toFixed(2)}%
-                          </Typography>
-                          <OperationStatus
-                            status={ctResults.constantTime.variance < 0.3 ? 'success' : 'warning'}
+                            status={ctResults.match ? "success" : "warning"}
                             message={
-                              ctResults.constantTime.variance < 0.3
-                                ? 'Timing is consistent - timing attacks mitigated'
-                                : 'Timing variance is high - may leak information'
+                              ctResults.match
+                                ? "Strings match"
+                                : "Strings do not match"
                             }
                           />
 
-                          <Typography variant="h6">Regular Comparison (for comparison)</Typography>
+                          <Typography variant="h6">
+                            Constant-Time Comparison
+                          </Typography>
                           <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Match</Typography>
-                                <Typography variant="body2">Mean: {ctResults.regular.match.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Std Dev: {ctResults.regular.match.stdDev.toFixed(4)}ms</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Match
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.match.mean.toFixed(4)}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev:{" "}
+                                  {ctResults.constantTime.match.stdDev.toFixed(
+                                    4,
+                                  )}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  CV:{" "}
+                                  {(
+                                    ctResults.constantTime.match
+                                      .coefficientOfVariation * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} sm={6}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Mismatch</Typography>
-                                <Typography variant="body2">Mean: {ctResults.regular.mismatch.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Std Dev: {ctResults.regular.mismatch.stdDev.toFixed(4)}ms</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Mismatch
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.mismatch.mean.toFixed(
+                                    4,
+                                  )}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev:{" "}
+                                  {ctResults.constantTime.mismatch.stdDev.toFixed(
+                                    4,
+                                  )}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  CV:{" "}
+                                  {(
+                                    ctResults.constantTime.mismatch
+                                      .coefficientOfVariation * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                           </Grid>
 
                           <Typography variant="body1">
-                            Regular Comparison Variance: {(ctResults.regular.variance * 100).toFixed(2)}%
+                            Timing Variance:{" "}
+                            {(ctResults.constantTime.variance * 100).toFixed(2)}
+                            %
+                          </Typography>
+                          <OperationStatus
+                            status={
+                              ctResults.constantTime.variance < 0.3
+                                ? "success"
+                                : "warning"
+                            }
+                            message={
+                              ctResults.constantTime.variance < 0.3
+                                ? "Timing is consistent - timing attacks mitigated"
+                                : "Timing variance is high - may leak information"
+                            }
+                          />
+
+                          <Typography variant="h6">
+                            Regular Comparison (for comparison)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <Paper sx={{ p: 2 }}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Match
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.regular.match.mean.toFixed(4)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev:{" "}
+                                  {ctResults.regular.match.stdDev.toFixed(4)}ms
+                                </Typography>
+                              </Paper>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Paper sx={{ p: 2 }}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Mismatch
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.regular.mismatch.mean.toFixed(4)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Std Dev:{" "}
+                                  {ctResults.regular.mismatch.stdDev.toFixed(4)}
+                                  ms
+                                </Typography>
+                              </Paper>
+                            </Grid>
+                          </Grid>
+
+                          <Typography variant="body1">
+                            Regular Comparison Variance:{" "}
+                            {(ctResults.regular.variance * 100).toFixed(2)}%
                           </Typography>
                         </Stack>
                       </CardContent>
@@ -592,46 +747,104 @@ const TimingAttackProtectionDemo = () => {
                       <CardContent>
                         <Stack spacing={2}>
                           <OperationStatus
-                            status={ctResults.match ? 'success' : 'warning'}
-                            message={ctResults.match ? 'Buffers match' : 'Buffers do not match'}
+                            status={ctResults.match ? "success" : "warning"}
+                            message={
+                              ctResults.match
+                                ? "Buffers match"
+                                : "Buffers do not match"
+                            }
                           />
 
-                          <Typography variant="h6">Timing by Difference Position</Typography>
+                          <Typography variant="h6">
+                            Timing by Difference Position
+                          </Typography>
                           <Grid container spacing={2}>
                             <Grid item xs={12} sm={4}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Match</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.match.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">CV: {(ctResults.constantTime.match.coefficientOfVariation * 100).toFixed(2)}%</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Match
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.match.mean.toFixed(4)}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  CV:{" "}
+                                  {(
+                                    ctResults.constantTime.match
+                                      .coefficientOfVariation * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} sm={4}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Difference at Start</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.start.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Variance: {(ctResults.constantTime.varianceStart * 100).toFixed(2)}%</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Difference at Start
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.start.mean.toFixed(4)}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Variance:{" "}
+                                  {(
+                                    ctResults.constantTime.varianceStart * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} sm={4}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Difference at Middle</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.middle.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Variance: {(ctResults.constantTime.varianceMiddle * 100).toFixed(2)}%</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Difference at Middle
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.middle.mean.toFixed(
+                                    4,
+                                  )}
+                                  ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Variance:{" "}
+                                  {(
+                                    ctResults.constantTime.varianceMiddle * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} sm={4}>
                               <Paper sx={{ p: 2 }}>
-                                <Typography variant="subtitle1" gutterBottom>Difference at End</Typography>
-                                <Typography variant="body2">Mean: {ctResults.constantTime.end.mean.toFixed(4)}ms</Typography>
-                                <Typography variant="body2">Variance: {(ctResults.constantTime.varianceEnd * 100).toFixed(2)}%</Typography>
+                                <Typography variant="subtitle1" gutterBottom>
+                                  Difference at End
+                                </Typography>
+                                <Typography variant="body2">
+                                  Mean:{" "}
+                                  {ctResults.constantTime.end.mean.toFixed(4)}ms
+                                </Typography>
+                                <Typography variant="body2">
+                                  Variance:{" "}
+                                  {(
+                                    ctResults.constantTime.varianceEnd * 100
+                                  ).toFixed(2)}
+                                  %
+                                </Typography>
                               </Paper>
                             </Grid>
                           </Grid>
 
                           <Alert severity="info">
                             <Typography variant="body2">
-                              Constant-time comparison ensures timing doesn't vary based on where differences occur.
-                              All variance values should be &lt; 30% for effective timing attack mitigation.
+                              Constant-time comparison ensures timing doesn't
+                              vary based on where differences occur. All
+                              variance values should be &lt; 30% for effective
+                              timing attack mitigation.
                             </Typography>
                           </Alert>
                         </Stack>
@@ -645,17 +858,24 @@ const TimingAttackProtectionDemo = () => {
                   <CardContent>
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        • <strong>Timing Attacks:</strong> Attackers can learn information by measuring how long operations take
+                        • <strong>Timing Attacks:</strong> Attackers can learn
+                        information by measuring how long operations take
                       </Typography>
                       <Typography variant="body2">
-                        • <strong>Fingerprint Verification:</strong> Regular string comparison leaks information about which characters match
+                        • <strong>Fingerprint Verification:</strong> Regular
+                        string comparison leaks information about which
+                        characters match
                       </Typography>
                       <Typography variant="body2">
-                        • <strong>Constant-Time Solution:</strong> Always compares all characters/bytes regardless of early differences
+                        • <strong>Constant-Time Solution:</strong> Always
+                        compares all characters/bytes regardless of early
+                        differences
                       </Typography>
                       <Typography variant="body2">
-                        • <strong>JavaScript Limitations:</strong> Perfect constant-time is impossible due to JIT compilation,
-                        but this implementation significantly reduces timing variance
+                        • <strong>JavaScript Limitations:</strong> Perfect
+                        constant-time is impossible due to JIT compilation, but
+                        this implementation significantly reduces timing
+                        variance
                       </Typography>
                     </Stack>
                   </CardContent>
@@ -676,4 +896,3 @@ export const TimingProtection = {
     </CryptographyProvider>
   ),
 };
-

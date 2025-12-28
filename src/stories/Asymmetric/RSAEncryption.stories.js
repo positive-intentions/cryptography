@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -25,23 +28,25 @@ import {
   LockOpen,
   Person,
   Share,
-  SecurityIcon as Security
-} from 'ui';
+  SecurityIcon as Security,
+} from "ui";
 
 export default {
-  title: 'Cryptography/Asymmetric/RSA Encryption',
+  title: "Cryptography/Asymmetric/RSA Encryption",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'RSA public-key cryptography for secure message exchange between parties.',
+        component:
+          "RSA public-key cryptography for secure message exchange between parties.",
       },
     },
   },
 };
 
 const RSAKeyGenerationDemo = () => {
-  const { generateKeyPair, deserializePublicKey, deserializePrivateKey } = useCryptography();
+  const { generateKeyPair, deserializePublicKey, deserializePrivateKey } =
+    useCryptography();
   const [keyPair, setKeyPair] = useState(null);
   const [loading, setLoading] = useState(false);
   const [generationTime, setGenerationTime] = useState(null);
@@ -49,11 +54,11 @@ const RSAKeyGenerationDemo = () => {
   const generateKeys = async () => {
     setLoading(true);
     const startTime = performance.now();
-    
+
     try {
       const keys = await generateKeyPair();
       const endTime = performance.now();
-      
+
       setKeyPair(keys);
       setGenerationTime((endTime - startTime).toFixed(2));
     } catch (error) {
@@ -68,9 +73,10 @@ const RSAKeyGenerationDemo = () => {
     >
       <Stack spacing={3}>
         <Alert severity="info">
-          RSA key generation creates a mathematically linked pair of keys. The public key can be shared 
-          openly, while the private key must be kept secure. Anyone can use the public key to encrypt 
-          messages that only the private key holder can decrypt.
+          RSA key generation creates a mathematically linked pair of keys. The
+          public key can be shared openly, while the private key must be kept
+          secure. Anyone can use the public key to encrypt messages that only
+          the private key holder can decrypt.
         </Alert>
 
         <Button
@@ -88,9 +94,9 @@ const RSAKeyGenerationDemo = () => {
         {keyPair && (
           <Stack spacing={2}>
             <Box display="flex" alignItems="center" gap={2}>
-              <Chip 
-                label={`Generated in ${generationTime}ms`} 
-                color="success" 
+              <Chip
+                label={`Generated in ${generationTime}ms`}
+                color="success"
                 variant="outlined"
                 icon={<Security />}
               />
@@ -109,7 +115,11 @@ const RSAKeyGenerationDemo = () => {
                     Used by others to encrypt messages for you
                   </Typography>
                   <CodeDisplay
-                    code={keyPair.publicKey ? JSON.stringify(keyPair.publicKey, null, 2) : 'No public key available'}
+                    code={
+                      keyPair.publicKey
+                        ? JSON.stringify(keyPair.publicKey, null, 2)
+                        : "No public key available"
+                    }
                     label="Public Key (JWK Format)"
                     maxHeight="200px"
                   />
@@ -125,7 +135,11 @@ const RSAKeyGenerationDemo = () => {
                     Used to decrypt messages encrypted with your public key
                   </Typography>
                   <CodeDisplay
-                    code={keyPair.privateKey ? JSON.stringify(keyPair.privateKey, null, 2) : 'No private key available'}
+                    code={
+                      keyPair.privateKey
+                        ? JSON.stringify(keyPair.privateKey, null, 2)
+                        : "No private key available"
+                    }
                     label="Private Key (JWK Format)"
                     secret={true}
                     maxHeight="200px"
@@ -147,23 +161,27 @@ export const KeyGeneration = () => (
 );
 
 const RSAEncryptionDemo = () => {
-  const { 
-    generateKeyPair, 
-    deserializePublicKey, 
+  const {
+    generateKeyPair,
+    deserializePublicKey,
     deserializePrivateKey,
     encrypt,
-    decrypt
+    decrypt,
   } = useCryptography();
-  
+
   const [step, setStep] = useState(0);
-  const [alice, setAlice] = useState({ keyPair: null, message: '', encrypted: '' });
-  const [bob, setBob] = useState({ keyPair: null, message: '', decrypted: '' });
+  const [alice, setAlice] = useState({
+    keyPair: null,
+    message: "",
+    encrypted: "",
+  });
+  const [bob, setBob] = useState({ keyPair: null, message: "", decrypted: "" });
   const [loading, setLoading] = useState(false);
 
   const steps = [
-    'Generate key pairs for Alice and Bob',
-    'Alice encrypts message with Bob\'s public key',
-    'Bob decrypts message with his private key'
+    "Generate key pairs for Alice and Bob",
+    "Alice encrypts message with Bob's public key",
+    "Bob decrypts message with his private key",
   ];
 
   const generateKeysForBoth = async () => {
@@ -171,11 +189,11 @@ const RSAEncryptionDemo = () => {
     try {
       const [aliceKeys, bobKeys] = await Promise.all([
         generateKeyPair(),
-        generateKeyPair()
+        generateKeyPair(),
       ]);
-      
-      setAlice(prev => ({ ...prev, keyPair: aliceKeys }));
-      setBob(prev => ({ ...prev, keyPair: bobKeys }));
+
+      setAlice((prev) => ({ ...prev, keyPair: aliceKeys }));
+      setBob((prev) => ({ ...prev, keyPair: bobKeys }));
       setStep(1);
     } catch (error) {
       setLoading(false);
@@ -184,13 +202,13 @@ const RSAEncryptionDemo = () => {
 
   const encryptMessage = async () => {
     if (!alice.message || !bob.keyPair) return;
-    
+
     setLoading(true);
     try {
       const bobPublicKey = await deserializePublicKey(bob.keyPair.publicKey);
       const encrypted = await encrypt(alice.message, bobPublicKey);
-      
-      setAlice(prev => ({ ...prev, encrypted }));
+
+      setAlice((prev) => ({ ...prev, encrypted }));
       setStep(2);
     } catch (error) {
       setLoading(false);
@@ -199,13 +217,13 @@ const RSAEncryptionDemo = () => {
 
   const decryptMessage = async () => {
     if (!alice.encrypted || !bob.keyPair) return;
-    
+
     setLoading(true);
     try {
       const bobPrivateKey = await deserializePrivateKey(bob.keyPair.privateKey);
       const decrypted = await decrypt(alice.encrypted, bobPrivateKey);
-      
-      setBob(prev => ({ ...prev, decrypted }));
+
+      setBob((prev) => ({ ...prev, decrypted }));
     } catch (error) {
       setLoading(false);
     }
@@ -259,13 +277,15 @@ const RSAEncryptionDemo = () => {
                 <TextField
                   label="Alice's Secret Message"
                   value={alice.message}
-                  onChange={(e) => setAlice(prev => ({ ...prev, message: e.target.value }))}
+                  onChange={(e) =>
+                    setAlice((prev) => ({ ...prev, message: e.target.value }))
+                  }
                   multiline
                   rows={3}
                   fullWidth
                   placeholder="Enter message to encrypt..."
                 />
-                
+
                 <Button
                   variant="contained"
                   onClick={encryptMessage}
@@ -335,13 +355,17 @@ const RSAEncryptionDemo = () => {
                   Alice shares her public key but keeps her private key secret
                 </Typography>
                 <CodeDisplay
-                  code={alice.keyPair?.publicKey ? JSON.stringify(alice.keyPair.publicKey, null, 2) : 'No public key available'}
+                  code={
+                    alice.keyPair?.publicKey
+                      ? JSON.stringify(alice.keyPair.publicKey, null, 2)
+                      : "No public key available"
+                  }
                   label="Alice's Public Key"
                   maxHeight="150px"
                 />
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -352,7 +376,11 @@ const RSAEncryptionDemo = () => {
                   Bob shares his public key but keeps his private key secret
                 </Typography>
                 <CodeDisplay
-                  code={bob.keyPair?.publicKey ? JSON.stringify(bob.keyPair.publicKey, null, 2) : 'No public key available'}
+                  code={
+                    bob.keyPair?.publicKey
+                      ? JSON.stringify(bob.keyPair.publicKey, null, 2)
+                      : "No public key available"
+                  }
                   label="Bob's Public Key"
                   maxHeight="150px"
                 />
@@ -374,7 +402,7 @@ export const AliceAndBob = () => (
 const RSALimitationsDemo = () => {
   const { generateKeyPair, deserializePublicKey, encrypt } = useCryptography();
   const [keyPair, setKeyPair] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -390,7 +418,7 @@ const RSALimitationsDemo = () => {
 
   const testEncryption = async () => {
     if (!keyPair || !message) return;
-    
+
     setLoading(true);
     try {
       const publicKey = await deserializePublicKey(keyPair.publicKey);
@@ -413,9 +441,9 @@ const RSALimitationsDemo = () => {
       <Stack spacing={3}>
         <Alert severity="warning">
           <Typography variant="body2" gutterBottom>
-            <strong>RSA Message Size Limit:</strong> RSA can only encrypt messages up to 
-            (key_size_in_bits/8) - 2*hash_length - 2 bytes. For 4096-bit keys with SHA-256, 
-            this is approximately 446 bytes.
+            <strong>RSA Message Size Limit:</strong> RSA can only encrypt
+            messages up to (key_size_in_bits/8) - 2*hash_length - 2 bytes. For
+            4096-bit keys with SHA-256, this is approximately 446 bytes.
           </Typography>
         </Alert>
 
@@ -443,7 +471,7 @@ const RSALimitationsDemo = () => {
               placeholder="Try entering a very long message..."
               error={message.length > maxMessageLength}
               helperText={
-                message.length > maxMessageLength 
+                message.length > maxMessageLength
                   ? `Message too long! ${message.length}/${maxMessageLength} bytes`
                   : `${message.length}/${maxMessageLength} bytes`
               }
@@ -464,7 +492,8 @@ const RSALimitationsDemo = () => {
                 {result.success ? (
                   <Alert severity="success">
                     <Typography variant="body2">
-                      Encryption successful! Message length: {message.length} bytes
+                      Encryption successful! Message length: {message.length}{" "}
+                      bytes
                     </Typography>
                   </Alert>
                 ) : (
@@ -485,14 +514,22 @@ const RSALimitationsDemo = () => {
           <Typography variant="h6" gutterBottom>
             RSA Best Practices
           </Typography>
-          
+
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom color="success.main">
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="success.main"
+                >
                   ✅ Good for RSA
                 </Typography>
-                <Typography component="ul" variant="body2" color="text.secondary">
+                <Typography
+                  component="ul"
+                  variant="body2"
+                  color="text.secondary"
+                >
                   <li>Encrypting small messages (under 446 bytes)</li>
                   <li>Digital signatures</li>
                   <li>Key exchange protocols</li>
@@ -501,13 +538,17 @@ const RSALimitationsDemo = () => {
                 </Typography>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom color="error.main">
                   ❌ Not ideal for RSA
                 </Typography>
-                <Typography component="ul" variant="body2" color="text.secondary">
+                <Typography
+                  component="ul"
+                  variant="body2"
+                  color="text.secondary"
+                >
                   <li>Large files or documents</li>
                   <li>Real-time streaming data</li>
                   <li>Bulk data encryption</li>
@@ -520,10 +561,10 @@ const RSALimitationsDemo = () => {
 
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              <strong>Hybrid Approach:</strong> In practice, RSA is often combined with 
-              symmetric encryption (like AES). RSA encrypts a randomly generated AES key, 
-              then AES encrypts the actual data. This gives you the security of RSA with 
-              the efficiency of AES.
+              <strong>Hybrid Approach:</strong> In practice, RSA is often
+              combined with symmetric encryption (like AES). RSA encrypts a
+              randomly generated AES key, then AES encrypts the actual data.
+              This gives you the security of RSA with the efficiency of AES.
             </Typography>
           </Alert>
         </Box>

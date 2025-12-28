@@ -4,13 +4,9 @@
  * Wraps the MLS protocol for use in cascading cipher chains.
  */
 
-import { MLSManager, MLSMessageEnvelope } from '../../MLS/MLSManager';
-import {
-  CipherLayer,
-  EncryptedPayload,
-  CipherLayerError,
-} from '../types';
-import { Zeroization } from '../../utils/zeroization';
+import { MLSManager, MLSMessageEnvelope } from "../../MLS/MLSManager";
+import { CipherLayer, EncryptedPayload, CipherLayerError } from "../types";
+import { Zeroization } from "../../utils/zeroization";
 
 /**
  * Keys for MLS encryption
@@ -27,8 +23,8 @@ export interface MLSKeys {
  * as a layer in the cascading cipher system.
  */
 export class MLSCipherLayer implements CipherLayer {
-  readonly name = 'MLS';
-  readonly version = '1.0.0';
+  readonly name = "MLS";
+  readonly version = "1.0.0";
 
   private mlsManager: MLSManager | null = null;
   private groupId: string | null = null;
@@ -62,8 +58,7 @@ export class MLSCipherLayer implements CipherLayer {
 
     // Otherwise, keys must provide them
     return (
-      keys.mlsManager instanceof MLSManager &&
-      typeof keys.groupId === 'string'
+      keys.mlsManager instanceof MLSManager && typeof keys.groupId === "string"
     );
   }
 
@@ -92,9 +87,9 @@ export class MLSCipherLayer implements CipherLayer {
 
       if (!manager || !groupId) {
         throw new CipherLayerError(
-          'MLS manager and groupId are required',
+          "MLS manager and groupId are required",
           this.name,
-          'encrypt'
+          "encrypt",
         );
       }
 
@@ -105,7 +100,7 @@ export class MLSCipherLayer implements CipherLayer {
       // Encrypt using MLS
       const envelope: MLSMessageEnvelope = await manager.encryptMessage(
         groupId,
-        base64Data
+        base64Data,
       );
 
       const endTime = performance.now();
@@ -114,7 +109,10 @@ export class MLSCipherLayer implements CipherLayer {
       const groupInfo = await manager.getGroupKeyInfo(groupId);
 
       // Convert groupId from Uint8Array to string for storage
-      const groupIdStr = typeof groupId === 'string' ? groupId : new TextDecoder().decode(envelope.groupId);
+      const groupIdStr =
+        typeof groupId === "string"
+          ? groupId
+          : new TextDecoder().decode(envelope.groupId);
 
       return {
         ciphertext: envelope.ciphertext,
@@ -128,8 +126,8 @@ export class MLSCipherLayer implements CipherLayer {
           metadata: {
             groupId: groupIdStr,
             epoch: groupInfo?.epoch,
-            cipherSuite: 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
-            encoding: 'base64',
+            cipherSuite: "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
+            encoding: "base64",
           },
         },
         parameters: {
@@ -142,28 +140,29 @@ export class MLSCipherLayer implements CipherLayer {
       base64Data = null;
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       // Check for sensitive data (groupId, manager info) in error message
       const groupId = keys.groupId || this.groupId;
-      const hasSensitiveData = 
+      const hasSensitiveData =
         (groupId && errorMessage.includes(groupId)) ||
-        errorMessage.includes('groupId') ||
-        errorMessage.includes('manager');
+        errorMessage.includes("groupId") ||
+        errorMessage.includes("manager");
 
       if (hasSensitiveData) {
         throw new CipherLayerError(
-          'MLS encryption failed',
+          "MLS encryption failed",
           this.name,
-          'encrypt',
-          error as Error
+          "encrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `MLS encryption failed: ${errorMessage}`,
         this.name,
-        'encrypt',
-        error as Error
+        "encrypt",
+        error as Error,
       );
     } finally {
       // Clear reference (strings are immutable, but we clear the reference)
@@ -175,7 +174,7 @@ export class MLSCipherLayer implements CipherLayer {
    * Convert Uint8Array to base64 string
    */
   private arrayBufferToBase64(buffer: Uint8Array): string {
-    let binary = '';
+    let binary = "";
     const bytes = new Uint8Array(buffer);
     const len = bytes.byteLength;
     try {
@@ -221,45 +220,61 @@ export class MLSCipherLayer implements CipherLayer {
 
       if (!manager || !groupId) {
         throw new CipherLayerError(
-          'MLS manager and groupId are required',
+          "MLS manager and groupId are required",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
       // Reconstruct MLS envelope
       // Convert groupId back to Uint8Array if it's stored as string
       const groupIdParam = payload.parameters.groupId;
-      const groupIdBytes = typeof groupIdParam === 'string' 
-        ? new TextEncoder().encode(groupIdParam)
-        : (groupIdParam instanceof Uint8Array ? groupIdParam : new Uint8Array(groupIdParam));
+      const groupIdBytes =
+        typeof groupIdParam === "string"
+          ? new TextEncoder().encode(groupIdParam)
+          : groupIdParam instanceof Uint8Array
+            ? groupIdParam
+            : new Uint8Array(groupIdParam);
 
       // Ensure ciphertext is Uint8Array (might be array after JSON serialization, or string in tests)
       let ciphertextBytes: Uint8Array;
-      
+
       // Handle string input (for test compatibility)
-      if (typeof payload.ciphertext === 'string') {
+      if (typeof payload.ciphertext === "string") {
         ciphertextBytes = new TextEncoder().encode(payload.ciphertext);
-      } else if (payload.ciphertext && 
-          (payload.ciphertext instanceof Uint8Array || 
-           (ArrayBuffer.isView(payload.ciphertext) && payload.ciphertext.constructor.name === 'Uint8Array'))) {
+      } else if (
+        payload.ciphertext &&
+        (payload.ciphertext instanceof Uint8Array ||
+          (ArrayBuffer.isView(payload.ciphertext) &&
+            payload.ciphertext.constructor.name === "Uint8Array"))
+      ) {
         // Check if it's already a Uint8Array (use constructor name check for cross-realm compatibility)
         ciphertextBytes = payload.ciphertext as Uint8Array;
       } else if (Array.isArray(payload.ciphertext)) {
         ciphertextBytes = new Uint8Array(payload.ciphertext);
       } else if (payload.ciphertext instanceof ArrayBuffer) {
         ciphertextBytes = new Uint8Array(payload.ciphertext);
-      } else if (payload.ciphertext && typeof payload.ciphertext === 'object' && 'buffer' in payload.ciphertext) {
+      } else if (
+        payload.ciphertext &&
+        typeof payload.ciphertext === "object" &&
+        "buffer" in payload.ciphertext
+      ) {
         // Handle TypedArray-like objects
-        ciphertextBytes = new Uint8Array(payload.ciphertext.buffer || payload.ciphertext);
-      } else if (payload.ciphertext && typeof payload.ciphertext === 'object' && 'length' in payload.ciphertext) {
+        ciphertextBytes = new Uint8Array(
+          payload.ciphertext.buffer || payload.ciphertext,
+        );
+      } else if (
+        payload.ciphertext &&
+        typeof payload.ciphertext === "object" &&
+        "length" in payload.ciphertext
+      ) {
         // Handle array-like objects
         ciphertextBytes = new Uint8Array(Array.from(payload.ciphertext as any));
       } else {
         throw new CipherLayerError(
-          `Invalid ciphertext format: expected Uint8Array, array, ArrayBuffer, or string, got ${typeof payload.ciphertext}${payload.ciphertext ? ` (${payload.ciphertext.constructor?.name || 'unknown'})` : ''}`,
+          `Invalid ciphertext format: expected Uint8Array, array, ArrayBuffer, or string, got ${typeof payload.ciphertext}${payload.ciphertext ? ` (${payload.ciphertext.constructor?.name || "unknown"})` : ""}`,
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -274,7 +289,7 @@ export class MLSCipherLayer implements CipherLayer {
 
       // Convert base64 back to binary data
       result = this.base64ToArrayBuffer(base64Data);
-      
+
       // Create a copy for return (before zeroization)
       const resultCopy = new Uint8Array(result);
       return resultCopy;
@@ -286,28 +301,29 @@ export class MLSCipherLayer implements CipherLayer {
       base64Data = null;
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       // Check for sensitive data (groupId, manager info) in error message
       const groupId = keys.groupId || this.groupId;
-      const hasSensitiveData = 
+      const hasSensitiveData =
         (groupId && errorMessage.includes(groupId)) ||
-        errorMessage.includes('groupId') ||
-        errorMessage.includes('manager');
+        errorMessage.includes("groupId") ||
+        errorMessage.includes("manager");
 
       if (hasSensitiveData) {
         throw new CipherLayerError(
-          'MLS decryption failed',
+          "MLS decryption failed",
           this.name,
-          'decrypt',
-          error as Error
+          "decrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `MLS decryption failed: ${errorMessage}`,
         this.name,
-        'decrypt',
-        error as Error
+        "decrypt",
+        error as Error,
       );
     } finally {
       // Clear references (strings are immutable, but we clear the reference)

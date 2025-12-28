@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -27,16 +30,17 @@ import {
   Timer,
   SwapHoriz as Compare,
   Assessment,
-  TrendingUp
-} from 'ui';
+  TrendingUp,
+} from "ui";
 
 export default {
-  title: 'Cryptography/Performance/Benchmarks',
+  title: "Cryptography/Performance/Benchmarks",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Performance benchmarks comparing different cryptographic operations and algorithms.',
+        component:
+          "Performance benchmarks comparing different cryptographic operations and algorithms.",
       },
     },
   },
@@ -51,8 +55,9 @@ const HashingBenchmarkDemo = () => {
   const [progress, setProgress] = useState(0);
 
   const generateTestData = (size) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < size; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -66,9 +71,9 @@ const HashingBenchmarkDemo = () => {
 
     const testData = generateTestData(dataSize);
     const algorithms = [
-      { name: 'SHA-256', func: sha256Hash, color: 'primary' },
-      { name: 'SHA-512', func: sha512Hash, color: 'secondary' },
-      { name: 'SHA3-512', func: sha3_512Hash, color: 'success' }
+      { name: "SHA-256", func: sha256Hash, color: "primary" },
+      { name: "SHA-512", func: sha512Hash, color: "secondary" },
+      { name: "SHA3-512", func: sha3_512Hash, color: "success" },
     ];
 
     const benchmarkResults = [];
@@ -76,28 +81,30 @@ const HashingBenchmarkDemo = () => {
     for (let i = 0; i < algorithms.length; i++) {
       const algo = algorithms[i];
       const times = [];
-      
+
       for (let j = 0; j < iterations; j++) {
         const start = performance.now();
         await algo.func(testData);
         const end = performance.now();
         times.push(end - start);
-        
-        setProgress(((i * iterations + j + 1) / (algorithms.length * iterations)) * 100);
+
+        setProgress(
+          ((i * iterations + j + 1) / (algorithms.length * iterations)) * 100,
+        );
       }
-      
+
       const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
       const minTime = Math.min(...times);
       const maxTime = Math.max(...times);
-      const throughput = (dataSize / avgTime * 1000).toFixed(0);
-      
+      const throughput = ((dataSize / avgTime) * 1000).toFixed(0);
+
       benchmarkResults.push({
         algorithm: algo.name,
         color: algo.color,
         avgTime: avgTime.toFixed(2),
         minTime: minTime.toFixed(2),
         maxTime: maxTime.toFixed(2),
-        throughput: throughput
+        throughput: throughput,
       });
     }
 
@@ -124,21 +131,19 @@ const HashingBenchmarkDemo = () => {
                 max={10000}
                 step={100}
                 marks={[
-                  { value: 100, label: '100' },
-                  { value: 1000, label: '1K' },
-                  { value: 5000, label: '5K' },
-                  { value: 10000, label: '10K' },
+                  { value: 100, label: "100" },
+                  { value: 1000, label: "1K" },
+                  { value: 5000, label: "5K" },
+                  { value: 10000, label: "10K" },
                 ]}
                 valueLabelDisplay="auto"
               />
             </Box>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Box>
-              <Typography gutterBottom>
-                Iterations: {iterations}
-              </Typography>
+              <Typography gutterBottom>Iterations: {iterations}</Typography>
               <Slider
                 value={iterations}
                 onChange={(e, val) => setIterations(val)}
@@ -146,10 +151,10 @@ const HashingBenchmarkDemo = () => {
                 max={500}
                 step={10}
                 marks={[
-                  { value: 10, label: '10' },
-                  { value: 100, label: '100' },
-                  { value: 250, label: '250' },
-                  { value: 500, label: '500' },
+                  { value: 10, label: "10" },
+                  { value: 100, label: "100" },
+                  { value: 250, label: "250" },
+                  { value: 500, label: "500" },
                 ]}
                 valueLabelDisplay="auto"
               />
@@ -169,9 +174,9 @@ const HashingBenchmarkDemo = () => {
 
         {loading && (
           <Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={progress} 
+            <LinearProgress
+              variant="determinate"
+              value={progress}
               sx={{ mb: 1 }}
             />
             <Typography variant="body2" color="text.secondary" align="center">
@@ -196,8 +201,8 @@ const HashingBenchmarkDemo = () => {
                 {results.map((result) => (
                   <TableRow key={result.algorithm}>
                     <TableCell component="th" scope="row">
-                      <Chip 
-                        label={result.algorithm} 
+                      <Chip
+                        label={result.algorithm}
                         color={result.color}
                         variant="outlined"
                       />
@@ -226,15 +231,15 @@ export const HashingBenchmark = () => (
 );
 
 const EncryptionBenchmarkDemo = () => {
-  const { 
+  const {
     generateKeyPair,
     generateSymmetricKey,
     deserializePublicKey,
     deserializeSymmetricKey,
     encrypt,
-    encryptWithSymmetricKey
+    encryptWithSymmetricKey,
   } = useCryptography();
-  
+
   const [rsaKeyPair, setRsaKeyPair] = useState(null);
   const [aesKey, setAesKey] = useState(null);
   const [results, setResults] = useState(null);
@@ -246,7 +251,7 @@ const EncryptionBenchmarkDemo = () => {
     try {
       const [rsa, aes] = await Promise.all([
         generateKeyPair(),
-        generateSymmetricKey()
+        generateSymmetricKey(),
       ]);
       setRsaKeyPair(rsa);
       setAesKey(aes);
@@ -257,7 +262,7 @@ const EncryptionBenchmarkDemo = () => {
 
   const runEncryptionBenchmark = async () => {
     if (!rsaKeyPair || !aesKey) return;
-    
+
     setLoading(true);
     setProgress(0);
 
@@ -270,8 +275,8 @@ const EncryptionBenchmarkDemo = () => {
       const symmetricKey = await deserializeSymmetricKey(aesKey);
 
       for (let size of testSizes) {
-        const testData = 'A'.repeat(size);
-        
+        const testData = "A".repeat(size);
+
         // RSA Benchmark
         const rsaTimes = [];
         for (let i = 0; i < iterations; i++) {
@@ -284,9 +289,11 @@ const EncryptionBenchmarkDemo = () => {
             // RSA failed - data too large
             break;
           }
-          setProgress((rsaTimes.length / (testSizes.length * iterations * 2)) * 100);
+          setProgress(
+            (rsaTimes.length / (testSizes.length * iterations * 2)) * 100,
+          );
         }
-        
+
         // AES Benchmark
         const aesTimes = [];
         for (let i = 0; i < iterations; i++) {
@@ -294,24 +301,54 @@ const EncryptionBenchmarkDemo = () => {
           await encryptWithSymmetricKey(testData, symmetricKey);
           const end = performance.now();
           aesTimes.push(end - start);
-          setProgress(((testSizes.indexOf(size) * iterations * 2 + rsaTimes.length + aesTimes.length) / (testSizes.length * iterations * 2)) * 100);
+          setProgress(
+            ((testSizes.indexOf(size) * iterations * 2 +
+              rsaTimes.length +
+              aesTimes.length) /
+              (testSizes.length * iterations * 2)) *
+              100,
+          );
         }
-        
+
         benchmarkResults.push({
           size,
           rsa: {
             success: rsaTimes.length > 0,
-            avgTime: rsaTimes.length > 0 ? (rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length).toFixed(2) : 'N/A',
-            throughput: rsaTimes.length > 0 ? (size / (rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length) * 1000).toFixed(0) : 'N/A'
+            avgTime:
+              rsaTimes.length > 0
+                ? (
+                    rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length
+                  ).toFixed(2)
+                : "N/A",
+            throughput:
+              rsaTimes.length > 0
+                ? (
+                    (size /
+                      (rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length)) *
+                    1000
+                  ).toFixed(0)
+                : "N/A",
           },
           aes: {
             success: aesTimes.length > 0,
-            avgTime: aesTimes.length > 0 ? (aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length).toFixed(2) : 'N/A',
-            throughput: aesTimes.length > 0 ? (size / (aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length) * 1000).toFixed(0) : 'N/A'
-          }
+            avgTime:
+              aesTimes.length > 0
+                ? (
+                    aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length
+                  ).toFixed(2)
+                : "N/A",
+            throughput:
+              aesTimes.length > 0
+                ? (
+                    (size /
+                      (aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length)) *
+                    1000
+                  ).toFixed(0)
+                : "N/A",
+          },
         });
       }
-      
+
       setResults(benchmarkResults);
     } catch (error) {
       setLoading(false);
@@ -325,8 +362,8 @@ const EncryptionBenchmarkDemo = () => {
     >
       <Stack spacing={3}>
         <Alert severity="info">
-          This benchmark demonstrates why RSA is typically used only for small data or key exchange, 
-          while AES is used for bulk encryption.
+          This benchmark demonstrates why RSA is typically used only for small
+          data or key exchange, while AES is used for bulk encryption.
         </Alert>
 
         {!rsaKeyPair || !aesKey ? (
@@ -353,9 +390,9 @@ const EncryptionBenchmarkDemo = () => {
 
         {loading && (
           <Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={progress} 
+            <LinearProgress
+              variant="determinate"
+              value={progress}
               sx={{ mb: 1 }}
             />
             <Typography variant="body2" color="text.secondary" align="center">
@@ -370,8 +407,12 @@ const EncryptionBenchmarkDemo = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Data Size (bytes)</TableCell>
-                  <TableCell align="center" colSpan={2}>RSA-OAEP</TableCell>
-                  <TableCell align="center" colSpan={2}>AES-GCM</TableCell>
+                  <TableCell align="center" colSpan={2}>
+                    RSA-OAEP
+                  </TableCell>
+                  <TableCell align="center" colSpan={2}>
+                    AES-GCM
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell></TableCell>
@@ -387,16 +428,26 @@ const EncryptionBenchmarkDemo = () => {
                     <TableCell component="th" scope="row">
                       {result.size}
                     </TableCell>
-                    <TableCell align="right" sx={{ 
-                      color: result.rsa.success ? 'text.primary' : 'error.main',
-                      fontStyle: result.rsa.success ? 'normal' : 'italic'
-                    }}>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        color: result.rsa.success
+                          ? "text.primary"
+                          : "error.main",
+                        fontStyle: result.rsa.success ? "normal" : "italic",
+                      }}
+                    >
                       {result.rsa.avgTime}
                     </TableCell>
-                    <TableCell align="right" sx={{ 
-                      color: result.rsa.success ? 'text.primary' : 'error.main',
-                      fontStyle: result.rsa.success ? 'normal' : 'italic'
-                    }}>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        color: result.rsa.success
+                          ? "text.primary"
+                          : "error.main",
+                        fontStyle: result.rsa.success ? "normal" : "italic",
+                      }}
+                    >
                       {result.rsa.throughput}
                     </TableCell>
                     <TableCell align="right">{result.aes.avgTime}</TableCell>
@@ -456,23 +507,27 @@ const KeyGenerationBenchmarkDemo = () => {
       }
 
       benchmarkResults.push({
-        algorithm: 'RSA-4096',
-        color: 'primary',
-        avgTime: (rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length).toFixed(2),
+        algorithm: "RSA-4096",
+        color: "primary",
+        avgTime: (
+          rsaTimes.reduce((a, b) => a + b, 0) / rsaTimes.length
+        ).toFixed(2),
         minTime: Math.min(...rsaTimes).toFixed(2),
         maxTime: Math.max(...rsaTimes).toFixed(2),
         operations: iterations,
-        type: 'Key Pair Generation'
+        type: "Key Pair Generation",
       });
 
       benchmarkResults.push({
-        algorithm: 'AES-256',
-        color: 'secondary',
-        avgTime: (aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length).toFixed(2),
+        algorithm: "AES-256",
+        color: "secondary",
+        avgTime: (
+          aesTimes.reduce((a, b) => a + b, 0) / aesTimes.length
+        ).toFixed(2),
         minTime: Math.min(...aesTimes).toFixed(2),
         maxTime: Math.max(...aesTimes).toFixed(2),
         operations: iterations,
-        type: 'Symmetric Key Generation'
+        type: "Symmetric Key Generation",
       });
 
       setResults(benchmarkResults);
@@ -488,8 +543,8 @@ const KeyGenerationBenchmarkDemo = () => {
     >
       <Stack spacing={3}>
         <Alert severity="warning">
-          RSA key generation is computationally expensive and may take several seconds. 
-          In production, keys should be generated once and reused.
+          RSA key generation is computationally expensive and may take several
+          seconds. In production, keys should be generated once and reused.
         </Alert>
 
         <Button
@@ -504,9 +559,9 @@ const KeyGenerationBenchmarkDemo = () => {
 
         {loading && (
           <Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={progress} 
+            <LinearProgress
+              variant="determinate"
+              value={progress}
               sx={{ mb: 1 }}
             />
             <Typography variant="body2" color="text.secondary" align="center">
@@ -524,8 +579,8 @@ const KeyGenerationBenchmarkDemo = () => {
                     title={result.algorithm}
                     subheader={result.type}
                     action={
-                      <Chip 
-                        label={`${result.operations} iterations`} 
+                      <Chip
+                        label={`${result.operations} iterations`}
                         color={result.color}
                         size="small"
                       />
@@ -541,7 +596,7 @@ const KeyGenerationBenchmarkDemo = () => {
                           {result.avgTime}ms
                         </Typography>
                       </Box>
-                      
+
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" color="text.secondary">
                           Fastest:
@@ -550,7 +605,7 @@ const KeyGenerationBenchmarkDemo = () => {
                           {result.minTime}ms
                         </Typography>
                       </Box>
-                      
+
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" color="text.secondary">
                           Slowest:
@@ -576,10 +631,18 @@ const KeyGenerationBenchmarkDemo = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom color="success.main">
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                  color="success.main"
+                >
                   ✅ Do
                 </Typography>
-                <Typography component="ul" variant="body2" color="text.secondary">
+                <Typography
+                  component="ul"
+                  variant="body2"
+                  color="text.secondary"
+                >
                   <li>Generate keys once and store securely</li>
                   <li>Use appropriate key sizes for your security needs</li>
                   <li>Generate keys on secure, trusted devices</li>
@@ -587,13 +650,17 @@ const KeyGenerationBenchmarkDemo = () => {
                 </Typography>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom color="error.main">
                   ❌ Don't
                 </Typography>
-                <Typography component="ul" variant="body2" color="text.secondary">
+                <Typography
+                  component="ul"
+                  variant="body2"
+                  color="text.secondary"
+                >
                   <li>Generate keys repeatedly for the same purpose</li>
                   <li>Generate keys on untrusted or compromised systems</li>
                   <li>Use weak entropy sources</li>

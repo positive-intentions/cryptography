@@ -178,11 +178,11 @@ export class CipherLayerError extends Error {
   constructor(
     message: string,
     public readonly layerName: string,
-    public readonly operation: 'encrypt' | 'decrypt' | 'initialize',
-    public readonly cause?: Error
+    public readonly operation: "encrypt" | "decrypt" | "initialize",
+    public readonly cause?: Error,
   ) {
     super(message);
-    this.name = 'CipherLayerError';
+    this.name = "CipherLayerError";
   }
 }
 
@@ -193,9 +193,9 @@ export class CascadingCipherError extends Error {
   constructor(
     message: string,
     public readonly failedAtLayer?: number,
-    public readonly cause?: Error
+    public readonly cause?: Error,
   ) {
     super(message);
-    this.name = 'CascadingCipherError';
+    this.name = "CascadingCipherError";
   }
 }

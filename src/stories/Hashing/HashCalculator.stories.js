@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { CryptographyProvider, useCryptography } from '../components/Cryptography';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  CryptographyProvider,
+  useCryptography,
+} from "../components/Cryptography";
 import {
   CryptoDemo,
   CodeDisplay,
@@ -24,16 +27,17 @@ import {
   Clear,
   Speed,
   CheckCircle,
-  Cancel
-} from 'ui';
+  Cancel,
+} from "ui";
 
 export default {
-  title: 'Cryptography/Hashing/Hash Calculator',
+  title: "Cryptography/Hashing/Hash Calculator",
   component: CryptographyProvider,
   parameters: {
     docs: {
       description: {
-        component: 'Calculate cryptographic hashes using SHA-256, SHA-512, and SHA3-512 algorithms.',
+        component:
+          "Calculate cryptographic hashes using SHA-256, SHA-512, and SHA3-512 algorithms.",
       },
     },
   },
@@ -41,11 +45,11 @@ export default {
 
 const HashCalculatorDemo = () => {
   const { sha256Hash, sha512Hash, sha3_512Hash } = useCryptography();
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [hashes, setHashes] = useState({
-    sha256: '',
-    sha512: '',
-    sha3_512: ''
+    sha256: "",
+    sha512: "",
+    sha3_512: "",
   });
   const [loading, setLoading] = useState(false);
   const [timings, setTimings] = useState({});
@@ -53,30 +57,30 @@ const HashCalculatorDemo = () => {
 
   const calculateHashes = useCallback(async () => {
     if (!input) return;
-    
+
     setLoading(true);
     const newTimings = {};
-    
+
     try {
       // SHA-256
       const start256 = performance.now();
       const hash256 = await sha256Hash(input);
       newTimings.sha256 = (performance.now() - start256).toFixed(2);
-      
+
       // SHA-512
       const start512 = performance.now();
       const hash512 = await sha512Hash(input);
       newTimings.sha512 = (performance.now() - start512).toFixed(2);
-      
+
       // SHA3-512
       const start3_512 = performance.now();
       const hash3_512 = await sha3_512Hash(input);
       newTimings.sha3_512 = (performance.now() - start3_512).toFixed(2);
-      
+
       setHashes({
         sha256: hash256,
         sha512: hash512,
-        sha3_512: hash3_512
+        sha3_512: hash3_512,
       });
       setTimings(newTimings);
     } catch (error) {
@@ -92,30 +96,30 @@ const HashCalculatorDemo = () => {
       }, 300);
       return () => clearTimeout(timer);
     } else {
-      setHashes({ sha256: '', sha512: '', sha3_512: '' });
+      setHashes({ sha256: "", sha512: "", sha3_512: "" });
       setTimings({});
     }
   }, [input, calculateHashes]);
 
   const hashAlgorithms = [
-    { 
-      id: 'sha256', 
-      name: 'SHA-256', 
+    {
+      id: "sha256",
+      name: "SHA-256",
       bits: 256,
-      description: 'Most common, fast, suitable for general use'
+      description: "Most common, fast, suitable for general use",
     },
-    { 
-      id: 'sha512', 
-      name: 'SHA-512', 
+    {
+      id: "sha512",
+      name: "SHA-512",
       bits: 512,
-      description: 'Stronger variant, better for sensitive data'
+      description: "Stronger variant, better for sensitive data",
     },
-    { 
-      id: 'sha3_512', 
-      name: 'SHA3-512', 
+    {
+      id: "sha3_512",
+      name: "SHA3-512",
       bits: 512,
-      description: 'Latest standard, maximum security'
-    }
+      description: "Latest standard, maximum security",
+    },
   ];
 
   return (
@@ -136,11 +140,11 @@ const HashCalculatorDemo = () => {
           InputProps={{
             endAdornment: input && (
               <InputAdornment position="end">
-                <IconButton onClick={() => setInput('')} edge="end">
+                <IconButton onClick={() => setInput("")} edge="end">
                   <Clear />
                 </IconButton>
               </InputAdornment>
-            )
+            ),
           }}
         />
 
@@ -149,49 +153,48 @@ const HashCalculatorDemo = () => {
         {input && (
           <>
             <Typography variant="subtitle2" color="text.secondary">
-              Input length: {input.length} characters | {new Blob([input]).size} bytes
+              Input length: {input.length} characters | {new Blob([input]).size}{" "}
+              bytes
             </Typography>
 
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onChange={(e, val) => setActiveTab(val)}
               variant="fullWidth"
             >
               {hashAlgorithms.map((algo, idx) => (
-                <Tab 
-                  key={algo.id} 
+                <Tab
+                  key={algo.id}
                   label={algo.name}
-                  icon={timings[algo.id] && (
-                    <Chip 
-                      size="small" 
-                      label={`${timings[algo.id]}ms`}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  )}
+                  icon={
+                    timings[algo.id] && (
+                      <Chip
+                        size="small"
+                        label={`${timings[algo.id]}ms`}
+                        color="primary"
+                        variant="outlined"
+                      />
+                    )
+                  }
                 />
               ))}
             </Tabs>
 
             <Box sx={{ mt: 2 }}>
               {hashAlgorithms.map((algo, idx) => (
-                <Box
-                  key={algo.id}
-                  hidden={activeTab !== idx}
-                  sx={{ p: 2 }}
-                >
+                <Box key={algo.id} hidden={activeTab !== idx} sx={{ p: 2 }}>
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
                       {algo.description}
                     </Typography>
-                    
+
                     {hashes[algo.id] && (
                       <>
                         <CodeDisplay
                           code={hashes[algo.id]}
                           label={`${algo.name} Hash (${algo.bits} bits / ${algo.bits / 8} bytes)`}
                         />
-                        
+
                         <Typography variant="caption" color="text.secondary">
                           Hex length: {hashes[algo.id].length} characters
                         </Typography>
@@ -217,7 +220,7 @@ export const Default = () => (
 const FileHashDemo = () => {
   const { sha256Hash, sha512Hash, sha3_512Hash } = useCryptography();
   const [file, setFile] = useState(null);
-  const [fileContent, setFileContent] = useState('');
+  const [fileContent, setFileContent] = useState("");
   const [hashes, setHashes] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -225,7 +228,7 @@ const FileHashDemo = () => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setFileContent(e.target.result);
@@ -236,19 +239,19 @@ const FileHashDemo = () => {
 
   const calculateFileHashes = useCallback(async () => {
     if (!fileContent) return;
-    
+
     setLoading(true);
     try {
       const [hash256, hash512, hash3_512] = await Promise.all([
         sha256Hash(fileContent),
         sha512Hash(fileContent),
-        sha3_512Hash(fileContent)
+        sha3_512Hash(fileContent),
       ]);
-      
+
       setHashes({
         sha256: hash256,
         sha512: hash512,
-        sha3_512: hash3_512
+        sha3_512: hash3_512,
       });
     } catch (error) {
       setLoading(false);
@@ -270,17 +273,13 @@ const FileHashDemo = () => {
         <Box>
           <input
             accept="*/*"
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             id="file-upload"
             type="file"
             onChange={handleFileSelect}
           />
           <label htmlFor="file-upload">
-            <Button
-              variant="contained"
-              component="span"
-              startIcon={<Upload />}
-            >
+            <Button variant="contained" component="span" startIcon={<Upload />}>
               Select File to Hash
             </Button>
           </label>
@@ -304,7 +303,7 @@ const FileHashDemo = () => {
               </Grid>
               <Grid item xs={12}>
                 <Typography variant="body2" color="text.secondary">
-                  Type: {file.type || 'Unknown'}
+                  Type: {file.type || "Unknown"}
                 </Typography>
               </Grid>
             </Grid>
@@ -319,7 +318,7 @@ const FileHashDemo = () => {
               <CodeDisplay
                 key={algo}
                 code={hash}
-                label={algo.toUpperCase().replace('_', '-') + ' Hash'}
+                label={algo.toUpperCase().replace("_", "-") + " Hash"}
               />
             ))}
           </Stack>
@@ -351,35 +350,35 @@ export const FileHashing = () => (
 
 const HashVerificationDemo = () => {
   const { sha256Hash, sha512Hash, sha3_512Hash } = useCryptography();
-  const [input, setInput] = useState('');
-  const [knownHash, setKnownHash] = useState('');
-  const [algorithm, setAlgorithm] = useState('sha256');
+  const [input, setInput] = useState("");
+  const [knownHash, setKnownHash] = useState("");
+  const [algorithm, setAlgorithm] = useState("sha256");
   const [verificationResult, setVerificationResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const verifyHash = async () => {
     if (!input || !knownHash) return;
-    
+
     setLoading(true);
     try {
       let calculatedHash;
       switch (algorithm) {
-        case 'sha256':
+        case "sha256":
           calculatedHash = await sha256Hash(input);
           break;
-        case 'sha512':
+        case "sha512":
           calculatedHash = await sha512Hash(input);
           break;
-        case 'sha3_512':
+        case "sha3_512":
           calculatedHash = await sha3_512Hash(input);
           break;
       }
-      
+
       const matches = calculatedHash.toLowerCase() === knownHash.toLowerCase();
       setVerificationResult({
         matches,
         calculated: calculatedHash,
-        provided: knownHash
+        provided: knownHash,
       });
     } catch (error) {
       setLoading(false);
@@ -455,7 +454,7 @@ const HashVerificationDemo = () => {
                   </>
                 )}
               </Stack>
-              
+
               <Stack spacing={2}>
                 <CodeDisplay
                   code={verificationResult.calculated}

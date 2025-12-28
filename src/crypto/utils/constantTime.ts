@@ -33,11 +33,11 @@ export class ConstantTime {
    */
   static constantTimeCompareStrings(str1: string, str2: string): boolean {
     // Validate inputs
-    if (str1 === null || str1 === undefined || typeof str1 !== 'string') {
-      throw new Error('First argument must be a string');
+    if (str1 === null || str1 === undefined || typeof str1 !== "string") {
+      throw new Error("First argument must be a string");
     }
-    if (str2 === null || str2 === undefined || typeof str2 !== 'string') {
-      throw new Error('Second argument must be a string');
+    if (str2 === null || str2 === undefined || typeof str2 !== "string") {
+      throw new Error("Second argument must be a string");
     }
 
     const len1 = str1.length;
@@ -79,14 +79,14 @@ export class ConstantTime {
    */
   static constantTimeCompareBuffers(
     buf1: Uint8Array | ArrayBuffer,
-    buf2: Uint8Array | ArrayBuffer
+    buf2: Uint8Array | ArrayBuffer,
   ): boolean {
     // Validate inputs
     if (buf1 === null || buf1 === undefined) {
-      throw new Error('First argument must be a Uint8Array or ArrayBuffer');
+      throw new Error("First argument must be a Uint8Array or ArrayBuffer");
     }
     if (buf2 === null || buf2 === undefined) {
-      throw new Error('Second argument must be a Uint8Array or ArrayBuffer');
+      throw new Error("Second argument must be a Uint8Array or ArrayBuffer");
     }
 
     // Convert ArrayBuffer to Uint8Array if needed
@@ -98,7 +98,7 @@ export class ConstantTime {
     } else if (buf1 instanceof Uint8Array) {
       arr1 = buf1;
     } else {
-      throw new Error('First argument must be a Uint8Array or ArrayBuffer');
+      throw new Error("First argument must be a Uint8Array or ArrayBuffer");
     }
 
     if (buf2 instanceof ArrayBuffer) {
@@ -106,7 +106,7 @@ export class ConstantTime {
     } else if (buf2 instanceof Uint8Array) {
       arr2 = buf2;
     } else {
-      throw new Error('Second argument must be a Uint8Array or ArrayBuffer');
+      throw new Error("Second argument must be a Uint8Array or ArrayBuffer");
     }
 
     const len1 = arr1.length;
@@ -133,5 +133,3 @@ export class ConstantTime {
     return diff === 0 && lengthMismatch === 0;
   }
 }
-
-

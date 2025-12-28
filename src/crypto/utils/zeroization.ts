@@ -61,7 +61,9 @@ export class Zeroization {
    *
    * @param buffers - Variable number of buffers to zeroize
    */
-  static zeroizeAll(...buffers: (Uint8Array | ArrayBuffer | null | undefined)[]): void {
+  static zeroizeAll(
+    ...buffers: (Uint8Array | ArrayBuffer | null | undefined)[]
+  ): void {
     for (const buf of buffers) {
       if (buf instanceof Uint8Array) {
         this.zeroize(buf);
@@ -72,4 +74,3 @@ export class Zeroization {
     }
   }
 }
-
