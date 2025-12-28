@@ -13,13 +13,9 @@
  * - Exception handling with buffer cleanup
  */
 
-import {
-  CipherLayer,
-  EncryptedPayload,
-  CipherLayerError,
-} from '../types';
-import { Zeroization } from '../../utils/zeroization';
-import { ConstantTime } from '../../utils/constantTime';
+import { CipherLayer, EncryptedPayload, CipherLayerError } from "../types";
+import { Zeroization } from "../../utils/zeroization";
+import { ConstantTime } from "../../utils/constantTime";
 
 /**
  * Keys for AES encryption
@@ -35,20 +31,21 @@ export interface AESKeys {
  * Includes security features: IV reuse protection, protocol version in AAD, and zeroization.
  */
 export class AESCipherLayer implements CipherLayer {
-  readonly name = 'AES-GCM-256';
-  readonly version = '2.0.0';
+  readonly name = "AES-GCM-256";
+  readonly version = "2.0.0";
 
   // Scrypt parameters (memory-hard, GPU-resistant)
   private readonly SCRYPT_N = 32768; // CPU/memory cost parameter
-  private readonly SCRYPT_R = 8;     // Block size parameter
-  private readonly SCRYPT_P = 1;     // Parallelization parameter
+  private readonly SCRYPT_R = 8; // Block size parameter
+  private readonly SCRYPT_P = 1; // Parallelization parameter
   private readonly SALT_LENGTH = 16;
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;
 
   // Track used IVs per key derivation (keyed by salt+password hash)
   // Structure: Map<ivKey, { ivSet: Set<string>, lastAccessTime: number }>
-  private usedIVs: Map<string, { ivSet: Set<string>; lastAccessTime: number }> = new Map();
+  private usedIVs: Map<string, { ivSet: Set<string>; lastAccessTime: number }> =
+    new Map();
   // Per-key limit: Maximum IVs to track per password+salt combination
   // This prevents IV reuse while limiting memory per key
   // 10000 is chosen as a balance between security (preventing reuse) and memory usage
@@ -81,14 +78,17 @@ export class AESCipherLayer implements CipherLayer {
     try {
       // Always perform all checks without early returns
       const hasKeys = keys !== null && keys !== undefined;
-      const hasPassword = typeof keys?.password === 'string';
+      const hasPassword = typeof keys?.password === "string";
       const hasValidPassword = hasPassword && keys.password.length > 0;
 
       // Use constant-time comparison for result
       const resultString = String(hasKeys && hasValidPassword);
-      const expectedString = 'true';
+      const expectedString = "true";
 
-      return ConstantTime.constantTimeCompareStrings(resultString, expectedString);
+      return ConstantTime.constantTimeCompareStrings(
+        resultString,
+        expectedString,
+      );
     } catch (error) {
       // Constant-time error handling
       return false;
@@ -100,12 +100,14 @@ export class AESCipherLayer implements CipherLayer {
    */
   private getIVKey(salt: Uint8Array, password: string): string {
     // Create a key from salt + password hash for IV tracking
-    const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+    const saltHex = Array.from(salt)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     // Use first 16 chars of password hash as identifier
     const passwordHash = Array.from(new TextEncoder().encode(password))
       .slice(0, 16)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     return `${saltHex}-${passwordHash}`;
   }
 
@@ -117,7 +119,9 @@ export class AESCipherLayer implements CipherLayer {
     if (!ivEntry) return false;
     // Update last access time
     ivEntry.lastAccessTime = Date.now();
-    const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+    const ivHex = Array.from(iv)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     return ivEntry.ivSet.has(ivHex);
   }
 
@@ -126,7 +130,10 @@ export class AESCipherLayer implements CipherLayer {
    */
   private markIVUsed(ivKey: string, iv: Uint8Array): void {
     // Enforce global limit using LRU eviction (Map maintains insertion order)
-    if (this.usedIVs.size >= this.MAX_GLOBAL_IV_TRACKING && !this.usedIVs.has(ivKey)) {
+    if (
+      this.usedIVs.size >= this.MAX_GLOBAL_IV_TRACKING &&
+      !this.usedIVs.has(ivKey)
+    ) {
       // Remove oldest entry (first in Map) to make room for new entry
       const firstKey = this.usedIVs.keys().next().value;
       this.usedIVs.delete(firstKey);
@@ -144,7 +151,9 @@ export class AESCipherLayer implements CipherLayer {
       ivEntry.lastAccessTime = Date.now();
     }
 
-    const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+    const ivHex = Array.from(iv)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     ivEntry.ivSet.add(ivHex);
 
     // Limit memory usage per key - remove oldest entries if over limit
@@ -152,7 +161,7 @@ export class AESCipherLayer implements CipherLayer {
     if (ivEntry.ivSet.size > this.MAX_IV_TRACKING) {
       const entries = Array.from(ivEntry.ivSet);
       const toRemove = entries.length - this.MAX_IV_TRACKING;
-      entries.slice(0, toRemove).forEach(e => ivEntry!.ivSet.delete(e));
+      entries.slice(0, toRemove).forEach((e) => ivEntry!.ivSet.delete(e));
     }
   }
 
@@ -171,13 +180,13 @@ export class AESCipherLayer implements CipherLayer {
     }
 
     // Delete expired entries
-    keysToDelete.forEach(key => this.usedIVs.delete(key));
+    keysToDelete.forEach((key) => this.usedIVs.delete(key));
   }
 
   /**
    * Lazy-load scrypt function (handles ES module import)
    * Uses caching to avoid repeated imports
-   * 
+   *
    * Browser-compatible: Uses @noble/hashes/scrypt.js which is a pure JavaScript
    * implementation that works in browsers. The dynamic import() syntax is supported
    * in all modern browsers and bundlers (webpack, vite, etc.).
@@ -198,7 +207,7 @@ export class AESCipherLayer implements CipherLayer {
       try {
         // Dynamic import for ES module - works in browsers and Node.js
         // @noble/hashes/scrypt.js is browser-compatible pure JavaScript
-        const scryptModule = await import('@noble/hashes/scrypt.js');
+        const scryptModule = await import("@noble/hashes/scrypt.js");
         const scryptFn = scryptModule.scrypt || (scryptModule as any).default;
         AESCipherLayer.scryptCache = scryptFn;
         AESCipherLayer.scryptCachePromise = null;
@@ -206,7 +215,9 @@ export class AESCipherLayer implements CipherLayer {
       } catch (error) {
         AESCipherLayer.scryptCachePromise = null;
         // Re-throw with better error message
-        throw new Error(`Failed to load scrypt module: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Failed to load scrypt module: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     })();
 
@@ -216,7 +227,10 @@ export class AESCipherLayer implements CipherLayer {
   /**
    * Derive AES key from password using Scrypt
    */
-  private async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+  private async deriveKey(
+    password: string,
+    salt: Uint8Array,
+  ): Promise<CryptoKey> {
     const encoder = new TextEncoder();
     const passwordBytes = encoder.encode(password);
 
@@ -232,13 +246,13 @@ export class AESCipherLayer implements CipherLayer {
 
       // Import the derived key material as a CryptoKey
       return await crypto.subtle.importKey(
-        'raw',
+        "raw",
         keyMaterial,
         {
-          name: 'AES-GCM',
+          name: "AES-GCM",
         },
         false,
-        ['encrypt', 'decrypt']
+        ["encrypt", "decrypt"],
       );
     } finally {
       // Zeroize password buffer
@@ -267,9 +281,9 @@ export class AESCipherLayer implements CipherLayer {
       // Validate keys
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError(
-          'Invalid keys: password is required',
+          "Invalid keys: password is required",
           this.name,
-          'encrypt'
+          "encrypt",
         );
       }
 
@@ -284,9 +298,9 @@ export class AESCipherLayer implements CipherLayer {
         attempts++;
         if (attempts > this.MAX_IV_GENERATION_ATTEMPTS) {
           throw new CipherLayerError(
-            'Failed to generate unique IV after multiple attempts',
+            "Failed to generate unique IV after multiple attempts",
             this.name,
-            'encrypt'
+            "encrypt",
           );
         }
       } while (this.isIVUsed(ivKey, iv));
@@ -303,12 +317,12 @@ export class AESCipherLayer implements CipherLayer {
       // Create AAD with protocol version and context
       const protocolVersion = `${this.name}-v${this.version}`;
       const timestamp = Date.now();
-      const context = 'cascading-cipher-encrypt';
+      const context = "cascading-cipher-encrypt";
       const aadData = {
         protocol: protocolVersion,
         context,
         timestamp,
-        encoding: 'binary',
+        encoding: "binary",
       };
       const aad = encoder.encode(JSON.stringify(aadData));
 
@@ -320,21 +334,22 @@ export class AESCipherLayer implements CipherLayer {
       const dataBuffer = data as unknown as BufferSource;
       const ciphertextBuffer = await crypto.subtle.encrypt(
         {
-          name: 'AES-GCM',
+          name: "AES-GCM",
           iv: ivBuffer,
           additionalData: aad,
           tagLength: 128,
         },
         key,
-        dataBuffer
+        dataBuffer,
       );
 
       const ciphertext = new Uint8Array(ciphertextBuffer);
       const endTime = performance.now();
 
       // Create copies of salt and IV for return (before zeroization)
-      const ivCopy = new Uint8Array(iv);
-      const saltCopy = new Uint8Array(salt);
+      // Convert to arrays for serialization compatibility
+      const ivCopy = Array.from(iv);
+      const saltCopy = Array.from(salt);
 
       return {
         ciphertext,
@@ -346,7 +361,7 @@ export class AESCipherLayer implements CipherLayer {
           outputSize: ciphertext.length,
           processingTime: endTime - startTime,
           metadata: {
-            keyDerivation: 'Scrypt',
+            keyDerivation: "Scrypt",
             scryptN: this.SCRYPT_N,
             scryptR: this.SCRYPT_R,
             scryptP: this.SCRYPT_P,
@@ -363,21 +378,22 @@ export class AESCipherLayer implements CipherLayer {
       key = null;
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes(keys?.password || '')) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes(keys?.password || "")) {
         throw new CipherLayerError(
-          'AES encryption failed',
+          "AES encryption failed",
           this.name,
-          'encrypt',
-          error as Error
+          "encrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `AES encryption failed: ${errorMessage}`,
         this.name,
-        'encrypt',
-        error as Error
+        "encrypt",
+        error as Error,
       );
     } finally {
       // Always zeroize sensitive data
@@ -397,9 +413,9 @@ export class AESCipherLayer implements CipherLayer {
       // Validate keys
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError(
-          'Invalid keys: password is required',
+          "Invalid keys: password is required",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -407,7 +423,7 @@ export class AESCipherLayer implements CipherLayer {
       // Handle case where they might be arrays after JSON serialization
       let ivBytes: Uint8Array;
       let saltBytes: Uint8Array;
-      
+
       if (payload.parameters.iv instanceof Uint8Array) {
         ivBytes = payload.parameters.iv;
       } else if (Array.isArray(payload.parameters.iv)) {
@@ -416,9 +432,9 @@ export class AESCipherLayer implements CipherLayer {
         ivBytes = new Uint8Array(payload.parameters.iv);
       } else {
         throw new CipherLayerError(
-          'Invalid IV format: expected Uint8Array, array, or ArrayBuffer',
+          "Invalid IV format: expected Uint8Array, array, or ArrayBuffer",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -430,17 +446,17 @@ export class AESCipherLayer implements CipherLayer {
         saltBytes = new Uint8Array(payload.parameters.salt);
       } else {
         throw new CipherLayerError(
-          'Invalid salt format: expected Uint8Array, array, or ArrayBuffer',
+          "Invalid salt format: expected Uint8Array, array, or ArrayBuffer",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
       if (!ivBytes || !saltBytes) {
         throw new CipherLayerError(
-          'Missing decryption parameters (IV or salt)',
+          "Missing decryption parameters (IV or salt)",
           this.name,
-          'decrypt'
+          "decrypt",
         );
       }
 
@@ -453,13 +469,13 @@ export class AESCipherLayer implements CipherLayer {
 
       // Reconstruct AAD (must match encryption)
       const protocolVersion = `${this.name}-v${this.version}`;
-      const context = 'cascading-cipher-encrypt';
+      const context = "cascading-cipher-encrypt";
       const timestamp = payload.layerMetadata.timestamp;
       const aadData = {
         protocol: protocolVersion,
         context,
         timestamp,
-        encoding: 'binary',
+        encoding: "binary",
       };
       const aad = encoder.encode(JSON.stringify(aadData));
 
@@ -471,15 +487,15 @@ export class AESCipherLayer implements CipherLayer {
       const ciphertextBuffer = payload.ciphertext as unknown as BufferSource;
       const plaintextBuffer = await crypto.subtle.decrypt(
         {
-          name: 'AES-GCM',
+          name: "AES-GCM",
           iv: ivBuffer,
           additionalData: aad,
           tagLength: 128,
         },
         key,
-        ciphertextBuffer
+        ciphertextBuffer,
       );
-      
+
       const plaintext = new Uint8Array(plaintextBuffer);
 
       return plaintext;
@@ -489,31 +505,35 @@ export class AESCipherLayer implements CipherLayer {
       key = null;
 
       // Don't leak sensitive data in error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes(keys?.password || '')) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes(keys?.password || "")) {
         throw new CipherLayerError(
-          'AES decryption failed: wrong password or corrupted data',
+          "AES decryption failed: wrong password or corrupted data",
           this.name,
-          'decrypt',
-          error as Error
+          "decrypt",
+          error as Error,
         );
       }
 
       // Provide helpful error messages
-      if (errorMessage.includes('decryption failed') || errorMessage.includes('OperationError')) {
+      if (
+        errorMessage.includes("decryption failed") ||
+        errorMessage.includes("OperationError")
+      ) {
         throw new CipherLayerError(
-          'AES decryption failed: wrong password or corrupted data',
+          "AES decryption failed: wrong password or corrupted data",
           this.name,
-          'decrypt',
-          error as Error
+          "decrypt",
+          error as Error,
         );
       }
 
       throw new CipherLayerError(
         `AES decryption failed: ${errorMessage}`,
         this.name,
-        'decrypt',
-        error as Error
+        "decrypt",
+        error as Error,
       );
     } finally {
       // Always zeroize sensitive data

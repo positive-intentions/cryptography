@@ -81,6 +81,7 @@ export class MLSManager {
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
+      return;
     }
 
     try {
@@ -90,10 +91,14 @@ export class MLSManager {
       const cs = getCiphersuiteFromName(cipherSuiteName);
       this.cipherSuite = await nobleCryptoProvider.getCiphersuiteImpl(cs);
 
-      // Mark as initialized before generating key package
       // Generate initial key package for this user
       await this.generateKeyPackage();
-    } catch (error) {}
+
+      // Mark as initialized after successful setup
+      this.initialized = true;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -113,7 +118,11 @@ export class MLSManager {
         ...keyPackageResult,
         userId: this.userId,
       };
-    } catch (error) {}
+
+      return this.keyPackage;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -332,7 +341,11 @@ export class MLSManager {
         ciphertext: encoded,
         timestamp: Date.now(),
       };
-    } catch (error) {}
+
+      return envelope;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -375,7 +388,11 @@ export class MLSManager {
       }
 
       const plaintext = new TextDecoder().decode(result.message);
-    } catch (error) {}
+
+      return plaintext;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
