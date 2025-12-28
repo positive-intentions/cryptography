@@ -198,8 +198,13 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 encodedMessage,
             )
             .catch((error) => {
-            c.charCodeAt(0),
-        );
+                console.error('Encryption error:', error);
+                throw error;
+            });
+        return encrypted;
+    };
+
+    const decrypt = async (buffer, privateKey) => {
         try {
             const decrypted = await window.crypto.subtle.decrypt(
                 {
@@ -212,6 +217,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             const message = new TextDecoder().decode(decrypted);
             return message;
         } catch (error) {
+            console.error('Decryption error:', error);
+            throw error;
         }
     };
 
@@ -276,9 +283,18 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 encodedMessage,
             )
             .catch((error) => {
+                console.error('Encryption error:', error);
+                throw error;
+            });
+        return { encrypted, iv };
+    };
+
+    const decryptWithSymmetricKey = async (buffer, key, iv) => {
+        try {
+            const decrypted = await window.crypto.subtle.decrypt(
                 {
                     name: "AES-GCM",
-                    iv: ivBuffer,
+                    iv: iv,
                 },
                 key,
                 buffer,
@@ -286,6 +302,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             const message = new TextDecoder().decode(decrypted);
             return message;
         } catch (error) {
+            console.error('Decryption error:', error);
             throw new Error("Unable to decrypt message. Incorrect key.");
         }
     };
@@ -618,6 +635,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 throw error;
             }
             // Fallback for testing when crypto API is mocked
+            return {
                 publicKey: { algorithm: { name: 'X25519' }, type: 'public', usages: [] },
                 privateKey: { algorithm: { name: 'X25519' }, type: 'private', usages: ['deriveBits'] }
             };
@@ -639,6 +657,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 throw error;
             }
             // Fallback for testing when crypto API is mocked
+            return {
                 publicKey: { algorithm: { name: 'Ed25519' }, type: 'public', usages: ['verify'] },
                 privateKey: { algorithm: { name: 'Ed25519' }, type: 'private', usages: ['sign'] }
             };
@@ -762,40 +781,25 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     const initializeSignalUser = async (name) => {
         try {
             // Generate identity key pairs (separate for X25519 and Ed25519)
-            if (!identitySigningKeyPair) {
-                return {
-                    name,
-                    identityKeyPair: { 
-                        publicKey: { algorithm: { name: 'X25519' }, type: 'public' },
-                        privateKey: { algorithm: { name: 'X25519' }, type: 'private' }
-                    },
-                    identitySigningKeyPair: { 
-                        publicKey: { algorithm: { name: 'Ed25519' }, type: 'public' },
-                        privateKey: { algorithm: { name: 'Ed25519' }, type: 'private' }
-                    },
-                    signedPrekeyPair: { 
-                        publicKey: { algorithm: { name: 'X25519' }, type: 'public' },
-                        privateKey: { algorithm: { name: 'X25519' }, type: 'private' }
-                    },
-                    signedPrekeySignature: new ArrayBuffer(64),
-                    oneTimePrekeyPairs: []
-                };
-            }
+            const identityKeyPair = await generateSignalKeyPair();
+            const identitySigningKeyPair = await generateSignalSigningKeyPair();
+
+            console.log({
                 privateKeyAlgorithm: identitySigningKeyPair.privateKey?.algorithm?.name || 'Ed25519'
             });
-            
+
             if (!identityKeyPair) {
                 return {
                     name,
-                    identityKeyPair: { 
+                    identityKeyPair: {
                         publicKey: { algorithm: { name: 'X25519' }, type: 'public' },
                         privateKey: { algorithm: { name: 'X25519' }, type: 'private' }
                     },
-                    identitySigningKeyPair: { 
+                    identitySigningKeyPair: {
                         publicKey: { algorithm: { name: 'Ed25519' }, type: 'public' },
                         privateKey: { algorithm: { name: 'Ed25519' }, type: 'private' }
                     },
-                    signedPrekeyPair: { 
+                    signedPrekeyPair: {
                         publicKey: { algorithm: { name: 'X25519' }, type: 'public' },
                         privateKey: { algorithm: { name: 'X25519' }, type: 'private' }
                     },
@@ -803,16 +807,28 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                     oneTimePrekeyPairs: []
                 };
             }
+
+            console.log({
                 privateKeyAlgorithm: identityKeyPair.privateKey?.algorithm?.name || 'X25519'
             });
-            
+
             // Generate signed prekey pair
+            const signedPrekeyPair = await generateSignalKeyPair();
+
             // Sign the prekey with identity signing key
+            const signedPrekeySignature = await signSignalData(
+                identitySigningKeyPair.privateKey,
+                await exportSignalPublicKey(signedPrekeyPair.publicKey)
+            );
+
             // Generate one-time prekeys
+            const oneTimePrekeyPairs = [];
             for (let i = 0; i < 3; i++) {
                 const oneTimeKey = await generateSignalKeyPair();
                 oneTimePrekeyPairs.push(oneTimeKey);
+            }
 
+            return {
                 name,
                 identityKeyPair, // X25519 key pair
                 identitySigningKeyPair, // Ed25519 key pair
@@ -821,24 +837,31 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 oneTimePrekeyPairs
             };
         } catch (error) {
+            console.error('Error initializing Signal user:', error);
+            throw error;
         }
     };
 
     const getSignalPublicKeyBundle = async (user) => {
         try {
-            const oneTimePrekey = user.oneTimePrekeyPairs.length > 0 ? 
+            const identityKey = await exportSignalPublicKey(user.identityKeyPair.publicKey);
+            const identitySigningKey = await exportSignalPublicKey(user.identitySigningKeyPair.publicKey);
+            const signedPrekey = await exportSignalPublicKey(user.signedPrekeyPair.publicKey);
+            const oneTimePrekey = user.oneTimePrekeyPairs.length > 0 ?
                 await exportSignalPublicKey(user.oneTimePrekeyPairs[0].publicKey) : null;
-            if (oneTimePrekey) {
 
             const bundle = {
                 identityKey, // X25519 key
-                identitySigningKey, // Ed25519 key  
+                identitySigningKey, // Ed25519 key
                 signedPrekey,
                 signedPrekeySignature: user.signedPrekeySignature,
                 oneTimePrekey
             };
-            
+
+            return bundle;
         } catch (error) {
+            console.error('Error getting Signal public key bundle:', error);
+            throw error;
         }
     };
 
@@ -847,42 +870,59 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
     };
 
     const performSignalX3DHKeyExchange = async (alice, bobBundle) => {
-
         try {
             // Step 1: Verify Bob's signed prekey signature using his signing key
+            const bobIdentitySigningKey = await importSignalSigningPublicKey(bobBundle.identitySigningKey);
             const isValidSignature = await verifySignalSignature(
                 bobIdentitySigningKey,
                 bobBundle.signedPrekeySignature,
                 bobBundle.signedPrekey
             );
-            
+
             if (!isValidSignature) {
                 throw new Error("Invalid signed prekey signature!");
             }
 
             // Step 2: Generate ephemeral key pair
+            const aliceEphemeralPair = await generateSignalKeyPair();
+            console.log({
                 privateAlgorithm: aliceEphemeralPair.privateKey?.algorithm?.name || 'X25519'
             });
 
             // Step 3: Import Bob's public keys for DH operations
-            const bobOneTimePrekey = bobBundle.oneTimePrekey ? 
+            const bobIdentityKey = await importSignalPublicKey(bobBundle.identityKey);
+            const bobSignedPrekey = await importSignalPublicKey(bobBundle.signedPrekey);
+            const bobOneTimePrekey = bobBundle.oneTimePrekey ?
                 await importSignalPublicKey(bobBundle.oneTimePrekey) : null;
+
             if (bobOneTimePrekey) {
+                console.log('Bob provided one-time prekey for X3DH');
+            }
 
             // Step 4: Perform the Triple (or Quadruple) Diffie-Hellman computation
+            // DH1: Alice_Ephemeral_Private × Bob_SignedPrekey_Public
+            const dh1 = await performSignalDH(aliceEphemeralPair.privateKey, bobSignedPrekey);
+
+            // DH2: Alice_Identity_Private × Bob_SignedPrekey_Public
+            const dh2 = await performSignalDH(alice.identityKeyPair.privateKey, bobSignedPrekey);
+
+            // DH3: Alice_Ephemeral_Private × Bob_Identity_Public
+            const dh3 = await performSignalDH(aliceEphemeralPair.privateKey, bobIdentityKey);
+
             // DH4: Alice_Ephemeral_Private × Bob_OneTimePrekey_Public (if available)
             let dh4: ArrayBuffer | null = null;
             if (bobOneTimePrekey) {
+                dh4 = await performSignalDH(aliceEphemeralPair.privateKey, bobOneTimePrekey);
+            }
 
             // Step 5: Combine all DH outputs
-            // Log the individual DH outputs for comparison
-            
-            const dhOutputs = dh4 ? 
+            const dhOutputs = dh4 ?
                 concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
                 concatSignalArrayBuffers(dh1, dh2, dh3);
+
             // Step 6: Derive the master secret using HKDF
             const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
-            
+            const salt = new Uint8Array(32); // Zero salt per X3DH spec
             const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
             const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
 
@@ -891,9 +931,10 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                 aliceEphemeralPublic: await exportSignalPublicKey(aliceEphemeralPair.publicKey),
                 usedOneTimePrekey: bobBundle.oneTimePrekey !== null
             };
-            
-            
+
+            return result;
         } catch (error) {
+            console.error('Error performing Signal X3DH key exchange:', error);
             throw error;
         }
     };
@@ -935,18 +976,22 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             }
 
             // Combine DH outputs in the same order
+            const dhOutputs = dh4 ?
                 concatSignalArrayBuffers(dh1, dh2, dh3, dh4) :
                 concatSignalArrayBuffers(dh1, dh2, dh3);
+
             // Log the individual DH outputs for comparison
 
             // Derive the same master secret
             const info = new TextEncoder().encode("Signal_X3DH_Key_Derivation");
-            
+            const salt = new Uint8Array(32); // Zero salt per X3DH spec
             const masterSecret = await deriveSignalKey(dhOutputs, salt, info);
             const secretBytes = await crypto.subtle.exportKey("raw", masterSecret);
 
             return secretBytes;
         } catch (error) {
+            console.error('Error deriving Signal shared secret:', error);
+            throw error;
         }
     };
 
@@ -1115,11 +1160,15 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             
             state.rootKey = hkdfOutput.slice(0, 32);
             state.sendingChainKey = hkdfOutput.slice(32, 64);
+            console.log({
                 sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
         } else {
             // Responder: Start with receiving mode, will derive receiving chain from root key on first message
-        
+            console.log('Responder initialized - waiting for first message');
+        }
+
+        return state;
     };
 
     // Derive message key from chain key
@@ -1181,15 +1230,22 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             state.rootKey = hkdfResult.slice(0, 32);
             // Set receiving chain to match initiator's sending chain
             state.receivingChainKey = hkdfResult.slice(32, 64);
-            
+
+            console.log({
                 updatedRootKeyHex: Array.from(new Uint8Array(state.rootKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
-            
+
             // Generate our sending key pair for future messages
-            
+            state.sendingDHKeyPair = await generateSignalKeyPair();
+
             // Skip the DH calculation for receiving - we already set receivingChainKey above
             receivingDHOutput = null;
         } else if (state.sendingDHKeyPair) {
+            // Normal DH ratchet step - perform DH operation
+            receivingDHOutput = await performSignalDH(
+                state.sendingDHKeyPair.privateKey,
+                newRemotePublicKey
+            );
         } else {
             // Fallback case - should not happen in normal operation
             receivingDHOutput = await performSignalDH(
@@ -1209,11 +1265,14 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             );
             state.rootKey = hkdfReceiving.slice(0, 32);
             state.receivingChainKey = hkdfReceiving.slice(32, 64);
-            
+
+            console.log({
                 receivingChainKeyHex: Array.from(new Uint8Array(state.receivingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
             });
         } else if (receivingDHOutput === null) {
-        
+            console.log('No DH output, using null');
+        }
+
         // Step 2: Generate NEW DH key pair and derive sending chain
         // This will be used for our future messages
         // CRITICAL: Always generate a NEW key pair for the DH ratchet step
@@ -1234,10 +1293,13 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         
         state.rootKey = hkdfSending.slice(0, 32);
         state.sendingChainKey = hkdfSending.slice(32, 64);
-        
+
+        console.log({
             sendingChainKeyHex: Array.from(new Uint8Array(state.sendingChainKey)).map(b => b.toString(16).padStart(2, '0')).join('')
         });
-        
+
+        return;
+    }
 
     // Skip message keys for out-of-order messages
     const skipMessageKeys = async (state, until) => {
@@ -1245,13 +1307,13 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
             if (until - state.receivingMessageNumber > MAX_SKIPPED_MESSAGE_KEYS) {
                 throw new Error(`Too many skipped message keys: ${until - state.receivingMessageNumber}`);
             }
-            
-            const dhPublicKeyHex = state.receivingDHPublicKey ? 
-                bufferToSignalHex(await exportSignalPublicKey(state.receivingDHPublicKey)) : 
+
+            const dhPublicKeyHex = state.receivingDHPublicKey ?
+                bufferToSignalHex(await exportSignalPublicKey(state.receivingDHPublicKey)) :
                 'null';
-            
+
             let chainKey = new Uint8Array(state.receivingChainKey);
-            
+
             while (state.receivingMessageNumber < until) {
                 const messageKey = await deriveMessageKey(chainKey);
                 const keyId = `${dhPublicKeyHex}:${state.receivingMessageNumber}`;
@@ -1276,17 +1338,18 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         // Get DH public key for logging
         const dhPublicKeyBuffer = await exportSignalPublicKey(state.sendingDHKeyPair.publicKey);
         const dhPublicKeyBytes = new Uint8Array(dhPublicKeyBuffer);
-        
+
+        console.log({
             messageKeyHex: Array.from(messageKey).map(b => b.toString(16).padStart(2, '0')).join(''),
             sendingDHPublicKeyHex: Array.from(dhPublicKeyBytes).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join(''),
             messageNumber: state.sendingMessageNumber,
             previousChainLength: state.previousChainLength
         });
-        
+
         // Prepare additional authenticated data (AAD) - using already exported key
         const aad = new Uint8Array(dhPublicKeyBytes.length + 8); // DH key + 2 uint32s
         aad.set(dhPublicKeyBytes);
-        
+
         // Add message number and previous chain length as AAD
         const view = new DataView(aad.buffer, dhPublicKeyBytes.length);
         view.setUint32(0, state.sendingMessageNumber, true);
@@ -1295,12 +1358,13 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         // Encrypt with AES-GCM
         const plaintextBytes = new TextEncoder().encode(plaintext);
         const iv = crypto.getRandomValues(new Uint8Array(12));
-        
+
+        console.log({
             ivLength: iv.length,
             aadLength: aad.length,
             plaintextLength: plaintextBytes.length
         });
-        
+
         const cryptoKey = await crypto.subtle.importKey(
             "raw",
             messageKey,
@@ -1386,7 +1450,8 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
                     receivingDHPublicKeyHex = 'non-extractable';
                 }
             }
-            
+
+            console.log({
                 messageKeyHex: Array.from(messageKey).map(b => b.toString(16).padStart(2, '0')).join(''),
                 newChainKeyHex: Array.from(new Uint8Array(state.receivingChainKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
                 receivingDHPublicKeyHex,
@@ -1411,6 +1476,7 @@ export const CryptographyProvider = ({ entropy = "", children }) => {
         );
         
         try {
+            console.log({
                 ivLength: iv.length,
                 aadLength: aad.length,
                 ciphertextLength: ciphertext.length

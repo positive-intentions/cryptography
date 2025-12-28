@@ -27,7 +27,7 @@ import {
   type Welcome,
   type PrivateMessage,
   type CiphersuiteImpl,
-} from 'ts-mls';
+} from "ts-mls";
 
 // Helper to strip trailing null nodes per RFC 9420
 function stripTrailingNulls(tree: any[]): any[] {
@@ -71,7 +71,7 @@ export class MLSManager {
   constructor(userId: string) {
     this.userId = userId;
     this.credential = {
-      credentialType: 'basic',
+      credentialType: "basic",
       identity: new TextEncoder().encode(userId),
     };
   }
@@ -86,16 +86,14 @@ export class MLSManager {
     try {
       // Use MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 (ID: 1)
       // Using nobleCryptoProvider for compatibility (pure JS implementation)
-      const cipherSuiteName = 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519';
+      const cipherSuiteName = "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519";
       const cs = getCiphersuiteFromName(cipherSuiteName);
       this.cipherSuite = await nobleCryptoProvider.getCiphersuiteImpl(cs);
 
       // Mark as initialized before generating key package
       // Generate initial key package for this user
       await this.generateKeyPackage();
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -108,16 +106,14 @@ export class MLSManager {
         defaultCapabilities(),
         defaultLifetime,
         [],
-        this.cipherSuite!
+        this.cipherSuite!,
       );
 
       this.keyPackage = {
         ...keyPackageResult,
         userId: this.userId,
       };
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -135,7 +131,9 @@ export class MLSManager {
 
     try {
       if (!this.keyPackage) {
-        throw new Error('No key package available. Call generateKeyPackage() first.');
+        throw new Error(
+          "No key package available. Call generateKeyPackage() first.",
+        );
       }
 
       const groupIdBytes = new TextEncoder().encode(groupId);
@@ -146,7 +144,7 @@ export class MLSManager {
         this.keyPackage.publicPackage,
         this.keyPackage.privatePackage,
         [],
-        this.cipherSuite!
+        this.cipherSuite!,
       );
 
       this.groups.set(groupId, groupState);
@@ -156,9 +154,7 @@ export class MLSManager {
         members: [this.userId],
         epoch: groupState.groupContext.epoch,
       };
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -166,7 +162,7 @@ export class MLSManager {
    */
   async addMembers(
     groupId: string,
-    keyPackages: MLSKeyPackageBundle[]
+    keyPackages: MLSKeyPackageBundle[],
   ): Promise<{ welcome: Welcome; ratchetTree: any; commit: any }> {
     this.ensureInitialized();
 
@@ -178,7 +174,7 @@ export class MLSManager {
 
       // Create add proposals for each key package
       const addProposals: Proposal[] = keyPackages.map((kp) => ({
-        proposalType: 'add',
+        proposalType: "add",
         add: {
           keyPackage: kp.publicPackage,
         },
@@ -187,20 +183,18 @@ export class MLSManager {
       // Create commit with add proposals
       const commitResult = await createCommit(
         { state: groupState, cipherSuite: this.cipherSuite! },
-        { extraProposals: addProposals }
+        { extraProposals: addProposals },
       );
 
       // Update group state
       this.groups.set(groupId, commitResult.newState);
 
       if (!commitResult.welcome) {
-        throw new Error('No welcome message generated');
+        throw new Error("No welcome message generated");
       }
 
-      );
-
       // Debug: Log the commit structure
-      console.group('🔍 [MLS Debug] Commit Structure');
+      console.group("🔍 [MLS Debug] Commit Structure");
 
       // RFC 9420 Section 11.2: Commit Distribution
       // ⚠️ IMPORTANT: The returned commit MUST be sent to all existing group members
@@ -225,8 +219,7 @@ export class MLSManager {
         ratchetTree: strippedTree,
         commit: commitResult.commit,
       };
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -243,13 +236,13 @@ export class MLSManager {
    */
   async processWelcome(
     welcome: Welcome,
-    ratchetTree?: Uint8Array[]
+    ratchetTree?: Uint8Array[],
   ): Promise<MLSGroupInfo> {
     this.ensureInitialized();
 
     try {
       if (!this.keyPackage) {
-        throw new Error('No key package available');
+        throw new Error("No key package available");
       }
 
       // RFC 9420: Interior null nodes are valid (represent blank parent nodes)
@@ -257,15 +250,20 @@ export class MLSManager {
       // Simply pass the tree as-is to ts-mls joinGroup()
 
       if (ratchetTree && Array.isArray(ratchetTree)) {
-        const nullCount = ratchetTree.filter(n => n === null).length;
+        const nullCount = ratchetTree.filter((n) => n === null).length;
         // DEBUG: Log structure of each node
-        console.group('🔍 [MLS Debug] Ratchet Tree Structure');
+        console.group("🔍 [MLS Debug] Ratchet Tree Structure");
         ratchetTree.forEach((node, i) => {
-          if (node === null) {
-              isObject: typeof node === 'object',
-              hasNodeType: node && 'nodeType' in node,
+          if (node !== null) {
+            console.log({
+              index: i,
+              isObject: typeof node === "object",
+              hasNodeType: node && "nodeType" in node,
               nodeType: node?.nodeType,
-              keys: node && typeof node === 'object' ? Object.keys(node).slice(0, 5) : 'n/a'
+              keys:
+                node && typeof node === "object"
+                  ? Object.keys(node).slice(0, 5)
+                  : "n/a",
             });
           }
         });
@@ -278,7 +276,7 @@ export class MLSManager {
         this.keyPackage.privatePackage,
         emptyPskIndex,
         this.cipherSuite!,
-        ratchetTree  // Pass as-is - nulls are valid
+        ratchetTree, // Pass as-is - nulls are valid
       );
 
       const groupId = new TextDecoder().decode(groupState.groupContext.groupId);
@@ -292,15 +290,16 @@ export class MLSManager {
         members,
         epoch: groupState.groupContext.epoch,
       };
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
    * Encrypt a message for a group
    */
-  async encryptMessage(groupId: string, plaintext: string): Promise<MLSMessageEnvelope> {
+  async encryptMessage(
+    groupId: string,
+    plaintext: string,
+  ): Promise<MLSMessageEnvelope> {
     this.ensureInitialized();
 
     try {
@@ -315,7 +314,7 @@ export class MLSManager {
       const result = await createApplicationMessage(
         groupState,
         plaintextBytes,
-        this.cipherSuite!
+        this.cipherSuite!,
       );
 
       // Update group state (for key ratcheting)
@@ -324,8 +323,8 @@ export class MLSManager {
       // Encode the private message
       const encoded = encodeMlsMessage({
         privateMessage: result.privateMessage,
-        wireformat: 'mls_private_message',
-        version: 'mls10',
+        wireformat: "mls_private_message",
+        version: "mls10",
       });
 
       const envelope: MLSMessageEnvelope = {
@@ -333,9 +332,7 @@ export class MLSManager {
         ciphertext: encoded,
         timestamp: Date.now(),
       };
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -354,12 +351,12 @@ export class MLSManager {
       // Decode the message
       const decoded = decodeMlsMessage(envelope.ciphertext, 0);
       if (!decoded || decoded.length === 0) {
-        throw new Error('Failed to decode message');
+        throw new Error("Failed to decode message");
       }
 
       const [decodedMessage] = decoded;
-      if (decodedMessage.wireformat !== 'mls_private_message') {
-        throw new Error('Expected private message');
+      if (decodedMessage.wireformat !== "mls_private_message") {
+        throw new Error("Expected private message");
       }
 
       // Process the private message
@@ -367,20 +364,18 @@ export class MLSManager {
         groupState,
         decodedMessage.privateMessage,
         emptyPskIndex,
-        this.cipherSuite!
+        this.cipherSuite!,
       );
 
       // Update group state
       this.groups.set(groupId, result.newState);
 
-      if (result.kind !== 'applicationMessage') {
-        throw new Error('Expected application message');
+      if (result.kind !== "applicationMessage") {
+        throw new Error("Expected application message");
       }
 
       const plaintext = new TextDecoder().decode(result.message);
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -398,18 +393,15 @@ export class MLSManager {
       // Create update commit (forces path update)
       const commitResult = await createCommit(
         { state: groupState, cipherSuite: this.cipherSuite! },
-        { forcePathUpdate: true }
+        { forcePathUpdate: true },
       );
 
       // Update group state
       this.groups.set(groupId, commitResult.newState);
 
-      );
-
       // Return the raw commit object for other members to process
       return commitResult.commit;
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -425,18 +417,21 @@ export class MLSManager {
     this.ensureInitialized();
 
     try {
-
       // DETAILED DEBUG LOGGING
-      console.group('🔍 [MLS Debug] Full Commit Structure');
+      console.group("🔍 [MLS Debug] Full Commit Structure");
 
       // Log proposals if present
       if (commit.publicMessage?.content) {
         if (commit.publicMessage.content.proposals) {
-          commit.publicMessage.content.proposals.forEach((prop: any, i: number) => {
-              keys: Object.keys(prop),
-              full: prop
-            });
-          });
+          commit.publicMessage.content.proposals.forEach(
+            (prop: any, i: number) => {
+              console.log({
+                index: i,
+                keys: Object.keys(prop),
+                full: prop,
+              });
+            },
+          );
         }
       }
       console.groupEnd();
@@ -449,23 +444,23 @@ export class MLSManager {
       let result;
 
       // RFC 9420: Route based on message type
-      if (commit.wireformat === 'mls_public_message') {
+      if (commit.wireformat === "mls_public_message") {
         // Public messages (add/remove member commits)
 
         result = await processPublicMessage(
           groupState,
-          publicMessage,
+          commit.publicMessage,
           emptyPskIndex,
-          this.cipherSuite!
+          this.cipherSuite!,
         );
-      } else if (commit.wireformat === 'mls_private_message') {
+      } else if (commit.wireformat === "mls_private_message") {
         // Private messages (update/key rotation commits)
 
         result = await processPrivateMessage(
           groupState,
-          privateMessage,
+          commit.privateMessage,
           emptyPskIndex,
-          this.cipherSuite!
+          this.cipherSuite!,
         );
       } else {
         throw new Error(`Unknown commit wireformat: ${commit.wireformat}`);
@@ -473,14 +468,19 @@ export class MLSManager {
 
       // Update group state
       this.groups.set(groupId, result.newState);
-
+    } catch (error) {
+      console.error("Error processing commit:", error);
+      throw error;
     }
   }
 
   /**
    * Remove members from a group
    */
-  async removeMembers(groupId: string, memberIndices: number[]): Promise<Uint8Array> {
+  async removeMembers(
+    groupId: string,
+    memberIndices: number[],
+  ): Promise<Uint8Array> {
     this.ensureInitialized();
 
     try {
@@ -491,7 +491,7 @@ export class MLSManager {
 
       // Create remove proposals
       const removeProposals: Proposal[] = memberIndices.map((index) => ({
-        proposalType: 'remove',
+        proposalType: "remove",
         remove: {
           removed: BigInt(index),
         },
@@ -500,7 +500,7 @@ export class MLSManager {
       // Create commit with remove proposals
       const commitResult = await createCommit(
         { state: groupState, cipherSuite: this.cipherSuite! },
-        { extraProposals: removeProposals }
+        { extraProposals: removeProposals },
       );
 
       // Update group state
@@ -509,12 +509,10 @@ export class MLSManager {
       // Encode the commit
       const encodedCommit = encodeMlsMessage({
         publicMessage: commitResult.publicMessage!,
-        wireformat: 'mls_public_message',
-        version: 'mls10',
+        wireformat: "mls_public_message",
+        version: "mls10",
       });
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -525,11 +523,10 @@ export class MLSManager {
 
     try {
       const groupIds = Array.from(this.groups.keys()).map((id) =>
-        new TextEncoder().encode(id)
+        new TextEncoder().encode(id),
       );
       return groupIds;
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -552,9 +549,7 @@ export class MLSManager {
         exported: Date.now(),
         // Add other serializable fields as needed
       };
-
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -580,8 +575,11 @@ export class MLSManager {
       groupId,
       epoch: groupState.groupContext.epoch.toString(),
       members,
-      cipherSuite: 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
-      treeHash: this.bytesToHex(groupState.groupContext.treeHash).substring(0, 16),
+      cipherSuite: "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
+      treeHash: this.bytesToHex(groupState.groupContext.treeHash).substring(
+        0,
+        16,
+      ),
     };
   }
 
@@ -603,13 +601,14 @@ export class MLSManager {
       // Iterate through ratchet tree to find leaf nodes
       for (let i = 0; i < state.ratchetTree.length; i++) {
         const node = state.ratchetTree[i];
-        if (node && node.nodeType === 'leaf' && node.leaf.credential) {
-          const identity = new TextDecoder().decode(node.leaf.credential.identity);
+        if (node && node.nodeType === "leaf" && node.leaf.credential) {
+          const identity = new TextDecoder().decode(
+            node.leaf.credential.identity,
+          );
           members.push(identity);
         }
       }
-    } catch (error) {
-    }
+    } catch (error) {}
 
     return members;
   }
@@ -619,8 +618,8 @@ export class MLSManager {
    */
   private bytesToHex(bytes: Uint8Array): string {
     return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   /**
@@ -628,8 +627,9 @@ export class MLSManager {
    */
   private ensureInitialized(): void {
     if (!this.initialized) {
+      throw new Error("MLSManager not initialized. Call initialize() first.");
     }
-
+  }
 }
 
 export default MLSManager;

@@ -15,15 +15,15 @@ function uint8ArrayToArray(obj: any): any {
     return null;
   }
   if (obj instanceof Uint8Array) {
-    return { __type: 'Uint8Array', data: Array.from(obj) };
+    return { __type: "Uint8Array", data: Array.from(obj) };
   }
-  if (typeof obj === 'bigint') {
-    return { __type: 'BigInt', value: obj.toString() };
+  if (typeof obj === "bigint") {
+    return { __type: "BigInt", value: obj.toString() };
   }
   if (Array.isArray(obj)) {
     return obj.map(uint8ArrayToArray);
   }
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     const result: any = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
@@ -46,12 +46,12 @@ function arrayToUint8Array(obj: any): any {
   }
 
   // Check for marked Uint8Array
-  if (typeof obj === 'object' && obj.__type === 'Uint8Array') {
+  if (typeof obj === "object" && obj.__type === "Uint8Array") {
     return new Uint8Array(obj.data);
   }
 
   // Check for marked BigInt
-  if (typeof obj === 'object' && obj.__type === 'BigInt') {
+  if (typeof obj === "object" && obj.__type === "BigInt") {
     return BigInt(obj.value);
   }
 
@@ -59,13 +59,21 @@ function arrayToUint8Array(obj: any): any {
     return obj.map(arrayToUint8Array);
   }
 
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     // Check if this is an array-like object with sequential numeric keys
     const keys = Object.keys(obj);
-    const isArrayLike = keys.length > 0 && keys.every((key, index) => key === String(index));
+    const isArrayLike =
+      keys.length > 0 && keys.every((key, index) => key === String(index));
 
     if (isArrayLike) {
       // Convert object with numeric keys back to array
+      const result: any[] = [];
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          result[parseInt(key)] = arrayToUint8Array(obj[key]);
+        }
+      }
+      return result;
     }
 
     const result: any = {};
@@ -144,14 +152,20 @@ export function encodeRatchetTree(ratchetTree: any): string {
 export function decodeRatchetTree(encoded: string): any {
   const parsed = JSON.parse(encoded);
 
-  if (parsed[0] && typeof parsed[0] === 'object') {
+  if (parsed[0] && typeof parsed[0] === "object") {
+    console.log("Node 0 is an object");
   }
-  if (parsed[2] && typeof parsed[2] === 'object') {
+  if (parsed[2] && typeof parsed[2] === "object") {
+    console.log("Node 2 is an object");
   }
 
   const result = arrayToUint8Array(parsed);
 
-  if (result[0] && typeof result[0] === 'object') {
-  if (result[2] && typeof result[2] === 'object') {
+  if (result[0] && typeof result[0] === "object") {
+    console.log("Result[0] is an object");
+  }
+  if (result[2] && typeof result[2] === "object") {
+    console.log("Result[2] is an object");
+  }
   return result;
 }
