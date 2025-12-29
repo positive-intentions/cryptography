@@ -1879,4 +1879,27 @@ export {
   decodeRatchetTree,
 } from "../../crypto/MLS/mlsCodec";
 
+// Backward compatibility: Alias refactored module functions to maintain existing API
+export const generateKeyPair = generateRSAKeyPair;
+export const deserializePublicKey = importRSAPublicKey;
+export const deserializePrivateKey = importRSAPrivateKey;
+export const encrypt = rsaEncrypt;
+export const decrypt = rsaDecrypt;
+export const generateSymmetricKey = generateAESKey;
+export const deserializeSymmetricKey = importAESKey;
+export const encryptWithSymmetricKey = aesEncrypt;
+export const decryptWithSymmetricKey = aesDecrypt;
+
 export default CryptographyProvider;
+
+// Backward compatibility: Alias refactored module functions to maintain existing API
+export const generateKeyPair = generateRSAKeyPair;
+export const deserializePublicKey = importRSAPublicKey;
+export const deserializePrivateKey = importRSAPrivateKey;
+export const encrypt = rsaEncrypt;
+export const decrypt = rsaDecrypt;
+export const generateSymmetricKey = generateAESKey;
+export const deserializeSymmetricKey = importAESKey;
+export const encryptWithSymmetricKey = aesEncrypt;
+export const decryptWithSymmetricKey = aesDecrypt;
+

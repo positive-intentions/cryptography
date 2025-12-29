@@ -1,5 +1,6 @@
 // Jest setup file for crypto functionality tests
-import { TextEncoder, TextDecoder } from "util";
+const { TextEncoder, TextDecoder } = require("util");
+const { createHash } = require("crypto");
 
 // Fix React testing warnings by mocking clipboard API
 Object.defineProperty(navigator, "clipboard", {
@@ -93,6 +94,9 @@ global.document = {
   },
 };
 
+// Counter for generating unique keys in tests
+let keyCounter = 0;
+
 // Mock crypto.subtle for tests
 const mockSubtle = {
   digest: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
@@ -108,16 +112,39 @@ const mockSubtle = {
         algorithm: { name: "AES-GCM" },
       });
     } else if (algorithm.name === "Ed25519") {
+      keyCounter++;
       return Promise.resolve({
         publicKey: {
           type: "public",
           algorithm: { name: "Ed25519" },
-          usages: ["verify"],
+          usages: usages || ["verify"],
+          extractable,
+          _id: `ed25519-pub-${keyCounter}`,
         },
         privateKey: {
           type: "private",
           algorithm: { name: "Ed25519" },
-          usages: ["sign"],
+          usages: usages || ["sign"],
+          extractable,
+          _id: `ed25519-priv-${keyCounter}`,
+        },
+      });
+    } else if (algorithm.name === "X25519") {
+      keyCounter++;
+      return Promise.resolve({
+        publicKey: {
+          type: "public",
+          algorithm: { name: "X25519" },
+          usages: usages || [],
+          extractable,
+          _id: `x25519-pub-${keyCounter}`,
+        },
+        privateKey: {
+          type: "private",
+          algorithm: { name: "X25519" },
+          usages: usages || ["deriveBits"],
+          extractable,
+          _id: `x25519-priv-${keyCounter}`,
         },
       });
     } else if (algorithm.name === "X25519") {
@@ -139,22 +166,38 @@ const mockSubtle = {
   exportKey: jest.fn((format, key) => {
     if (format === "jwk") {
       if (key.algorithm?.name === "Ed25519") {
+        keyCounter++;
         return Promise.resolve({
           kty: "OKP",
           crv: "Ed25519",
-          x: "test-ed25519-key",
+          x: `test-ed25519-key-${keyCounter}`,
           use: "sig",
           key_ops: key.type === "public" ? ["verify"] : ["sign"],
         });
       } else if (key.algorithm?.name === "X25519") {
+        keyCounter++;
         return Promise.resolve({
           kty: "OKP",
           crv: "X25519",
-          x: "test-x25519-key",
+          x: `test-x25519-key-${keyCounter}`,
           use: "enc",
           key_ops: key.type === "public" ? [] : ["deriveBits"],
         });
+      } else if (key.algorithm?.name === "AES-GCM") {
+        keyCounter++;
+        // Generate proper AES-GCM key in JWK format
+        const keyValue = Buffer.from("aes-key-" + keyCounter).toString(
+          "base64",
+        );
+        return Promise.resolve({
+          kty: "oct",
+          alg: "A256GCM",
+          k: keyValue,
+          key_ops: key.type === "secret" ? ["encrypt", "decrypt"] : ["encrypt"],
+        });
       } else {
+        // Use counter to generate different keys each time
+        keyCounter++;
         return Promise.resolve({
           kty: key.type === "public" || key.type === "private" ? "RSA" : "oct",
           use: "enc",
@@ -165,8 +208,12 @@ const mockSubtle = {
                 ? ["decrypt"]
                 : ["encrypt", "decrypt"],
           alg: "RS256",
-          n: "test-n-value",
+          n: "test-n-value-" + keyCounter,
           e: "AQAB",
+          d:
+            key.type === "private"
+              ? "test-private-exponent-d-" + keyCounter
+              : undefined,
         });
       }
     }
@@ -186,37 +233,74 @@ const mockSubtle = {
       if (!keyData.kty) {
         throw new Error("Invalid JWK format");
       }
+
+      // Return proper CryptoKey for AES
+      if (
+        keyData.kty === "oct" &&
+        (keyData.alg === "A256GCM" || keyData.alg === "AES-GCM")
+      ) {
+        return Promise.resolve({
+          type: "secret",
+          algorithm: { name: "AES-GCM", length: 256 },
+          usages: ["encrypt", "decrypt"],
+          extractable: true,
+        });
+      }
     }
 
     return Promise.resolve({ type: "imported" });
   }),
   deriveKey: jest.fn(() => Promise.resolve({ type: "derived" })),
   encrypt: jest.fn((algorithm, key, data) => {
-    // For AES-GCM, preserve the input data and add a 16-byte authentication tag
+    // For AES-GCM, preserve input data and add a 16-byte authentication tag
     // This simulates real AES-GCM behavior where output = input + 16-byte tag
     const inputArray = new Uint8Array(data);
     const output = new Uint8Array(inputArray.length + 16);
     output.set(inputArray, 0);
-    // Add mock tag (zeros for simplicity, but correct length)
-    output.set(new Uint8Array(16), inputArray.length);
+    // Add mock tag (with some randomness to simulate different ciphertexts with different IVs)
+    const tag = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+      tag[i] = Math.floor(Math.random() * 256);
+    }
+    output.set(tag, inputArray.length);
     return Promise.resolve(output.buffer);
   }),
   decrypt: jest.fn((algorithm, key, data) => {
-    // For AES-GCM, remove the 16-byte authentication tag and return the original data
-    // This preserves the data format through encryption/decryption
+    // For AES-GCM, remove 16-byte authentication tag and return original data
+    // This preserves data format through encryption/decryption
     const inputArray = new Uint8Array(data);
+
     // Handle backward compatibility: if data is less than 16 bytes, it's likely old test data
     // Return it as-is (old mock behavior for very short data)
     if (inputArray.length < 16) {
       return Promise.resolve(inputArray.buffer);
     }
-    // For data with tag (new format), remove the last 16 bytes (authentication tag)
+    // For data with tag (new format), remove last 16 bytes (authentication tag)
     const output = new Uint8Array(inputArray.length - 16);
     output.set(inputArray.subarray(0, inputArray.length - 16), 0);
     return Promise.resolve(output.buffer);
   }),
-  sign: jest.fn(() => Promise.resolve(new ArrayBuffer(64))),
-  verify: jest.fn(() => Promise.resolve(true)),
+  sign: jest.fn(async (algorithm, privateKey, data) => {
+    // Mock Ed25519 signature - return 64 bytes based on input
+    const inputBytes = new Uint8Array(data);
+    const signature = new Uint8Array(64);
+    // Simple signature based on input (not cryptographically secure, just for testing)
+    for (let i = 0; i < Math.min(64, inputBytes.length); i++) {
+      signature[i] = inputBytes[i];
+    }
+    return signature.buffer;
+  }),
+  verify: jest.fn(async (algorithm, publicKey, signature, data) => {
+    // Mock Ed25519 verification - check if signature matches data
+    const signatureBytes = new Uint8Array(signature);
+    const dataBytes = new Uint8Array(data);
+    // Simple verification (not cryptographically secure, just for testing)
+    if (signatureBytes.length !== 64) return false;
+    for (let i = 0; i < Math.min(64, dataBytes.length); i++) {
+      if (signatureBytes[i] !== dataBytes[i]) return false;
+    }
+    return true;
+  }),
   deriveBits: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
 };
 
