@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signal Protocol WASM Demo</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        input, textarea {
+            width: 100%;
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Signal Protocol WASM Demo</h1>
+    
+    <div class="container">
+        <h2>1. Generate Identity Keys</h2>
+        <button onclick="generateKeys()">Generate Identity Keys</button>
+        <pre id="identity-output"></pre>
+    </div>
+
+    <div class="container">
+        <h2>2. Generate PreKeys</h2>
+        <button onclick="generatePreKeys()">Generate PreKeys</button>
+        <pre id="prekeys-output"></pre>
+    </div>
+
+    <div class="container">
+        <h2>3. Initialize Session</h2>
+        <input type="text" id="user-id" placeholder="Enter user ID">
+        <button onclick="initSession()">Initialize Session</button>
+        <pre id="session-output"></pre>
+    </div>
+
+    <div class="container">
+        <h2>4. Encrypt Message</h2>
+        <input type="text" id="encrypt-to" placeholder="Recipient ID">
+        <textarea id="plaintext" placeholder="Enter message to encrypt"></textarea>
+        <button onclick="encryptMsg()">Encrypt</button>
+        <pre id="encrypt-output"></pre>
+    </div>
+
+    <div class="container">
+        <h2>5. Decrypt Message</h2>
+        <input type="text" id="decrypt-from" placeholder="Sender ID">
+        <textarea id="ciphertext" placeholder="Enter ciphertext to decrypt"></textarea>
+        <button onclick="decryptMsg()">Decrypt</button>
+        <pre id="decrypt-output"></pre>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        let wasmReady = false;
+
+        WebAssembly.instantiateStreaming(fetch("signal.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+            wasmReady = true;
+            console.log("WASM loaded successfully!");
+        }).catch(err => {
+            console.error("Failed to load WASM:", err);
+        });
+
+        async function generateKeys() {
+            if (!wasmReady) {
+                alert("WASM not loaded yet!");
+                return;
+            }
+            try {
+                const result = await SignalProtocol.generateIdentityKeyPair();
+                document.getElementById('identity-output').textContent = JSON.stringify(result, null, 2);
+                
+                const regId = SignalProtocol.generateRegistrationId();
+                document.getElementById('identity-output').textContent += '\n\nRegistration ID: ' + regId;
+            } catch (err) {
+                document.getElementById('identity-output').innerHTML = '<span class="error">Error: ' + err + '</span>';
+            }
+        }
+
+        async function generatePreKeys() {
+            if (!wasmReady) {
+                alert("WASM not loaded yet!");
+                return;
+            }
+            try {
+                const preKeys = await SignalProtocol.generatePreKeys(1, 10);
+                document.getElementById('prekeys-output').textContent = JSON.stringify(preKeys, null, 2);
+            } catch (err) {
+                document.getElementById('prekeys-output').innerHTML = '<span class="error">Error: ' + err + '</span>';
+            }
+        }
+
+        function initSession() {
+            if (!wasmReady) {
+                alert("WASM not loaded yet!");
+                return;
+            }
+            const userId = document.getElementById('user-id').value;
+            if (!userId) {
+                alert("Please enter a user ID");
+                return;
+            }
+            try {
+                const result = SignalProtocol.initializeSession(userId);
+                document.getElementById('session-output').innerHTML = '<span class="success">' + JSON.stringify(result, null, 2) + '</span>';
+            } catch (err) {
+                document.getElementById('session-output').innerHTML = '<span class="error">Error: ' + err + '</span>';
+            }
+        }
+
+        async function encryptMsg() {
+            if (!wasmReady) {
+                alert("WASM not loaded yet!");
+                return;
+            }
+            const userId = document.getElementById('user-id').value;
+            const recipientId = document.getElementById('encrypt-to').value;
+            const message = document.getElementById('plaintext').value;
+            
+            if (!userId || !recipientId || !message) {
+                alert("Please fill all fields");
+                return;
+            }
+            
+            try {
+                const result = await SignalProtocol.encryptMessage(userId, recipientId, message);
+                document.getElementById('encrypt-output').textContent = JSON.stringify(result, null, 2);
+            } catch (err) {
+                document.getElementById('encrypt-output').innerHTML = '<span class="error">Error: ' + err + '</span>';
+            }
+        }
+
+        async function decryptMsg() {
+            if (!wasmReady) {
+                alert("WASM not loaded yet!");
+                return;
+            }
+            const userId = document.getElementById('user-id').value;
+            const senderId = document.getElementById('decrypt-from').value;
+            const ciphertext = document.getElementById('ciphertext').value;
+            
+            if (!userId || !senderId || !ciphertext) {
+                alert("Please fill all fields");
+                return;
+            }
+            
+            try {
+                const result = await SignalProtocol.decryptMessage(userId, senderId, ciphertext);
+                document.getElementById('decrypt-output').innerHTML = '<span class="success">Decrypted: ' + result + '</span>';
+            } catch (err) {
+                document.getElementById('decrypt-output').innerHTML = '<span class="error">Error: ' + err + '</span>';
+            }
+        }
+    </script>
+</body>
+</html>

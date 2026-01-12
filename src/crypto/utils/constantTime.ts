@@ -44,7 +44,7 @@ export class ConstantTime {
     const len2 = str2.length;
 
     // Track length mismatch (but continue comparison)
-    let lengthMismatch = len1 !== len2 ? 1 : 0;
+    const lengthMismatch = len1 !== len2 ? 1 : 0;
 
     // Always process the maximum length to ensure constant-time behavior
     // This prevents timing leaks based on string length differences
@@ -113,7 +113,7 @@ export class ConstantTime {
     const len2 = arr2.length;
 
     // Track length mismatch (but continue comparison)
-    let lengthMismatch = len1 !== len2 ? 1 : 0;
+    const lengthMismatch = len1 !== len2 ? 1 : 0;
 
     // Always process the maximum length to ensure constant-time behavior
     // This prevents timing leaks based on buffer length differences
