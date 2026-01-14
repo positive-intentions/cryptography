@@ -49,6 +49,24 @@ export class MLKEMCipherLayer implements CipherLayer {
 
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;
+
+  // ML-KEM-768 key sizes (in bytes)
+  private readonly PUBLIC_KEY_SIZE = 1184;
+  private readonly PRIVATE_KEY_SIZE = 64;
+  private readonly ENCAPSULATED_KEY_SIZE = 1088;
+  private readonly SHARED_SECRET_MIN_SIZE = 32;
+  private readonly SALT_SIZE = 16;
+
+  // IV Reuse Protection Constants
+  private usedIVs: Map<string, { ivSet: Set<string>; lastAccessTime: number }> =
+    new Map();
+  private readonly MAX_IV_TRACKING = 10000;
+  private readonly MAX_GLOBAL_IV_TRACKING = 5000;
+  private readonly MAX_IV_GENERATION_ATTEMPTS = 100;
+  private readonly IV_TRACKING_EXPIRY_MS = 60 * 60 * 1000;
+  private readonly CLEANUP_INTERVAL = 1000;
+  private encryptionCount = 0;
+
   private kem: MlKem768;
 
   constructor() {
@@ -67,15 +85,19 @@ export class MLKEMCipherLayer implements CipherLayer {
    * Validate ML-KEM keys with constant-time comparison
    *
    * SECURITY: Uses constant-time comparison to prevent timing attacks
-   * on key validation operations.
+   * on key validation operations. Always performs all checks without
+   * early returns to avoid timing leaks.
    */
   validateKeys(keys: Partial<MLKEMKeys> | null): boolean {
     try {
-      if (!keys) return false;
-
+      // Always perform all operations to avoid timing leaks
+      // Check for null/undefined without early return
+      const hasKeys = keys !== null && keys !== undefined;
+      
       // Must have either publicKey (for encryption) or privateKey (for decryption)
-      const hasPublicKey = keys.publicKey !== undefined;
-      const hasPrivateKey = keys.privateKey !== undefined;
+      // Always check both properties regardless of early matches
+      const hasPublicKey = hasKeys && keys.publicKey !== undefined;
+      const hasPrivateKey = hasKeys && keys.privateKey !== undefined;
       const isValid = hasPublicKey || hasPrivateKey;
 
       // Use constant-time comparison without string conversion
@@ -94,16 +116,45 @@ export class MLKEMCipherLayer implements CipherLayer {
 
   /**
    * Get raw bytes from a key (handles both Uint8Array and XCryptoKey)
+   *
+   * Validates key size according to ML-KEM-768 specification:
+   * - Public key: 1184 bytes
+   * - Private key: 64 bytes
+   * - Encapsulated key: 1088 bytes
    */
   private async getKeyBytes(
     key: Uint8Array | Record<string, unknown>,
   ): Promise<Uint8Array> {
     if (key instanceof Uint8Array) {
+      const validSizes = [
+        this.PUBLIC_KEY_SIZE,
+        this.PRIVATE_KEY_SIZE,
+        this.ENCAPSULATED_KEY_SIZE,
+      ];
+      if (!validSizes.includes(key.length)) {
+        throw new CipherLayerError(
+          "Invalid ML-KEM key format",
+          this.name,
+          "encrypt",
+        );
+      }
       return key;
     }
 
     // Handle XCryptoKey from @hpke/ml-kem
     if (key && "key" in key && key.key instanceof Uint8Array) {
+      const validSizes = [
+        this.PUBLIC_KEY_SIZE,
+        this.PRIVATE_KEY_SIZE,
+        this.ENCAPSULATED_KEY_SIZE,
+      ];
+      if (!validSizes.includes(key.key.length)) {
+        throw new CipherLayerError(
+          "Invalid ML-KEM key format",
+          this.name,
+          "encrypt",
+        );
+      }
       return key.key;
     }
 
@@ -112,19 +163,49 @@ export class MLKEMCipherLayer implements CipherLayer {
       try {
         // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
         const serialized = await this.kem.serializePublicKey(key);
-        return new Uint8Array(serialized);
-      } catch {
+        const bytes = new Uint8Array(serialized);
+        const validSizes = [
+          this.PUBLIC_KEY_SIZE,
+          this.PRIVATE_KEY_SIZE,
+          this.ENCAPSULATED_KEY_SIZE,
+        ];
+        if (!validSizes.includes(bytes.length)) {
+          throw new CipherLayerError(
+            "Invalid ML-KEM key format",
+            this.name,
+            "encrypt",
+          );
+        }
+        return bytes;
+      } catch (error) {
         try {
           // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
           const serialized = await this.kem.serializePrivateKey(key);
-          return new Uint8Array(serialized);
+          const bytes = new Uint8Array(serialized);
+          const validSizes = [
+            this.PUBLIC_KEY_SIZE,
+            this.PRIVATE_KEY_SIZE,
+            this.ENCAPSULATED_KEY_SIZE,
+          ];
+          if (!validSizes.includes(bytes.length)) {
+            throw new CipherLayerError(
+              "Invalid ML-KEM key format",
+              this.name,
+              "decrypt",
+            );
+          }
+          return bytes;
         } catch {
-          throw new Error("Invalid key format");
+          throw new CipherLayerError(
+            "Invalid key format",
+            this.name,
+            "encrypt",
+          );
         }
       }
     }
 
-    throw new Error("Invalid key format");
+    throw new CipherLayerError("Invalid key format", this.name, "encrypt");
   }
 
   /**
@@ -173,11 +254,33 @@ export class MLKEMCipherLayer implements CipherLayer {
 
   /**
    * Derive AES key from shared secret using HKDF
+   *
+   * Validates:
+   * - Shared secret: >= 32 bytes (minimum for AES-256)
+   * - Salt: exactly 16 bytes
    */
   private async deriveAESKey(
     sharedSecret: Uint8Array,
     salt: Uint8Array,
   ): Promise<CryptoKey> {
+    // Validate shared secret size
+    if (sharedSecret.length < this.SHARED_SECRET_MIN_SIZE) {
+      throw new CipherLayerError(
+        "Invalid shared secret",
+        this.name,
+        "encrypt",
+      );
+    }
+
+    // Validate salt size
+    if (salt.length !== this.SALT_SIZE) {
+      throw new CipherLayerError(
+        "Invalid salt",
+        this.name,
+        "encrypt",
+      );
+    }
+
     // Use first 32 bytes of shared secret (ML-KEM produces 64 bytes, but we only need 32 for AES-256)
     const secret32 = sharedSecret.slice(0, 32);
 
@@ -209,6 +312,119 @@ export class MLKEMCipherLayer implements CipherLayer {
   }
 
   /**
+   * Get IV tracking key from public key bytes
+   * Creates a unique identifier for tracking IVs per public key
+   */
+  private getIVTrackingKey(publicKeyBytes: Uint8Array): string {
+    // Use first 16 bytes of public key as identifier
+    // This provides sufficient uniqueness while keeping the key manageable
+    const keyPrefix = Array.from(publicKeyBytes)
+      .slice(0, 16)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return keyPrefix;
+  }
+
+  /**
+   * Check if IV has been used before
+   */
+  private isIVUsed(ivKey: string, iv: Uint8Array): boolean {
+    const ivEntry = this.usedIVs.get(ivKey);
+    if (!ivEntry) return false;
+    // Update last access time
+    ivEntry.lastAccessTime = Date.now();
+    const ivHex = Array.from(iv)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return ivEntry.ivSet.has(ivHex);
+  }
+
+  /**
+   * Mark IV as used
+   */
+  private markIVUsed(ivKey: string, iv: Uint8Array): void {
+    // Enforce global limit using LRU eviction (Map maintains insertion order)
+    if (
+      this.usedIVs.size >= this.MAX_GLOBAL_IV_TRACKING &&
+      !this.usedIVs.has(ivKey)
+    ) {
+      // Remove oldest entry (first in Map) to make room for new entry
+      const firstKey = this.usedIVs.keys().next().value;
+      this.usedIVs.delete(firstKey);
+    }
+
+    let ivEntry = this.usedIVs.get(ivKey);
+    if (!ivEntry) {
+      ivEntry = {
+        ivSet: new Set(),
+        lastAccessTime: Date.now(),
+      };
+      this.usedIVs.set(ivKey, ivEntry);
+    } else {
+      // Update last access time
+      ivEntry.lastAccessTime = Date.now();
+    }
+
+    const ivHex = Array.from(iv)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    ivEntry.ivSet.add(ivHex);
+
+    // Limit memory usage per key - remove oldest entries if over limit
+    // This maintains per-key limit while global limit is handled above
+    if (ivEntry.ivSet.size > this.MAX_IV_TRACKING) {
+      const entries = Array.from(ivEntry.ivSet);
+      const toRemove = entries.length - this.MAX_IV_TRACKING;
+      entries.slice(0, toRemove).forEach((e) => ivEntry!.ivSet.delete(e));
+    }
+  }
+
+  /**
+   * Clean up old IV tracking entries based on time-based expiration
+   * Removes entries that haven't been accessed in the last hour
+   */
+  private cleanupOldIVs(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    for (const [key, entry] of this.usedIVs.entries()) {
+      if (now - entry.lastAccessTime > this.IV_TRACKING_EXPIRY_MS) {
+        keysToDelete.push(key);
+      }
+    }
+
+    // Delete expired entries
+    keysToDelete.forEach((key) => this.usedIVs.delete(key));
+  }
+
+  /**
+   * Generate a unique IV with collision detection
+   * Prevents IV reuse which could compromise AES-GCM security
+   */
+  private async generateUniqueIV(
+    publicKeyBytes: Uint8Array,
+  ): Promise<Uint8Array> {
+    const ivKey = this.getIVTrackingKey(publicKeyBytes);
+    let attempts = 0;
+    let iv: Uint8Array;
+
+    do {
+      iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+      attempts++;
+      if (attempts > this.MAX_IV_GENERATION_ATTEMPTS) {
+        throw new CipherLayerError(
+          "Failed to generate unique IV after multiple attempts",
+          this.name,
+          "encrypt",
+        );
+      }
+    } while (this.isIVUsed(ivKey, iv));
+
+    this.markIVUsed(ivKey, iv);
+    return iv;
+  }
+
+  /**
    * Encrypt data using ML-KEM + AES-GCM
    */
   async encrypt(data: Uint8Array, keys: MLKEMKeys): Promise<EncryptedPayload> {
@@ -220,6 +436,13 @@ export class MLKEMCipherLayer implements CipherLayer {
     let aesKey: CryptoKey | null = null;
 
     try {
+      // Periodically cleanup old IV tracking entries
+      this.encryptionCount++;
+      if (this.encryptionCount >= this.CLEANUP_INTERVAL) {
+        this.cleanupOldIVs();
+        this.encryptionCount = 0;
+      }
+
       if (!this.validateKeys(keys)) {
         throw new CipherLayerError("Invalid keys", this.name, "encrypt");
       }
@@ -235,6 +458,9 @@ export class MLKEMCipherLayer implements CipherLayer {
       // Import public key
       const publicKey = await this.importPublicKey(keys.publicKey);
 
+      // Get public key bytes for IV tracking
+      const publicKeyBytes = await this.getKeyBytes(keys.publicKey);
+
       // Perform ML-KEM encapsulation
       const { sharedSecret, enc } = await this.kem.encap({
         recipientPublicKey: publicKey,
@@ -243,9 +469,11 @@ export class MLKEMCipherLayer implements CipherLayer {
       // Convert shared secret to Uint8Array
       sharedSecretBytes = new Uint8Array(sharedSecret);
 
-      // Generate random salt and IV
+      // Generate random salt
       salt = crypto.getRandomValues(new Uint8Array(16));
-      iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+
+      // Generate unique IV with reuse protection
+      iv = await this.generateUniqueIV(publicKeyBytes);
 
       // Derive AES key from shared secret
       aesKey = await this.deriveAESKey(sharedSecretBytes, salt);
@@ -291,6 +519,15 @@ export class MLKEMCipherLayer implements CipherLayer {
         },
       };
     } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[MLKEMCipherLayer] Encryption error:", {
+          layer: this.name,
+          operation: "encrypt",
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+      }
+
       throw new CipherLayerError(
         "Encryption failed",
         this.name,
@@ -346,6 +583,33 @@ export class MLKEMCipherLayer implements CipherLayer {
           ? encapsulated
           : new Uint8Array(encapsulated);
 
+      // Validate IV size
+      if (ivBytes.length !== this.IV_LENGTH) {
+        throw new CipherLayerError(
+          "Invalid decryption parameters",
+          this.name,
+          "decrypt",
+        );
+      }
+
+      // Validate salt size
+      if (saltBytes.length !== this.SALT_SIZE) {
+        throw new CipherLayerError(
+          "Invalid decryption parameters",
+          this.name,
+          "decrypt",
+        );
+      }
+
+      // Validate encapsulated key size
+      if (encapsulatedBytes.length !== this.ENCAPSULATED_KEY_SIZE) {
+        throw new CipherLayerError(
+          "Invalid decryption parameters",
+          this.name,
+          "decrypt",
+        );
+      }
+
       // Import private key
       const privateKey = await this.importPrivateKey(keys.privateKey);
 
@@ -357,6 +621,15 @@ export class MLKEMCipherLayer implements CipherLayer {
 
       // Convert shared secret to Uint8Array
       sharedSecretBytes = new Uint8Array(sharedSecret);
+
+      // Validate shared secret size immediately after decapsulation
+      if (sharedSecretBytes.length < this.SHARED_SECRET_MIN_SIZE) {
+        throw new CipherLayerError(
+          "Decryption failed",
+          this.name,
+          "decrypt",
+        );
+      }
 
       // Derive AES key from shared secret
       aesKey = await this.deriveAESKey(sharedSecretBytes, saltBytes);
@@ -373,19 +646,16 @@ export class MLKEMCipherLayer implements CipherLayer {
 
       return new Uint8Array(plaintextBuffer);
     } catch (error) {
-      // SECURITY: Generic error message to prevent information leakage
-      if (
-        error.message?.includes("decryption failed") ||
-        error.message?.includes("DecapError")
-      ) {
-        throw new CipherLayerError(
-          "Decryption failed",
-          this.name,
-          "decrypt",
-          error as Error,
-        );
+      if (process.env.NODE_ENV === "development") {
+        console.error("[MLKEMCipherLayer] Decryption error:", {
+          layer: this.name,
+          operation: "decrypt",
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
 
+      // SECURITY: Generic error message to prevent information leakage
       throw new CipherLayerError(
         "Decryption failed",
         this.name,

@@ -12,6 +12,11 @@
  * - Constant-time validation
  * - Error message sanitization
  * - Zeroization verification
+ *
+ * NOTE: Timing attack protection tests are available in Storybook:
+ * - Storybook Path: Cryptography/Security/ML-KEM Timing Tests
+ * - File: src/stories/Security/MLKEMTimingTests.stories.js
+ * - See STORYBOOK_TIMING_TESTS.md for details
  */
 
 jest.setTimeout(300000); // 5 minutes timeout for all tests
@@ -156,6 +161,22 @@ describe("MLKEMCipherLayer Security", () => {
       }
     });
 
+    test("should throw specific error for invalid public key size", async () => {
+      if (!MLKEMCipherLayer) return;
+
+      const layer = new MLKEMCipherLayer();
+      const invalidPublicKey = new Uint8Array(1000);
+      crypto.getRandomValues(invalidPublicKey);
+
+      const plaintext = new TextEncoder().encode("Test data");
+
+      await expect(
+        layer.encrypt(plaintext, { publicKey: invalidPublicKey }),
+      ).rejects.toThrow(
+        "Invalid ML-KEM key size: 1000 bytes (expected 1184 for public key, 64 for private key, or 1088 for encapsulated key)",
+      );
+    });
+
     test("should reject private key with invalid size", async () => {
       if (!MLKEMCipherLayer || !MlKem768) return;
 
@@ -178,6 +199,28 @@ describe("MLKEMCipherLayer Security", () => {
           layer.decrypt(encrypted, { privateKey: invalidPrivateKey }),
         ).rejects.toThrow();
       }
+    });
+
+    test("should throw specific error for invalid private key size", async () => {
+      if (!MLKEMCipherLayer || !MlKem768) return;
+
+      const kem = new MlKem768();
+      const keyPair = await kem.generateKeyPair();
+
+      const layer = new MLKEMCipherLayer();
+      const plaintext = new TextEncoder().encode("Test data");
+      const encrypted = await layer.encrypt(plaintext, {
+        publicKey: keyPair.publicKey,
+      });
+
+      const invalidPrivateKey = new Uint8Array(50);
+      crypto.getRandomValues(invalidPrivateKey);
+
+      await expect(
+        layer.decrypt(encrypted, { privateKey: invalidPrivateKey }),
+      ).rejects.toThrow(
+        "Invalid ML-KEM key size: 50 bytes (expected 1184 for public key, 64 for private key, or 1088 for encapsulated key)",
+      );
     });
 
     test("should reject encapsulated key with invalid size", async () => {
@@ -203,6 +246,33 @@ describe("MLKEMCipherLayer Security", () => {
       await expect(
         layer.decrypt(modifiedPayload, { privateKey: keyPair.privateKey }),
       ).rejects.toThrow();
+    });
+
+    test("should throw specific error for invalid encapsulated key size", async () => {
+      if (!MLKEMCipherLayer || !MlKem768) return;
+
+      const kem = new MlKem768();
+      const keyPair = await kem.generateKeyPair();
+
+      const layer = new MLKEMCipherLayer();
+      const plaintext = new TextEncoder().encode("Test data");
+      const encrypted = await layer.encrypt(plaintext, {
+        publicKey: keyPair.publicKey,
+      });
+
+      const modifiedPayload = {
+        ...encrypted,
+        parameters: {
+          ...encrypted.parameters,
+          encapsulated: new Uint8Array(1000),
+        },
+      };
+
+      await expect(
+        layer.decrypt(modifiedPayload, { privateKey: keyPair.privateKey }),
+      ).rejects.toThrow(
+        "Invalid encapsulated key size: 1000 bytes (expected 1088 bytes)",
+      );
     });
   });
 
@@ -474,6 +544,14 @@ describe("MLKEMCipherLayer Security", () => {
     });
   });
 
+  /**
+   * Constant-Time Validation Tests
+   *
+   * NOTE: For comprehensive timing attack protection tests, see Storybook:
+   * - Storybook Path: Cryptography/Security/ML-KEM Timing Tests
+   * - These tests verify basic constant-time behavior
+   * - Storybook tests provide detailed timing variance analysis
+   */
   describe("Constant-Time Validation", () => {
     test("should validate keys with constant-time comparison", async () => {
       if (!MLKEMCipherLayer || !MlKem768) return;
@@ -821,6 +899,32 @@ describe("MLKEMCipherLayer Security", () => {
       ).rejects.toThrow();
     });
 
+    test("should throw specific error for invalid IV size", async () => {
+      if (!MLKEMCipherLayer || !MlKem768) return;
+
+      const kem = new MlKem768();
+      const keyPair = await kem.generateKeyPair();
+
+      const layer = new MLKEMCipherLayer();
+      const plaintext = new TextEncoder().encode("Test data");
+
+      const encrypted = await layer.encrypt(plaintext, {
+        publicKey: keyPair.publicKey,
+      });
+
+      const modifiedPayload = {
+        ...encrypted,
+        parameters: {
+          ...encrypted.parameters,
+          iv: new Uint8Array(16),
+        },
+      };
+
+      await expect(
+        layer.decrypt(modifiedPayload, { privateKey: keyPair.privateKey }),
+      ).rejects.toThrow("Invalid IV size: 16 bytes (expected 12 bytes)");
+    });
+
     test("should fail decryption with wrong salt size", async () => {
       if (!MLKEMCipherLayer || !MlKem768) return;
 
@@ -845,6 +949,62 @@ describe("MLKEMCipherLayer Security", () => {
       await expect(
         layer.decrypt(modifiedPayload, { privateKey: keyPair.privateKey }),
       ).rejects.toThrow();
+    });
+
+    test("should throw specific error for invalid salt size", async () => {
+      if (!MLKEMCipherLayer || !MlKem768) return;
+
+      const kem = new MlKem768();
+      const keyPair = await kem.generateKeyPair();
+
+      const layer = new MLKEMCipherLayer();
+      const plaintext = new TextEncoder().encode("Test data");
+
+      const encrypted = await layer.encrypt(plaintext, {
+        publicKey: keyPair.publicKey,
+      });
+
+      const modifiedPayload = {
+        ...encrypted,
+        parameters: {
+          ...encrypted.parameters,
+          salt: new Uint8Array(32),
+        },
+      };
+
+      await expect(
+        layer.decrypt(modifiedPayload, { privateKey: keyPair.privateKey }),
+      ).rejects.toThrow("Invalid salt size: 32 bytes (expected 16 bytes)");
+    });
+  });
+});
+  });
+});
+
+    test("should throw specific error for undersized shared secret", async () => {
+      if (!MLKEMCipherLayer) return;
+
+      const layer = new MLKEMCipherLayer();
+
+      const undersizedSecret = new Uint8Array(16);
+      const salt = new Uint8Array(16);
+
+      await expect(layer.deriveAESKey(undersizedSecret, salt)).rejects.toThrow(
+        "Invalid shared secret size: 16 bytes (expected >= 32 bytes)",
+      );
+    });
+
+    test("should throw specific error for invalid salt size in deriveAESKey", async () => {
+      if (!MLKEMCipherLayer) return;
+
+      const layer = new MLKEMCipherLayer();
+
+      const sharedSecret = new Uint8Array(64);
+      const invalidSalt = new Uint8Array(32);
+
+      await expect(
+        layer.deriveAESKey(sharedSecret, invalidSalt),
+      ).rejects.toThrow("Invalid salt size: 32 bytes (expected 16 bytes)");
     });
   });
 });
