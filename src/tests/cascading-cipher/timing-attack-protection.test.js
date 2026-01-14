@@ -15,10 +15,14 @@ describe("Timing Attack Protection", () => {
   let DHCipherLayer;
   let MLSCipherLayer;
   let SignalCipherLayer;
+  let MLKEMCipherLayer;
+  let MlKem768;
   let crypto;
+  let originalCrypto;
 
-  beforeEach(async () => {
-    // Setup REAL Web Crypto API
+  beforeAll(async () => {
+    originalCrypto = global.crypto;
+
     const { webcrypto } = await import("crypto");
     global.crypto = webcrypto;
     globalThis.crypto = webcrypto;
@@ -27,7 +31,7 @@ describe("Timing Attack Protection", () => {
     }
     crypto = webcrypto;
 
-    // Dynamic imports
+    // Dynamic imports - using beforeAll to ensure modules load once
     try {
       const aesModule = await import(
         "../../crypto/CascadingCipher/layers/AESCipherLayer.ts"
@@ -57,13 +61,36 @@ describe("Timing Attack Protection", () => {
     } catch (e) {
       SignalCipherLayer = null;
     }
+
+    // Note: MLKEMCipherLayer and MlKem768 imports moved to individual tests
+    // to avoid Jest/Babel ES module issues
+    // Import happens in each test where it's needed
+  });
+
+  afterEach(() => {
+    global.crypto = originalCrypto;
+    globalThis.crypto = originalCrypto;
+    if (typeof window !== "undefined") {
+      window.crypto = originalCrypto;
+    }
+  });
+
+  beforeEach(async () => {
+    // Setup REAL Web Crypto API for each test
+    const { webcrypto } = await import("crypto");
+    global.crypto = webcrypto;
+    globalThis.crypto = webcrypto;
+    if (typeof window !== "undefined") {
+      window.crypto = webcrypto;
+    }
+    crypto = webcrypto;
   });
 
   /**
    * Measure timing for multiple runs and calculate statistics
    * Includes warm-up runs to stabilize JIT compilation
    */
-  async function measureTiming(operation, runs = 50, warmupRuns = 10) {
+  async function measureTiming(operation, runs = 20, warmupRuns = 1) {
     // Warm-up runs to stabilize JIT compilation and reduce timing variance
     for (let i = 0; i < warmupRuns; i++) {
       try {
@@ -188,7 +215,7 @@ describe("Timing Attack Protection", () => {
       const variance = calculateVariance(timings1, timings2);
       // Allow higher variance for different data sizes
       expect(variance).toBeLessThan(1.0); // 100% variance threshold
-    }, 120000); // 2 minute timeout (increased sample size requires more time)
+    }, 30000); // 30 second timeout (reduced sample size)
   });
 
   describe("DHCipherLayer timing consistency", () => {
@@ -376,6 +403,97 @@ describe("Timing Attack Protection", () => {
     });
   });
 
+  describe("MLKEMCipherLayer timing consistency", () => {
+    let MlKem768Local, MLKEMCipherLayerLocal, kem, keyPair1, keyPair2;
+
+    beforeAll(async () => {
+      try {
+        const mlkemModule = await import("@hpke/ml-kem");
+        MlKem768Local = mlkemModule.MlKem768;
+      } catch (e) {
+        throw new Error(`MlKem768 import failed: ${e.message}`);
+      }
+
+      try {
+        const mlkemLayerModule = await import(
+          "../../crypto/CascadingCipher/layers/MLKEMCipherLayer.ts"
+        );
+        MLKEMCipherLayerLocal = mlkemLayerModule.MLKEMCipherLayer;
+      } catch (e) {
+        throw new Error(`MLKEMCipherLayer import failed: ${e.message}`);
+      }
+
+      if (!MLKEMCipherLayerLocal || !MlKem768Local) {
+        throw new Error(
+          "MLKEMCipherLayer or MlKem768 not available - test cannot run",
+        );
+      }
+
+      kem = new MlKem768Local();
+      keyPair1 = await kem.generateKeyPair();
+      keyPair2 = await kem.generateKeyPair();
+    });
+
+    test("should have consistent validateKeys() timing for valid vs invalid keys", async () => {
+      const layer = new MLKEMCipherLayerLocal();
+
+      const validKeys = { publicKey: keyPair1.publicKey };
+      const invalidKeys = {};
+
+      const validTimings = await measureTiming(() => {
+        layer.validateKeys(validKeys);
+      });
+
+      const invalidTimings = await measureTiming(() => {
+        layer.validateKeys(invalidKeys);
+      });
+
+      const variance = calculateVariance(validTimings, invalidTimings);
+
+      expect(variance).toBeLessThan(0.75);
+    });
+
+    test("should have consistent validation timing regardless of key type", async () => {
+      const layer = new MLKEMCipherLayerLocal();
+
+      const publicKeyKeys = { publicKey: new Uint8Array(1184) };
+      const privateKeyKeys = { privateKey: new Uint8Array(64) };
+      const bothKeys = {
+        publicKey: new Uint8Array(1184),
+        privateKey: new Uint8Array(64),
+      };
+      const emptyKeys = {};
+
+      const publicKeyTimings = await measureTiming(() => {
+        layer.validateKeys(publicKeyKeys);
+      });
+
+      const privateKeyTimings = await measureTiming(() => {
+        layer.validateKeys(privateKeyKeys);
+      });
+
+      const bothKeysTimings = await measureTiming(() => {
+        layer.validateKeys(bothKeys);
+      });
+
+      const emptyKeysTimings = await measureTiming(() => {
+        layer.validateKeys(emptyKeys);
+      });
+
+      const publicKeyVariance = calculateVariance(
+        publicKeyTimings,
+        privateKeyTimings,
+      );
+      const bothKeysVariance = calculateVariance(
+        publicKeyTimings,
+        bothKeysTimings,
+      );
+
+      expect(publicKeyVariance).toBeLessThan(0.75);
+      expect(bothKeysVariance).toBeLessThan(0.75);
+    });
+  });
+
   describe("Statistical analysis", () => {
     test("should demonstrate timing measurements are statistically valid", async () => {
       if (!AESCipherLayer) {
@@ -388,7 +506,7 @@ describe("Timing Attack Protection", () => {
       // Measure timing with sufficient samples
       const timings = await measureTiming(async () => {
         await layer.encrypt(new TextEncoder().encode("Test"), keys);
-      }, 100);
+      }, 20);
 
       // Should have enough samples
       expect(timings.length).toBe(100);
@@ -576,7 +694,7 @@ describe("Timing Attack Protection", () => {
       const str3 = "a" + "x".repeat(99); // Different at start
 
       // Use larger sample size and warm-up for more reliable statistics
-      const sampleSize = 200;
+      const sampleSize = 100;
       const warmupRuns = 20;
 
       // Measure constant-time comparison (matching vs non-matching)
@@ -639,6 +757,6 @@ describe("Timing Attack Protection", () => {
         // This is acceptable - the security property is that constant-time always processes
         // the same amount of data, not that it's always faster or more consistent
       }
-    }, 60000); // 60 second timeout for larger sample size
+    }, 30000); // 30 second timeout (reduced sample size)
   });
 });

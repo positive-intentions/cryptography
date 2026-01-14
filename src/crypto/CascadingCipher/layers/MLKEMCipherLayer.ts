@@ -18,14 +18,23 @@ import { Zeroization } from "../../utils/zeroization";
 import { ConstantTime } from "../../utils/constantTime";
 
 /**
+ * XCryptoKey type from @hpke/ml-kem
+ * Internal key object type used by the library
+ */
+export type XCryptoKey = {
+  key: Uint8Array;
+  type: "public" | "private";
+};
+
+/**
  * Keys for ML-KEM encryption
  */
 export interface MLKEMKeys {
   /** Public key for encryption (Uint8Array or XCryptoKey) */
-  publicKey?: Uint8Array | any;
+  publicKey?: Uint8Array | XCryptoKey;
 
   /** Private key for decryption (Uint8Array or XCryptoKey) */
-  privateKey?: Uint8Array | any;
+  privateKey?: Uint8Array | XCryptoKey;
 }
 
 /**
@@ -60,7 +69,7 @@ export class MLKEMCipherLayer implements CipherLayer {
    * SECURITY: Uses constant-time comparison to prevent timing attacks
    * on key validation operations.
    */
-  validateKeys(keys: any): boolean {
+  validateKeys(keys: Partial<MLKEMKeys> | null): boolean {
     try {
       if (!keys) return false;
 
@@ -69,13 +78,13 @@ export class MLKEMCipherLayer implements CipherLayer {
       const hasPrivateKey = keys.privateKey !== undefined;
       const isValid = hasPublicKey || hasPrivateKey;
 
-      // Use constant-time comparison for result
-      const resultString = String(isValid);
-      const expectedString = "true";
+      // Use constant-time comparison without string conversion
+      const isValidBuffer = new Uint8Array([isValid ? 1 : 0]);
+      const expectedBuffer = new Uint8Array([1]);
 
-      return ConstantTime.constantTimeCompareStrings(
-        resultString,
-        expectedString,
+      return ConstantTime.constantTimeCompareBuffers(
+        isValidBuffer,
+        expectedBuffer,
       );
     } catch (error) {
       // Constant-time error handling
@@ -86,23 +95,27 @@ export class MLKEMCipherLayer implements CipherLayer {
   /**
    * Get raw bytes from a key (handles both Uint8Array and XCryptoKey)
    */
-  private async getKeyBytes(key: Uint8Array | any): Promise<Uint8Array> {
+  private async getKeyBytes(
+    key: Uint8Array | Record<string, unknown>,
+  ): Promise<Uint8Array> {
     if (key instanceof Uint8Array) {
       return key;
     }
 
     // Handle XCryptoKey from @hpke/ml-kem
-    if (key && key.key instanceof Uint8Array) {
+    if (key && "key" in key && key.key instanceof Uint8Array) {
       return key.key;
     }
 
     // Try to serialize if it's an XCryptoKey
     if (key && typeof key.type === "string") {
       try {
+        // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
         const serialized = await this.kem.serializePublicKey(key);
         return new Uint8Array(serialized);
       } catch {
         try {
+          // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
           const serialized = await this.kem.serializePrivateKey(key);
           return new Uint8Array(serialized);
         } catch {
@@ -129,7 +142,11 @@ export class MLKEMCipherLayer implements CipherLayer {
 
     // Convert Uint8Array to XCryptoKey
     const keyBytes = await this.getKeyBytes(publicKey);
-    return await this.kem.importKey("raw", keyBytes, true);
+    return await this.kem.importKey(
+      "raw",
+      keyBytes.buffer as ArrayBuffer,
+      true,
+    );
   }
 
   /**
@@ -147,7 +164,11 @@ export class MLKEMCipherLayer implements CipherLayer {
 
     // Convert Uint8Array to XCryptoKey
     const keyBytes = await this.getKeyBytes(privateKey);
-    return await this.kem.importKey("raw", keyBytes, false);
+    return await this.kem.importKey(
+      "raw",
+      keyBytes.buffer as ArrayBuffer,
+      false,
+    );
   }
 
   /**
@@ -173,7 +194,7 @@ export class MLKEMCipherLayer implements CipherLayer {
     return crypto.subtle.deriveKey(
       {
         name: "HKDF",
-        salt,
+        salt: salt.buffer as ArrayBuffer,
         info: new TextEncoder().encode("ML-KEM-768-AES-GCM-Cascading-Cipher"),
         hash: "SHA-256",
       },
@@ -233,10 +254,10 @@ export class MLKEMCipherLayer implements CipherLayer {
       const ciphertextBuffer = await crypto.subtle.encrypt(
         {
           name: "AES-GCM",
-          iv,
+          iv: iv.buffer as ArrayBuffer,
         },
         aesKey,
-        data,
+        data.buffer as ArrayBuffer,
       );
 
       const ciphertext = new Uint8Array(ciphertextBuffer);
@@ -331,7 +352,7 @@ export class MLKEMCipherLayer implements CipherLayer {
       // Perform ML-KEM decapsulation
       const sharedSecret = await this.kem.decap({
         recipientKey: privateKey,
-        enc: encapsulatedBytes,
+        enc: encapsulatedBytes.buffer as ArrayBuffer,
       });
 
       // Convert shared secret to Uint8Array
@@ -344,10 +365,10 @@ export class MLKEMCipherLayer implements CipherLayer {
       const plaintextBuffer = await crypto.subtle.decrypt(
         {
           name: "AES-GCM",
-          iv: ivBytes,
+          iv: ivBytes.buffer as ArrayBuffer,
         },
         aesKey,
-        payload.ciphertext,
+        payload.ciphertext.buffer as ArrayBuffer,
       );
 
       return new Uint8Array(plaintextBuffer);
