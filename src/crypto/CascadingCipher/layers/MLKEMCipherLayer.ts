@@ -70,6 +70,9 @@ export class MLKEMCipherLayer implements CipherLayer {
 
   private readonly IV_LENGTH = 12;
   private readonly KEY_LENGTH = 256;
+  
+  // Input size limits to prevent DoS attacks
+  private readonly MAX_PLAINTEXT_SIZE = 10 * 1024 * 1024; // 10MB maximum
 
   // ML-KEM-768 key sizes (in bytes)
   private readonly PUBLIC_KEY_SIZE = 1184;
@@ -85,8 +88,10 @@ export class MLKEMCipherLayer implements CipherLayer {
   private readonly MAX_GLOBAL_IV_TRACKING = 5000;
   private readonly MAX_IV_GENERATION_ATTEMPTS = 100;
   private readonly IV_TRACKING_EXPIRY_MS = 60 * 60 * 1000;
-  private readonly CLEANUP_INTERVAL = 1000;
+  private readonly CLEANUP_INTERVAL = 100; // Reduced from 1000 to prevent memory growth
+  private readonly CLEANUP_TIME_INTERVAL_MS = 60000; // 1 minute time-based cleanup
   private encryptionCount = 0;
+  private lastCleanupTime = Date.now();
 
   private kem: MlKem768;
 
@@ -497,13 +502,14 @@ export class MLKEMCipherLayer implements CipherLayer {
    * 5. Encrypts plaintext with AES-GCM
    * 6. Returns ciphertext with encapsulated key and metadata
    *
-   * **Security Features:**
-   * - IV reuse protection (tracks used IVs per public key)
-   * - Automatic zeroization of sensitive buffers
-   * - Constant-time key validation
-   * - Generic error messages (no information leakage)
+ * **Security Features:**
+ * - Input size limits (10MB maximum) to prevent DoS attacks
+ * - IV reuse protection (tracks used IVs per public key)
+ * - Automatic zeroization of sensitive buffers
+ * - Constant-time key validation
+ * - Generic error messages (no information leakage)
    *
-   * @param {Uint8Array} data - Plaintext to encrypt (any length supported)
+   * @param {Uint8Array} data - Plaintext to encrypt (maximum 10MB)
    * @param {MLKEMKeys} keys - Encryption keys, must contain publicKey
    * @param {Uint8Array | XCryptoKey} keys.publicKey - ML-KEM public key (1184 bytes as Uint8Array or XCryptoKey)
    *
@@ -512,9 +518,10 @@ export class MLKEMCipherLayer implements CipherLayer {
    *   - `parameters`: Encryption parameters (iv, salt, encapsulated key)
    *   - `layerMetadata`: Algorithm info, timestamps, and performance metrics
    *
-   * @throws {CipherLayerError} If encryption fails, keys are invalid, or publicKey is missing
-   * @throws {CipherLayerError} If IV generation fails after multiple attempts
-   * @throws {CipherLayerError} If key format is invalid (wrong size)
+ * @throws {CipherLayerError} If encryption fails, keys are invalid, or publicKey is missing
+ * @throws {CipherLayerError} If input size exceeds maximum allowed (10MB)
+ * @throws {CipherLayerError} If IV generation fails after multiple attempts
+ * @throws {CipherLayerError} If key format is invalid (wrong size)
    *
    * @example
    * ```typescript
@@ -541,11 +548,25 @@ export class MLKEMCipherLayer implements CipherLayer {
     let aesKey: CryptoKey | null = null;
 
     try {
-      // Periodically cleanup old IV tracking entries
+      // SECURITY: Validate input size to prevent DoS attacks
+      if (data.length > this.MAX_PLAINTEXT_SIZE) {
+        throw new CipherLayerError(
+          "Input size exceeds maximum allowed",
+          this.name,
+          "encrypt",
+        );
+      }
+
+      // Periodically cleanup old IV tracking entries (count-based and time-based)
+      const now = Date.now();
       this.encryptionCount++;
-      if (this.encryptionCount >= this.CLEANUP_INTERVAL) {
+      if (
+        this.encryptionCount >= this.CLEANUP_INTERVAL ||
+        now - this.lastCleanupTime > this.CLEANUP_TIME_INTERVAL_MS
+      ) {
         this.cleanupOldIVs();
         this.encryptionCount = 0;
+        this.lastCleanupTime = now;
       }
 
       if (!this.validateKeys(keys)) {
@@ -624,15 +645,7 @@ export class MLKEMCipherLayer implements CipherLayer {
         },
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("[MLKEMCipherLayer] Encryption error:", {
-          layer: this.name,
-          operation: "encrypt",
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-      }
-
+      // SECURITY: Never log errors in production - use generic error messages only
       throw new CipherLayerError(
         "Encryption failed",
         this.name,
@@ -808,16 +821,7 @@ export class MLKEMCipherLayer implements CipherLayer {
 
       return new Uint8Array(plaintextBuffer);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("[MLKEMCipherLayer] Decryption error:", {
-          layer: this.name,
-          operation: "decrypt",
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-      }
-
-      // SECURITY: Generic error message to prevent information leakage
+      // SECURITY: Never log errors in production - use generic error messages only
       throw new CipherLayerError(
         "Decryption failed",
         this.name,
