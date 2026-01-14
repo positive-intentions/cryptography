@@ -27,7 +27,28 @@ export type XCryptoKey = {
 };
 
 /**
- * Keys for ML-KEM encryption
+ * Keys for ML-KEM encryption/decryption
+ *
+ * @interface MLKEMKeys
+ * @property {Uint8Array | XCryptoKey} [publicKey] - Public key for encryption (1184 bytes as Uint8Array or XCryptoKey object)
+ * @property {Uint8Array | XCryptoKey} [privateKey] - Private key for decryption (64 bytes as Uint8Array or XCryptoKey object)
+ *
+ * @example
+ * ```typescript
+ * // Using Uint8Array keys
+ * const keys: MLKEMKeys = {
+ *   publicKey: new Uint8Array(1184), // Public key bytes
+ *   privateKey: new Uint8Array(64)   // Private key bytes
+ * };
+ *
+ * // Using XCryptoKey objects (from @hpke/ml-kem)
+ * const kem = new MlKem768();
+ * const keyPair = await kem.generateKeyPair();
+ * const keys: MLKEMKeys = {
+ *   publicKey: keyPair.publicKey,
+ *   privateKey: keyPair.privateKey
+ * };
+ * ```
  */
 export interface MLKEMKeys {
   /** Public key for encryption (Uint8Array or XCryptoKey) */
@@ -74,19 +95,56 @@ export class MLKEMCipherLayer implements CipherLayer {
   }
 
   /**
-   * Public getter for KEM instance
-   * Provides proper encapsulation instead of accessing private property directly
+   * Gets the underlying ML-KEM-768 instance
+   *
+   * Provides proper encapsulation instead of accessing private property directly.
+   * This method allows external code to interact with the ML-KEM instance for
+   * operations like key generation while maintaining encapsulation.
+   *
+   * @returns {MlKem768} The ML-KEM-768 instance used by this cipher layer
+   *
+   * @example
+   * ```typescript
+   * const layer = new MLKEMCipherLayer();
+   * const kem = layer.getKEMInstance();
+   * const keyPair = await kem.generateKeyPair();
+   * ```
    */
   getKEMInstance(): MlKem768 {
     return this.kem;
   }
 
   /**
-   * Validate ML-KEM keys with constant-time comparison
+   * Validates ML-KEM keys with constant-time comparison
    *
-   * SECURITY: Uses constant-time comparison to prevent timing attacks
-   * on key validation operations. Always performs all checks without
-   * early returns to avoid timing leaks.
+   * Checks if the provided keys object contains either a public key (for encryption)
+   * or a private key (for decryption). Uses constant-time comparison to prevent
+   * timing attacks on key validation operations.
+   *
+   * **SECURITY:** Always performs all checks without early returns to avoid timing leaks.
+   * Returns false for any invalid input (null, undefined, or missing both keys).
+   *
+   * @param {Partial<MLKEMKeys> | null} keys - Keys object to validate, may be null or undefined
+   * @returns {boolean} True if keys are valid (contains publicKey or privateKey), false otherwise
+   *
+   * @throws Never throws - always returns boolean to prevent timing leaks
+   *
+   * @example
+   * ```typescript
+   * const layer = new MLKEMCipherLayer();
+   *
+   * // Valid - has public key
+   * const isValid1 = layer.validateKeys({ publicKey: publicKeyBytes });
+   *
+   * // Valid - has private key
+   * const isValid2 = layer.validateKeys({ privateKey: privateKeyBytes });
+   *
+   * // Invalid - missing both keys
+   * const isValid3 = layer.validateKeys({});
+   *
+   * // Invalid - null input
+   * const isValid4 = layer.validateKeys(null);
+   * ```
    */
   validateKeys(keys: Partial<MLKEMKeys> | null): boolean {
     try {
@@ -123,7 +181,7 @@ export class MLKEMCipherLayer implements CipherLayer {
    * - Encapsulated key: 1088 bytes
    */
   private async getKeyBytes(
-    key: Uint8Array | Record<string, unknown>,
+    key: Uint8Array | XCryptoKey,
   ): Promise<Uint8Array> {
     if (key instanceof Uint8Array) {
       const validSizes = [
@@ -158,11 +216,11 @@ export class MLKEMCipherLayer implements CipherLayer {
       return key.key;
     }
 
-    // Try to serialize if it's an XCryptoKey
+    // Try to serialize if it's an XCryptoKey with type property
     if (key && typeof key.type === "string") {
       try {
         // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
-        const serialized = await this.kem.serializePublicKey(key);
+        const serialized = await this.kem.serializePublicKey(key as XCryptoKey);
         const bytes = new Uint8Array(serialized);
         const validSizes = [
           this.PUBLIC_KEY_SIZE,
@@ -180,7 +238,7 @@ export class MLKEMCipherLayer implements CipherLayer {
       } catch (error) {
         try {
           // @ts-ignore: Library's type defs are incorrect - accepts internal key objects
-          const serialized = await this.kem.serializePrivateKey(key);
+          const serialized = await this.kem.serializePrivateKey(key as XCryptoKey);
           const bytes = new Uint8Array(serialized);
           const validSizes = [
             this.PUBLIC_KEY_SIZE,
@@ -211,7 +269,7 @@ export class MLKEMCipherLayer implements CipherLayer {
   /**
    * Import public key for encryption
    */
-  private async importPublicKey(publicKey: Uint8Array | any): Promise<any> {
+  private async importPublicKey(publicKey: Uint8Array | XCryptoKey): Promise<XCryptoKey> {
     if (
       publicKey &&
       typeof publicKey.type === "string" &&
@@ -233,7 +291,7 @@ export class MLKEMCipherLayer implements CipherLayer {
   /**
    * Import private key for decryption
    */
-  private async importPrivateKey(privateKey: Uint8Array | any): Promise<any> {
+  private async importPrivateKey(privateKey: Uint8Array | XCryptoKey): Promise<XCryptoKey> {
     if (
       privateKey &&
       typeof privateKey.type === "string" &&
@@ -425,7 +483,54 @@ export class MLKEMCipherLayer implements CipherLayer {
   }
 
   /**
-   * Encrypt data using ML-KEM + AES-GCM
+   * Encrypts data using ML-KEM-768 key encapsulation + AES-GCM-256
+   *
+   * Performs ML-KEM key encapsulation to derive a shared secret, then uses AES-GCM
+   * for authenticated encryption of plaintext. Provides quantum-resistant security
+   * suitable for long-term data confidentiality.
+   *
+   * **Process:**
+   * 1. Validates encryption keys (requires publicKey)
+   * 2. Performs ML-KEM encapsulation to derive shared secret
+   * 3. Generates random salt (16 bytes) and unique IV (12 bytes)
+   * 4. Derives AES-256-GCM key using HKDF-SHA256
+   * 5. Encrypts plaintext with AES-GCM
+   * 6. Returns ciphertext with encapsulated key and metadata
+   *
+   * **Security Features:**
+   * - IV reuse protection (tracks used IVs per public key)
+   * - Automatic zeroization of sensitive buffers
+   * - Constant-time key validation
+   * - Generic error messages (no information leakage)
+   *
+   * @param {Uint8Array} data - Plaintext to encrypt (any length supported)
+   * @param {MLKEMKeys} keys - Encryption keys, must contain publicKey
+   * @param {Uint8Array | XCryptoKey} keys.publicKey - ML-KEM public key (1184 bytes as Uint8Array or XCryptoKey)
+   *
+   * @returns {Promise<EncryptedPayload>} Encrypted payload containing:
+   *   - `ciphertext`: Encrypted data (Uint8Array)
+   *   - `parameters`: Encryption parameters (iv, salt, encapsulated key)
+   *   - `layerMetadata`: Algorithm info, timestamps, and performance metrics
+   *
+   * @throws {CipherLayerError} If encryption fails, keys are invalid, or publicKey is missing
+   * @throws {CipherLayerError} If IV generation fails after multiple attempts
+   * @throws {CipherLayerError} If key format is invalid (wrong size)
+   *
+   * @example
+   * ```typescript
+   * const layer = new MLKEMCipherLayer();
+   * const kem = new MlKem768();
+   * const keyPair = await kem.generateKeyPair();
+   *
+   * const plaintext = new TextEncoder().encode("Hello, World!");
+   * const encrypted = await layer.encrypt(plaintext, {
+   *   publicKey: keyPair.publicKey
+   * });
+   *
+   * // encrypted.ciphertext contains encrypted data
+   * // encrypted.parameters.encapsulated contains ML-KEM encapsulated key
+   * // encrypted.parameters.iv and encrypted.parameters.salt are included
+   * ```
    */
   async encrypt(data: Uint8Array, keys: MLKEMKeys): Promise<EncryptedPayload> {
     const startTime = performance.now();
@@ -542,7 +647,64 @@ export class MLKEMCipherLayer implements CipherLayer {
   }
 
   /**
-   * Decrypt data using ML-KEM + AES-GCM
+   * Decrypts data using ML-KEM-768 key decapsulation + AES-GCM-256
+   *
+   * Performs ML-KEM key decapsulation to recover the shared secret, then uses AES-GCM
+   * for authenticated decryption of ciphertext. Validates all parameters before decryption.
+   *
+   * **Process:**
+   * 1. Validates decryption keys (requires privateKey)
+   * 2. Extracts and validates IV (12 bytes), salt (16 bytes), and encapsulated key (1088 bytes)
+   * 3. Performs ML-KEM decapsulation to recover shared secret
+   * 4. Derives AES-256-GCM key using HKDF-SHA256
+   * 5. Decrypts ciphertext with AES-GCM
+   * 6. Returns plaintext
+   *
+   * **Security Features:**
+   * - Parameter validation (IV, salt, encapsulated key sizes)
+   * - Automatic zeroization of sensitive buffers
+   * - Constant-time key validation
+   * - Generic error messages (no information leakage)
+   *
+   * @param {EncryptedPayload} payload - Encrypted payload from encrypt()
+   * @param {Uint8Array} payload.ciphertext - Encrypted data
+   * @param {object} payload.parameters - Encryption parameters
+   * @param {number[] | Uint8Array} payload.parameters.iv - Initialization vector (12 bytes)
+   * @param {number[] | Uint8Array} payload.parameters.salt - Salt for key derivation (16 bytes)
+   * @param {number[] | Uint8Array} payload.parameters.encapsulated - ML-KEM encapsulated key (1088 bytes)
+   * @param {MLKEMKeys} keys - Decryption keys, must contain privateKey
+   * @param {Uint8Array | XCryptoKey} keys.privateKey - ML-KEM private key (64 bytes as Uint8Array or XCryptoKey)
+   *
+   * @returns {Promise<Uint8Array>} Decrypted plaintext
+   *
+   * @throws {CipherLayerError} If decryption fails, keys are invalid, or privateKey is missing
+   * @throws {CipherLayerError} If payload parameters are missing or invalid
+   * @throws {CipherLayerError} If IV size is not 12 bytes
+   * @throws {CipherLayerError} If salt size is not 16 bytes
+   * @throws {CipherLayerError} If encapsulated key size is not 1088 bytes
+   * @throws {CipherLayerError} If shared secret size is invalid after decapsulation
+   * @throws {CipherLayerError} If AES-GCM authentication fails (tampered ciphertext)
+   *
+   * @example
+   * ```typescript
+   * const layer = new MLKEMCipherLayer();
+   * const kem = new MlKem768();
+   * const keyPair = await kem.generateKeyPair();
+   *
+   * // Encrypt
+   * const plaintext = new TextEncoder().encode("Hello, World!");
+   * const encrypted = await layer.encrypt(plaintext, {
+   *   publicKey: keyPair.publicKey
+   * });
+   *
+   * // Decrypt
+   * const decrypted = await layer.decrypt(encrypted, {
+   *   privateKey: keyPair.privateKey
+   * });
+   *
+   * // decrypted should equal plaintext
+   * const text = new TextDecoder().decode(decrypted);
+   * ```
    */
   async decrypt(
     payload: EncryptedPayload,
