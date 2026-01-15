@@ -2,12 +2,12 @@
 //   withStorybookModuleFederation,
 // } = require('storybook-module-federation');
 const { ModuleFederationPlugin } = require("webpack").container;
-var deps = require('../package.json').dependencies;
+var deps = require("../package.json").dependencies;
 
 const moduleRedundency = ({
   moduleName,
-  urls
-}) => (`promise new Promise(async (resolve) => {
+  urls,
+}) => `promise new Promise(async (resolve) => {
 
   function getRandomNumber(min, max) {
     if (min > max) {
@@ -86,55 +86,55 @@ const moduleRedundency = ({
   // inject this script with the src set to the versioned remoteEntry.js
   document.head.appendChild(script);
 })
-`);
+`;
 
 const moduleFederationConfig = new ModuleFederationPlugin({
   name: "cryptography",
   // filename: "remoteEntry.js",
   exposes: {
-    './Cryptography': './src/stories/components/Cryptography.tsx',
-    './mlsCodec': './src/crypto/MLS/mlsCodec.ts',
-    './CascadingCipher': './src/crypto/CascadingCipher/index.ts',
+    "./Cryptography": "./src/stories/components/Cryptography.tsx",
+    "./mlsCodec": "./src/crypto/MLS/mlsCodec.ts",
+    "./CascadingCipher": "./src/crypto/CascadingCipher/index.ts",
   },
   remotes: {
-    "dim": moduleRedundency({
-      moduleName: 'dim',
+    dim: moduleRedundency({
+      moduleName: "dim",
       urls: [
-        'http://localhost:8082/remoteEntry.js', // local for testing
-        'https://positive-intentions.github.io/dim/remoteEntry.js',
-        'https://dim.positive-intentions.com/remoteEntry.js'
-      ]
+        "http://localhost:8082/remoteEntry.js", // local for testing
+        "https://positive-intentions.github.io/dim/remoteEntry.js",
+        "https://dim.positive-intentions.com/remoteEntry.js",
+      ],
     }),
-    "ui": moduleRedundency({
-      moduleName: 'ui',
+    ui: moduleRedundency({
+      moduleName: "ui",
       urls: [
-        'http://localhost:8081/remoteEntry.js', // local for testing
-        'https://positive-intentions.github.io/ui/remoteEntry.js',
-        'https://ui.positive-intentions.com/remoteEntry.js'
-      ]
+        "http://localhost:8081/remoteEntry.js", // local for testing
+        "https://positive-intentions.github.io/ui/remoteEntry.js",
+        "https://ui.positive-intentions.com/remoteEntry.js",
+      ],
     }),
-    "signal_protocol": moduleRedundency({
-      moduleName: 'signal_protocol',
+    signal_protocol: moduleRedundency({
+      moduleName: "signal_protocol",
       urls: [
-        'http://localhost:8084/remoteEntry.js', // local for testing
-        'https://positive-intentions.github.io/signal-protocol/remoteEntry.js',
-        'https://signal.positive-intentions.com/remoteEntry.js'
-      ]
+        "http://localhost:8084/remoteEntry.js", // local for testing
+        "https://positive-intentions.github.io/signal-protocol/remoteEntry.js",
+        "https://signal.positive-intentions.com/remoteEntry.js",
+      ],
     }),
   },
   shared: {
     react: {
       singleton: false,
       requiredVersion: deps.react,
-      eager: true
+      eager: true,
     },
     "react-dom": {
       singleton: false,
       requiredVersion: deps["react-dom"],
-      eager: true
-    }
-  }
-})
+      eager: true,
+    },
+  },
+});
 
 /** @type { import('@storybook/react-webpack5').StorybookConfig } */
 const config = {
@@ -146,8 +146,8 @@ const config = {
     // Resolve emotion duplication
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@emotion/react': require.resolve('@emotion/react'),
-      '@emotion/styled': require.resolve('@emotion/styled'),
+      "@emotion/react": require.resolve("@emotion/react"),
+      "@emotion/styled": require.resolve("@emotion/styled"),
     };
 
     // Add WASM file watching for hot reload
@@ -156,7 +156,7 @@ const config = {
       // Remove pkg directory from ignored so WASM files are watched
       if (Array.isArray(config.watchOptions.ignored)) {
         config.watchOptions.ignored = config.watchOptions.ignored.filter(
-          pattern => !pattern.toString().includes('pkg')
+          (pattern) => !pattern.toString().includes("pkg"),
         );
       }
     }
@@ -164,7 +164,7 @@ const config = {
     // Ensure WASM files are treated as assets
     config.module.rules.push({
       test: /\.wasm$/,
-      type: 'asset/resource',
+      type: "asset/resource",
     });
 
     return config;
@@ -175,6 +175,8 @@ const config = {
     "@storybook/addon-docs",
     "@storybook/addon-webpack5-compiler-swc",
     "@storybook/addon-themes",
+    "@storybook/addon-interactions",
+    "@storybook/addon-a11y",
   ],
 
   framework: {
@@ -184,15 +186,15 @@ const config = {
     },
   },
 
-  staticDirs: ['../public'],
+  staticDirs: ["../public"],
 
   typescript: {
-    reactDocgen: "react-docgen-typescript"
+    reactDocgen: "react-docgen-typescript",
   },
 
   core: {
     disableWhatsNewNotifications: true,
-  }
+  },
 };
 
 // export default withStorybookModuleFederation(moduleFederationConfig)(

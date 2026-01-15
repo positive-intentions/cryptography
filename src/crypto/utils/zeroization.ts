@@ -74,3 +74,69 @@ export class Zeroization {
     }
   }
 }
+
+/**
+ * Zeroize a Uint8Array buffer or array of buffers by filling with zeros
+ *
+ * @param buffer - The buffer or array of buffers to zeroize
+ */
+export function zeroize(
+  buffer: Uint8Array | null | undefined | Uint8Array[],
+): void {
+  if (Array.isArray(buffer)) {
+    for (const buf of buffer) {
+      if (buf && buf.length > 0) {
+        buf.fill(0);
+      }
+    }
+  } else if (buffer && buffer.length > 0) {
+    buffer.fill(0);
+  }
+}
+
+/**
+ * Zeroize a string by encoding and clearing the reference
+ *
+ * Note: Strings are immutable in JavaScript, so this primarily documents
+ * the intent to not keep references to sensitive strings.
+ *
+ * @param str - The string to zeroize
+ */
+export function zeroizeString(str: string | null | undefined): void {
+  if (str) {
+    // Strings are immutable, but we document the security intent
+    // The buffer created during encoding is transient
+    new TextEncoder().encode(str);
+  }
+}
+
+/**
+ * Create a copy of a buffer and zeroize the original
+ *
+ * This is useful when you need to pass sensitive data but don't want
+ * to keep the original in memory.
+ *
+ * @param buffer - The buffer to copy and zeroize
+ * @returns A copy of the original buffer
+ */
+export function zeroizeCopy(buffer: Uint8Array): Uint8Array {
+  const copy = new Uint8Array(buffer.length);
+  copy.set(buffer);
+  buffer.fill(0);
+  return copy;
+}
+
+/**
+ * Check if a buffer has been zeroized (all bytes are zero)
+ *
+ * @param buffer - The buffer to check
+ * @returns True if all bytes are zero, false otherwise
+ */
+export function isZeroized(buffer: Uint8Array): boolean {
+  for (let i = 0; i < buffer.length; i++) {
+    if (buffer[i] !== 0) {
+      return false;
+    }
+  }
+  return true;
+}

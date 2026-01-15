@@ -242,12 +242,16 @@ const PasswordBasedFileEncryptionDemo = () => {
 
   const handleEncryptedFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file || !password.trim()) {
+      setStatus("Please select a file and enter a password");
+      return;
+    }
 
     setLoading(true);
     try {
       // Validate the encrypted file package
       const validation = await parseEncryptedFilePackage(file);
+
       setUploadValidation(validation);
 
       if (validation.isValid) {
@@ -259,10 +263,12 @@ const PasswordBasedFileEncryptionDemo = () => {
         setStatus(`Invalid encrypted file: ${validation.error}`);
         setUploadedEncryptedFile(null);
       }
-
       event.target.value = ""; // Reset file input
     } catch (error) {
-      setStatus(`Failed to load encrypted file: ${error.message}`);
+      console.error("Failed to load encrypted file:", error);
+      setStatus(
+        `Failed to load encrypted file: ${error?.message || String(error)}`,
+      );
       setUploadedEncryptedFile(null);
       setUploadValidation(null);
     } finally {
@@ -272,7 +278,7 @@ const PasswordBasedFileEncryptionDemo = () => {
 
   const handleDecryptUploadedFile = async () => {
     if (!uploadedEncryptedFile || !password.trim()) {
-      setStatus("Please select an encrypted file and enter the password");
+      setStatus("Please select an encrypted file and enter a password");
       return;
     }
 
@@ -306,6 +312,11 @@ const PasswordBasedFileEncryptionDemo = () => {
             mimeType: decrypted.metadata.mimeType,
           },
         });
+        setSelectedFile({
+          id: "uploaded",
+          fileName: decrypted.metadata.fileName,
+          type: "binary",
+        });
         setStatus(
           `Binary file "${decrypted.metadata.fileName}" decrypted successfully!`,
         );
@@ -315,7 +326,11 @@ const PasswordBasedFileEncryptionDemo = () => {
       setUploadedEncryptedFile(null);
       setUploadValidation(null);
     } catch (error) {
-      setStatus(`Failed to decrypt uploaded file: ${error.message}`);
+      console.error("Decryption error:", error);
+      setStatus(
+        `Failed to decrypt uploaded file: ${error?.message || String(error)}`,
+      );
+      setUploadedEncryptedFile(null);
     } finally {
       setLoading(false);
     }

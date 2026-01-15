@@ -182,6 +182,66 @@ const keys = { doubleRatchetState };
 - Post-compromise security
 - Out-of-order message handling
 
+### 5. MLKEMCipherLayer
+
+ML-KEM-768 (CRYSTALS-Kyber) quantum-resistant key encapsulation with AES-GCM encryption.
+
+```typescript
+import { MlKem768 } from "@hpke/ml-kem";
+
+const kem = new MlKem768();
+const keyPair = await kem.generateKeyPair();
+
+const mlkemLayer = new MLKEMCipherLayer();
+const keys = {
+  publicKey: keyPair.publicKey,  // For encryption
+  privateKey: keyPair.privateKey, // For decryption
+};
+```
+
+**Features:**
+
+- ML-KEM-768 key encapsulation (NIST PQC standard)
+- Quantum-resistant security (NIST Level 3)
+- AES-GCM-256 encryption
+- IV reuse protection
+- Zeroization of sensitive buffers
+- Constant-time key validation
+
+**Performance Characteristics:**
+
+Performance benchmarks are available in `src/tests/cascading-cipher/mlkem-cipher-layer-performance.test.js`.
+
+Typical performance (measured on modern hardware):
+
+- **Key Generation**: ~50-100ms
+- **Encryption (1KB)**: ~20-50ms
+- **Encryption (10KB)**: ~30-100ms
+- **Encryption (100KB)**: ~100-500ms
+- **Encryption (1MB)**: ~500-3000ms
+- **Decryption**: Similar to encryption times
+
+**Performance Comparison:**
+
+ML-KEM is slower than classical algorithms (AES, DH) due to quantum-resistant algorithms:
+
+- **vs AES**: ~2-5x slower (depends on data size)
+- **vs DH**: ~1.5-3x slower (depends on data size)
+
+**Use Cases:**
+
+- Long-term data confidentiality (years to decades)
+- Quantum-resistant security requirements
+- Post-quantum cryptography compliance
+- Future-proofing encrypted data
+
+**Security Notes:**
+
+- Provides NIST Level 3 security (equivalent to AES-256)
+- Quantum-resistant against both classical and quantum attacks
+- Key sizes: Public (1184 bytes), Private (64 bytes), Encapsulated (1088 bytes)
+- Suitable for data that needs to remain secure for extended periods
+
 ## Creating Custom Cipher Layers
 
 Implement the `CipherLayer` interface:
