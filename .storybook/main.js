@@ -2,6 +2,7 @@
 //   withStorybookModuleFederation,
 // } = require('storybook-module-federation');
 const { ModuleFederationPlugin } = require("webpack").container;
+const { NormalModuleReplacementPlugin } = require("webpack");
 var deps = require("../package.json").dependencies;
 
 const moduleRedundency = ({
@@ -149,6 +150,20 @@ const config = {
       "@emotion/react": require.resolve("@emotion/react"),
       "@emotion/styled": require.resolve("@emotion/styled"),
     };
+
+    // Prevent root imports of @noble/ciphers and @noble/curves
+    // Replace any root imports with submodule imports
+    // This prevents the "root module cannot be imported" error
+    config.plugins.push(
+      new NormalModuleReplacementPlugin(
+        /^@noble\/ciphers$/,
+        require.resolve("@noble/ciphers/aes.js")
+      ),
+      new NormalModuleReplacementPlugin(
+        /^@noble\/curves$/,
+        require.resolve("@noble/curves/secp256k1.js")
+      )
+    );
 
     // Add WASM file watching for hot reload
     if (config.watchOptions) {
