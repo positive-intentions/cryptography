@@ -177,10 +177,10 @@ const EncapsulationBox = () => {
               {/* Encrypted data display */}
               {encrypted && ciphertextHex && (
                 <Paper sx={{ p: 2, mt: 2, bgcolor: "warning.light" }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                  <Typography variant="subtitle2" gutterBottom sx={{ color: "text.primary" }}>
                     Encrypted Ciphertext (Hex)
                   </Typography>
-                  <Typography variant="caption" sx={{ display: "block", mb: 1 }}>
+                  <Typography variant="caption" sx={{ display: "block", mb: 1, color: "text.primary" }}>
                     This is the encrypted data Alice sends to Bob. Bob needs this + his private key to recover the secret!
                   </Typography>
                   <TextField
@@ -189,10 +189,10 @@ const EncapsulationBox = () => {
                     multiline
                     rows={4}
                     size="small"
-                    sx={{ fontFamily: "monospace", fontSize: "0.65rem", wordBreak: "break-all" }}
+                    sx={{ fontFamily: "monospace", fontSize: "0.65rem", wordBreak: "break-all", bgcolor: "background.paper", "& .MuiInputBase-input": { color: "text.primary" } }}
                     helperText="Copy and paste this ciphertext to Bob. Bob will use it with his private key to recover the secret."
                   />
-                  <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
+                  <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.primary" }}>
                     Start: {ciphertextHex.substring(0, 64)}...
                   </Typography>
                 </Paper>
@@ -200,8 +200,8 @@ const EncapsulationBox = () => {
 
               {logs.length > 0 && (
                 <Box>
-                  <Typography variant="subtitle2">Encapsulation Steps:</Typography>
-                  <Box sx={{ maxHeight: 200, overflow: "auto", bgcolor: "grey.50", p: 2, borderRadius: 1, fontFamily: "monospace", fontSize: "0.75rem" }}>
+                  <Typography variant="subtitle2" sx={{ color: "text.primary" }}>Encapsulation Steps:</Typography>
+                  <Box sx={{ maxHeight: 200, overflow: "auto", bgcolor: "grey.100", p: 2, borderRadius: 1, fontFamily: "monospace", fontSize: "0.75rem" }}>
                     {logs.map((log, i) => (
                       <Typography key={i} sx={{ color: log.type === "error" ? "error.main" : log.type === "success" ? "success.main" : "text.primary", mb: 0.5, whiteSpace: "pre-wrap" }}>
                         [{log.time}] {log.message}
@@ -212,8 +212,8 @@ const EncapsulationBox = () => {
               )}
 
               <Paper sx={{ p: 2, bgcolor: "warning.light" }}>
-                <Typography variant="subtitle2">How It Works</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="subtitle2" sx={{ color: "text.primary" }}>How It Works</Typography>
+                <Typography variant="body2" sx={{ color: "text.primary" }}>
                   Alice picks random K, uses Bob's public key to wrap K in ciphertext C.
                   Bob receives C, uses his secret s to unwrap and get the same K!
                 </Typography>
