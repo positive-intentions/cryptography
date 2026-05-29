@@ -8,14 +8,14 @@
  */
 (self["webpackChunkchat"] = self["webpackChunkchat"] || []).push([["_aba5"],{
 
-/***/ "?aba5":
+/***/ "?aba5"
 /*!************************!*\
   !*** crypto (ignored) ***!
   \************************/
-/***/ (() => {
+() {
 
 eval("{/* (ignored) */\n\n//# sourceURL=webpack://chat/crypto_(ignored)?\n}");
 
-/***/ })
+/***/ }
 
 }]);
